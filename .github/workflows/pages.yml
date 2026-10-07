@@ -32,6 +32,7 @@ jobs:
         run: |
           rm -rf studio/*
           cp -R build/public/. studio/
+          printf '\n<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js", { updateViaCache: "none" }).catch(() => {});</script>\n' >> studio/index.html
           cp studio/index.html studio/404.html
       - name: Configure Pages
         uses: actions/configure-pages@v5
