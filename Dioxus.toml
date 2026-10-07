@@ -1,0 +1,14 @@
+[application]
+name="SYN Studio"
+default_platform="web"
+out_dir="studio"
+asset_dir="public"
+
+[web.app]
+title="SYN Studio"
+base_path="SYN-STUDIO/studio"
+
+[web.watcher]
+reload_html=true
+watch_path=["src","public"]
+index_on_404=true
