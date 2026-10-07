@@ -35,3 +35,18 @@ The first prototype uses a declarative JSON representation so the format can be 
 6. **The runtime is separate from the file.** A SYN file should describe an experience. The viewer/renderer supplies the sandboxed execution environment.
 
 This is an experimental 0.1 model, not a frozen standard.
+
+
+## Runtime action model
+
+The prototype runtime uses a deliberately constrained declarative action vocabulary:
+
+- `scene.next`
+- `scene.goto`
+- `object.show`
+- `object.hide`
+- `object.setText`
+
+A document cannot execute arbitrary JavaScript through this model. Runtime validation rejects unknown actions and broken targets. Media is currently intended to be embedded as image data rather than fetched from arbitrary network URLs.
+
+This vocabulary is experimental and will evolve with the format.
