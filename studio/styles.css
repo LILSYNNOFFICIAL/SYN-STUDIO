@@ -201,3 +201,7 @@ body { overflow-x: hidden; }
 .code-workspace { max-height: 55vh; }
 @media (max-width: 900px) { .topbar { padding: 0 10px; gap: 8px; } .brand strong { font-size: 12px; } .brand-mark { width: 28px; height: 28px; } .workspace { display: block; min-height: calc(100vh - var(--studio-header-height)); } .stage-area { min-height: calc(100vh - var(--studio-header-height)); } .stage { margin: 10px; min-height: calc(100vh - var(--studio-header-height) - 58px); border-radius: 8px; } .inspector { display: none; } .stage-toolbar { padding: 0 10px; } .menu-trigger { padding: 7px 6px; font-size: 11px; } }
 @media (max-width: 560px) { :root { --studio-header-height: 50px; } .brand-mark { width: 26px; height: 26px; border-radius: 7px; } .brand strong { font-size: 11px; } .stage { margin: 7px; } .stage-toolbar { height: 34px; } .menu-panel { min-width: 220px; max-height: 68vh; } }
+/* Showcase rendering */
+.syn-text { background: transparent !important; border-color: transparent !important; box-shadow: none !important; padding: 0 !important; text-align: left; overflow: visible; }
+.syn-shape { display: flex; align-items: center; justify-content: center; text-align: center; }
+.syn-button { display: flex; align-items: center; justify-content: center; }
