@@ -4,7 +4,7 @@ use serde_json::{json,Value};
 use uuid::Uuid;
 use base64::{engine::general_purpose::STANDARD,Engine as _};
 #[cfg(target_arch="wasm32")] use wasm_bindgen::JsCast;
-static CSS:Asset=asset!("/app.css");
+static CSS:Asset=asset!("/assets/app.css");
 #[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]struct Document{syn:String,r#type:String,meta:Meta,viewport:Viewport,assets:Vec<Asset>,scenes:Vec<Scene>}
 #[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]struct Meta{id:String,title:String}
 #[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]struct Viewport{width:u32,height:u32}
@@ -44,6 +44,7 @@ fn App()->Element{
     let active=doc.read().scenes.get(*scene.read()).cloned();
     let selected_id=selected.read().clone();
     let scene_count=doc.read().scenes.len();
+    let zoom_label=format!("{}%",(*zoom.read()*100.) as i32);
 
     if *preview.read() {
         return rsx! {
@@ -245,7 +246,7 @@ fn App()->Element{
                         }
                         div { class:"zoom",
                             button { onclick:move |_| { zoom.set((*zoom.read()-0.1).max(.5)); }, "−" }
-                            span { format!("{}%",(*zoom.read()*100.) as i32) }
+                            span { "{zoom_label}" }
                             button { onclick:move |_| { zoom.set((*zoom.read()+0.1).min(2.)); }, "+" }
                         }
                     }
@@ -331,13 +332,11 @@ fn Canvas(doc:Signal<Document>,scene:usize,selected:Signal<Option<String>>,zoom:
                 onclick:move |_|pick.call(None),
                 if let Some(s)=s {
                     for o in s.objects.iter().filter(|o|!o.hidden) {
-                        let oid=o.id.clone();
-                        let class_name=if selected.read().as_deref()==Some(oid.as_str()){"obj selected"}else{"obj"};
                         rsx! {
                             div {
-                                class:class_name,
+                                class:object_class(&selected,&o.id),
                                 style:style(o),
-                                onclick:move |e|{e.stop_propagation();pick.call(Some(oid.clone()));},
+                                onclick:move |e|{e.stop_propagation();pick.call(Some(o.id.clone()));},
                                 if o.kind=="video" {
                                     video { src:o.props.get("src").and_then(Value::as_str), controls:true }
                                 } else if o.kind=="audio" {
@@ -354,6 +353,10 @@ fn Canvas(doc:Signal<Document>,scene:usize,selected:Signal<Option<String>>,zoom:
             }
         }
     }
+}
+
+fn object_class(selected:&Signal<Option<String>>,id:&str)->&'static str{
+    if selected.read().as_deref()==Some(id){"obj selected"}else{"obj"}
 }
 #[component]fn Inspect(doc:Signal<Document>,scene:usize,id:String,status:Signal<String>,history:Signal<History>)->Element{let o=doc.read().scenes.get(scene).and_then(|s|s.objects.iter().find(|o|o.id==id)).cloned();let Some(o)=o else{return rsx!{}};let mut x=use_signal(||o.x.to_string());let mut y=use_signal(||o.y.to_string());let mut copy=use_signal(||text(&o));rsx!{div{class:"inspectbody",strong{"{o.label}"},small{"{o.kind}"},label{"X",input{value:"{x}",oninput:move|e|x.set(e.value())}},label{"Y",input{value:"{y}",oninput:move|e|y.set(e.value())}},textarea{value:"{copy}",oninput:move|e|copy.set(e.value())},button{class:"apply",onclick:{let mut doc=doc.clone();let mut history=history.clone();let mut status=status.clone();move |_|{let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;if let Some(v)=n.scenes.get_mut(scene).and_then(|s|s.objects.iter_mut().find(|o|o.id==id)){v.x=x.read().parse().unwrap_or(v.x);v.y=y.read().parse().unwrap_or(v.y);v.props=json!({"text":copy.read().clone()});}doc.set(n);status.set("Object updated".into())}},"Apply changes"}}}}
 #[component]
