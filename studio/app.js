@@ -833,10 +833,11 @@ function renderInteractions() {
     const action = item.actions[0] ?? { type: "scene.next" };
     const source = scene().objects.find(object => object.id === item.event.target);
     const targetOptions = action.type === "scene.goto" ? sceneOptions : objectOptions;
+    const linkValue = action.type === "link.openUrl" ? action.url ?? "" : action.type === "link.openSyn" ? action.target ?? "" : "";
     return `<div class="interaction">
       <div class="interaction-rule"><strong>WHEN</strong> <span class="target-chip">${escapeHtml(source?.label ?? item.event.target)}</span> <code>clicked</code></div>
       <span class="flow">→</span>
-      <div class="interaction-rule">
+      <div class="interaction-rule interaction-action-wrap">
         <strong>THEN</strong>
         <select class="interaction-action" data-id="${item.id}">
           <option value="scene.next" ${action.type === "scene.next" ? "selected" : ""}>Next scene</option>
@@ -844,9 +845,13 @@ function renderInteractions() {
           <option value="object.show" ${action.type === "object.show" ? "selected" : ""}>Show object</option>
           <option value="object.hide" ${action.type === "object.hide" ? "selected" : ""}>Hide object</option>
           <option value="object.setText" ${action.type === "object.setText" ? "selected" : ""}>Set object text</option>
+          <option value="link.openUrl" ${action.type === "link.openUrl" ? "selected" : ""}>Open URL</option>
+          <option value="link.openSyn" ${action.type === "link.openSyn" ? "selected" : ""}>Open SYN link</option>
         </select>
-        ${action.type !== "scene.next" ? `<select class="interaction-target" data-id="${item.id}">${targetOptions}</select>` : ""}
+        ${action.type === "scene.goto" || ["object.show","object.hide","object.setText"].includes(action.type) ? `<select class="interaction-target" data-id="${item.id}">${targetOptions}</select>` : ""}
         ${action.type === "object.setText" ? `<input class="interaction-value" data-id="${item.id}" value="${escapeHtml(action.value ?? "")}" placeholder="Text">` : ""}
+        ${action.type === "link.openUrl" ? `<input class="interaction-link" data-id="${item.id}" value="${escapeHtml(linkValue)}" placeholder="https://example.com">` : ""}
+        ${action.type === "link.openSyn" ? `<input class="interaction-link" data-id="${item.id}" value="${escapeHtml(linkValue)}" placeholder="SYN URL or document target">` : ""}
       </div>
       <button class="remove-interaction" data-id="${item.id}" aria-label="Remove interaction">×</button>
     </div>`;
@@ -859,11 +864,12 @@ function renderInteractions() {
       recordHistory();
       const action = item.actions[0] ?? { type: "scene.next" };
       action.type = actionSelect.value;
-      delete action.target;
-      delete action.value;
+      delete action.target; delete action.value; delete action.url;
       if (action.type === "scene.goto") action.target = state.document.scenes[state.sceneIndex + 1]?.id ?? state.document.scenes[0]?.id;
       if (["object.show","object.hide","object.setText"].includes(action.type)) action.target = scene().objects[0]?.id;
       if (action.type === "object.setText") action.value = "";
+      if (action.type === "link.openUrl") action.url = "https://";
+      if (action.type === "link.openSyn") action.target = "";
       item.actions = [action];
       renderInteractions();
     });
@@ -885,6 +891,16 @@ function renderInteractions() {
       const item = scene().interactions.find(value => value.id === input.dataset.id);
       if (item) item.actions[0].value = input.value;
     });
+  });
+
+  interactionList.querySelectorAll(".interaction-link").forEach(input => {
+    input.addEventListener("input", () => {
+      const item = scene().interactions.find(value => value.id === input.dataset.id);
+      if (!item) return;
+      if (item.actions[0].type === "link.openUrl") item.actions[0].url = input.value;
+      if (item.actions[0].type === "link.openSyn") item.actions[0].target = input.value;
+    });
+    input.addEventListener("change", () => recordHistory());
   });
 
   interactionList.querySelectorAll(".remove-interaction").forEach(button => {
