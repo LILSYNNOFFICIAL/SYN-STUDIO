@@ -50,11 +50,11 @@ jobs:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=./studio/">
+  <meta http-equiv="refresh" content="0; url=/SYN-STUDIO/studio/">
   <title>SYN Studio</title>
 </head>
 <body>
-  <p>Opening <a href="./studio/">SYN Studio</a>…</p>
+  <p>Opening <a href="/SYN-STUDIO/studio/">SYN Studio</a>…</p>
 </body>
 </html>
 ''')
@@ -65,6 +65,8 @@ jobs:
           test -f studio/index.html
           test -f studio/404.html
           test -d studio/assets
+          test -s studio/index.html
+          ! grep -q 'url=/SYN-STUDIO/studio/' studio/index.html
           ! grep -q '<meta http-equiv="refresh"' studio/index.html
           ! grep -q 'url=./studio/' studio/index.html
           grep -q 'id="main"' studio/index.html
