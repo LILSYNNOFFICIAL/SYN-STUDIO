@@ -37,6 +37,12 @@ The first prototype uses a declarative JSON representation so the format can be 
 This is an experimental 0.1 model, not a frozen standard.
 
 
+## Authoring fields
+
+Objects may carry optional `styles` and media/link metadata in `props`. Styles include typography, color, background, border radius, opacity, spacing, and shadow properties as supported by the runtime. The Studio source workspace exposes the same document model as inspectable JSON so visual edits and source edits operate on the same document.
+
+Navigation may use safe declarative actions such as `scene.goto`, `link.openUrl`, and `link.openSyn`. URL actions are limited to HTTP(S). Database credentials and secrets are not stored in SYN documents.
+
 ## Runtime action model
 
 The prototype runtime uses a deliberately constrained declarative action vocabulary:
@@ -46,6 +52,8 @@ The prototype runtime uses a deliberately constrained declarative action vocabul
 - `object.show`
 - `object.hide`
 - `object.setText`
+- `link.openUrl`
+- `link.openSyn`
 
 A document cannot execute arbitrary JavaScript through this model. Runtime validation rejects unknown actions and broken targets. Media is currently intended to be embedded as image data rather than fetched from arbitrary network URLs.
 
