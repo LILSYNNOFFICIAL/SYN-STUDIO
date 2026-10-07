@@ -1,11 +1,18 @@
 {
   "name": "SYN Studio",
   "short_name": "SYN",
-  "description": "Create, preview, and export SYN creative documents.",
+  "description": "Professional visual authoring environment for the SYN creative document format.",
   "start_url": "./studio/",
   "scope": "./",
   "display": "standalone",
   "background_color": "#090a0d",
   "theme_color": "#090a0d",
-  "icons": []
+  "icons": [
+    {
+      "src": "./icons/syn-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
