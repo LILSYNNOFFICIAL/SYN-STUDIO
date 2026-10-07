@@ -65,3 +65,17 @@ test("SYN Studio exposes real link actions and richer visual controls", () => {
   assert.match(app, /objectOpacity/);
   assert.match(app, /objectLetterSpacing/);
 });
+
+
+test("SYN Studio has actionable empty-canvas onboarding", () => {
+  const html = read("studio/index.html");
+  const app = read("studio/app.js");
+  const css = read("studio/styles.css");
+  for (const id of ["emptyText","emptyShape","emptyMedia","emptyCommands"]) assert.match(html, new RegExp('id="' + id + '"'));
+  assert.match(html, /tabindex="0" aria-label="SYN canvas"/);
+  assert.match(app, /emptyText.*addCanvasObject\("text"\)/s);
+  assert.match(app, /emptyShape.*addCanvasObject\("shape"\)/s);
+  assert.match(app, /emptyMedia.*mediaInput/s);
+  assert.match(app, /emptyCommands.*openCodePalette/s);
+  assert.match(css, /\.empty-state\{/);
+});
