@@ -23,7 +23,7 @@ fn demo()->Document{let mut d=Document{syn:"0.1".into(),r#type:"document".into()
 fn initial()->Document{#[cfg(target_arch="wasm32")]if let Some(w)=web_sys::window(){if let Ok(Some(s))=w.local_storage(){if let Ok(Some(v))=s.get_item("syn-studio-document"){if let Ok(d)=serde_json::from_str(&v){return d}}}}demo()}
 fn save(d:&Document){#[cfg(target_arch="wasm32")]if let Some(w)=web_sys::window(){if let Ok(Some(s))=w.local_storage(){let _=s.set_item("syn-studio-document",&serde_json::to_string(d).unwrap());}}}
 fn export(d:&Document){#[cfg(target_arch="wasm32")] {let raw=serde_json::to_string_pretty(d).unwrap();let w=web_sys::window().unwrap();let doc=w.document().unwrap();let blob=web_sys::Blob::new_with_str_sequence(&js_sys::Array::of1(&wasm_bindgen::JsValue::from_str(&raw))).unwrap();let url=web_sys::Url::create_object_url_with_blob(&blob).unwrap();let a=doc.create_element("a").unwrap().dyn_into::<web_sys::HtmlAnchorElement>().unwrap();a.set_href(&url);a.set_download("syn-studio-project.syn");a.click();let _=web_sys::Url::revoke_object_url(&url);}}
-fn style(o:&Object)->String{let mut s=format!("left:{}px;top:{}px;width:{}px;height:{}px;transform:rotate({}deg);",o.x,o.y,o.width,o.height,o.rotation);if let Some(m)=o.styles.as_object(){for(k,v)in m{match(k,v){("fontSize",Value::Number(n))=>s+=&format!("font-size:{}px;",n),("fontWeight",Value::Number(n))=>s+=&format!("font-weight:{};",n),("color",Value::String(v))=>s+=&format!("color:{};",v),("background",Value::String(v))=>s+=&format!("background:{};",v),("borderRadius",Value::Number(n))=>s+=&format!("border-radius:{}px;",n),("borderWidth",Value::Number(n))=>s+=&format!("border-width:{}px;",n),("borderColor",Value::String(v))=>s+=&format!("border-color:{};",v),("boxShadow",Value::String(v))=>s+=&format!("box-shadow:{};",v),("letterSpacing",Value::Number(n))=>s+=&format!("letter-spacing:{}px;",n),_=>{}}}}s}
+fn style(o:&Object)->String{let mut s=format!("left:{}px;top:{}px;width:{}px;height:{}px;transform:rotate({}deg);",o.x,o.y,o.width,o.height,o.rotation);if let Some(m)=o.styles.as_object(){for(k,v)in m{match(k.as_str(),v){("fontSize",Value::Number(n))=>s+=&format!("font-size:{}px;",n),("fontWeight",Value::Number(n))=>s+=&format!("font-weight:{};",n),("color",Value::String(v))=>s+=&format!("color:{};",v),("background",Value::String(v))=>s+=&format!("background:{};",v),("borderRadius",Value::Number(n))=>s+=&format!("border-radius:{}px;",n),("borderWidth",Value::Number(n))=>s+=&format!("border-width:{}px;",n),("borderColor",Value::String(v))=>s+=&format!("border-color:{};",v),("boxShadow",Value::String(v))=>s+=&format!("box-shadow:{};",v),("letterSpacing",Value::Number(n))=>s+=&format!("letter-spacing:{}px;",n),_=>{}}}}s}
 #[cfg(feature="web")]fn main(){dioxus::launch(App)}
 #[cfg(not(feature="web"))]fn main(){}
 #[component]
@@ -333,7 +333,8 @@ fn Code(source:Signal<String>,doc:Signal<Document>,history:Signal<History>,statu
                         onclick: {
                             let mut source=source.clone();
                             move |_| {
-                                if let Ok(v)=serde_json::from_str::<Value>(&source.read()) {
+                                let raw=source.read().clone();
+                                if let Ok(v)=serde_json::from_str::<Value>(&raw) {
                                     source.set(serde_json::to_string_pretty(&v).unwrap());
                                 }
                             }
