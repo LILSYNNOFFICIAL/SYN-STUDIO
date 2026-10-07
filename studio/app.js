@@ -99,11 +99,11 @@ button(interactive,"int-back","Back to architecture",940,500,110,46,{background:
 addInteraction(interactive,{event:{type:"click",target:"int-continue"},actions:[{type:"object.setText",target:"int-story-text",value:"The story changed at runtime. No page reload. No custom DOM hack."}]});
 addInteraction(interactive,{event:{type:"click",target:"int-back"},actions:[{type:"scene.goto",target:"scene-2"}]});
 
-text(source,"src-kicker","03 / SOURCE",70,52,300,22,{fontSize:10,fontWeight:800,color:blue,letterSpacing:2.5});
-text(source,"src-title","The canvas has a source.",70,84,680,58,{fontSize:48,fontWeight:850,color:white});
+text(source,"src-code-1",'{  "syn": "0.1",',98,232,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
+text(source,"src-code-2",'  "type": "document",',98,258,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
 text(source,"src-copy","Visual authoring and source inspection target the same document model.",72,145,650,28,{fontSize:16,color:muted});
-card(source,"src-editor","",72,205,760,335,{background:"#090d13",borderColor:"#2d3949",borderWidth:1,borderRadius:14,boxShadow:"0 24px 60px #0009"});
-text(source,"src-code-1","{  "syn": "0.1",",98,232,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
+text(source,"src-code-4",'    { "id": "scene-3",',98,310,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
+text(source,"src-code-5",'      "objects": [ ... ],',98,336,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#9ce5c0"});
 text(source,"src-code-2","  "type": "document",",98,258,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
 text(source,"src-code-3",'  "scenes": [',98,284,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#8faeff"});
 text(source,"src-code-4","    { "id": "scene-3",",98,310,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
