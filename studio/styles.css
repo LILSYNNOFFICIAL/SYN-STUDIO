@@ -1449,3 +1449,22 @@ body{
 .interaction-action-wrap{flex-wrap:wrap}
 .interaction-action-wrap .interaction-action,.interaction-action-wrap .interaction-target,.interaction-action-wrap .interaction-value,.interaction-action-wrap .interaction-link{min-width:130px}
 .interaction-link{flex:1 1 220px}
+
+/* Final product pass: intentional empty state, canvas chrome, and timeline */
+.empty-state{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100% - 32px));padding:26px 24px;text-align:center;border:1px solid #26354a;border-radius:16px;background:linear-gradient(145deg,rgba(15,24,37,.92),rgba(9,14,22,.9));box-shadow:0 24px 80px rgba(0,0,0,.28);backdrop-filter:blur(14px)}
+.empty-icon{display:grid;place-items:center;width:42px;height:42px;margin:0 auto 12px;border:1px solid #35537e;border-radius:12px;background:#101c2d;color:#82adff;font:800 17px/1 ui-monospace,SFMono-Regular,Consolas,monospace;box-shadow:0 0 30px rgba(86,139,220,.12)}
+.empty-eyebrow{margin-bottom:7px;color:#6f829c;font:800 8px/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.16em}
+.empty-state h1{margin:0;color:#edf4ff;font-size:22px;letter-spacing:-.04em}
+.empty-state p{margin:8px auto 17px;max-width:330px;color:#75869d;font-size:11px;line-height:1.6}
+.empty-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.empty-action{min-height:34px;border:1px solid #2c3c53;border-radius:8px;background:#101925;color:#cbd7e8;font-size:10px;font-weight:700;cursor:pointer}
+.empty-action:hover{border-color:#5279aa;background:#142238;color:#f3f7ff;transform:translateY(-1px)}
+.empty-action.primary{border-color:#4c73a5;background:linear-gradient(180deg,#27456d,#1a304c);color:#edf5ff}
+.empty-action kbd{margin-left:5px;padding:2px 4px;border:1px solid #3a4d68;border-radius:4px;color:#87a9d5;background:#0d1724;font:8px ui-monospace,SFMono-Regular,Consolas,monospace}
+.stage:focus-visible{outline:2px solid #4f78ac;outline-offset:-2px}
+.timeline{background:linear-gradient(180deg,#0e141d,#0a0f16)!important;border-top:1px solid #26364b!important}
+.timeline-head{min-height:52px}
+.timeline-head strong{font-size:12px;letter-spacing:-.01em}
+.interaction-list{padding:4px 10px 10px}
+.interaction{border-color:#27384e!important;background:#0c131d!important}
+@media (max-width:560px){.empty-state{padding:20px 16px;border-radius:13px}.empty-actions{grid-template-columns:1fr}.empty-state h1{font-size:19px}}
