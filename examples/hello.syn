@@ -1,0 +1,100 @@
+{
+  "syn": "0.1",
+  "type": "document",
+  "meta": {
+    "id": "demo-syn-001",
+    "title": "Hello SYN"
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "Welcome",
+      "objects": [
+        {
+          "id": "title",
+          "kind": "text",
+          "label": "Hello SYN",
+          "x": 80,
+          "y": 80,
+          "width": 360,
+          "height": 70,
+          "props": {
+            "text": "Hello SYN"
+          }
+        },
+        {
+          "id": "button",
+          "kind": "button",
+          "label": "Enter",
+          "x": 80,
+          "y": 180,
+          "width": 180,
+          "height": 56,
+          "props": {
+            "text": "Enter"
+          }
+        }
+      ],
+      "interactions": [
+        {
+          "id": "go",
+          "event": {
+            "type": "click",
+            "target": "button"
+          },
+          "actions": [
+            {
+              "type": "scene.goto",
+              "target": "scene-2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "name": "Inside",
+      "objects": [
+        {
+          "id": "message",
+          "kind": "text",
+          "label": "It runs.",
+          "x": 80,
+          "y": 90,
+          "width": 360,
+          "height": 70,
+          "props": {
+            "text": "It runs."
+          }
+        },
+        {
+          "id": "back",
+          "kind": "button",
+          "label": "Back",
+          "x": 80,
+          "y": 190,
+          "width": 180,
+          "height": 56,
+          "props": {
+            "text": "Back"
+          }
+        }
+      ],
+      "interactions": [
+        {
+          "id": "back-action",
+          "event": {
+            "type": "click",
+            "target": "back"
+          },
+          "actions": [
+            {
+              "type": "scene.goto",
+              "target": "scene-1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
