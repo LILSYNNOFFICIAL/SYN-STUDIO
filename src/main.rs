@@ -173,7 +173,8 @@ fn App()->Element{
                                 "Button" => insert(&mut doc,&mut history,&mut scene,&mut selected,"button",item,&mut status),
                                 "Shape" => insert(&mut doc,&mut history,&mut scene,&mut selected,"shape",item,&mut status),
                                 "Undo" => {
-                                    if let Some(n)=history.write().undo(&doc.read()) {
+                                    let current=doc.read().clone();
+                                    if let Some(n)=history.write().undo(&current) {
                                         doc.set(n);
                                         selected.set(None);
                                         status.set("Undo".into());
@@ -223,7 +224,8 @@ fn App()->Element{
                             button {
                                 onclick:move |_| {
                                     if *scene.read()>0 {
-                                        scene.set(*scene.read()-1);
+                                        let current_scene=*scene.read();
+                                        scene.set(current_scene-1);
                                         selected.set(None);
                                     }
                                 },
@@ -233,7 +235,8 @@ fn App()->Element{
                             button {
                                 onclick:move |_| {
                                     if *scene.read()+1<scene_count {
-                                        scene.set(*scene.read()+1);
+                                        let current_scene=*scene.read();
+                                        scene.set(current_scene+1);
                                         selected.set(None);
                                     }
                                 },
@@ -262,9 +265,11 @@ fn App()->Element{
                             button { onclick:move |_|preview.set(true), "Preview" }
                         }
                         div { class:"zoom",
-                            button { onclick:move |_| { zoom.set((*zoom.read()-0.1).max(.5)); }, "−" }
+                            button { onclick:move |_| { let current_zoom=*zoom.read();
+                                    zoom.set((current_zoom-0.1).max(.5)); }, "−" }
                             span { "{zoom_label}" }
-                            button { onclick:move |_| { zoom.set((*zoom.read()+0.1).min(2.)); }, "+" }
+                            button { onclick:move |_| { let current_zoom=*zoom.read();
+                                    zoom.set((current_zoom+0.1).min(2.)); }, "+" }
                         }
                     }
 
@@ -383,9 +388,7 @@ fn ObjectNode(object:Object,selected:Signal<Option<String>>,pick:EventHandler<Op
     }
 }
 
-fn object_class(selected:&Signal<Option<String>>,id:&str)->&'static str{
-    if selected.read().as_deref()==Some(id){"obj selected"}else{"obj"}
-}
+
 #[component]fn Inspect(doc:Signal<Document>,scene:usize,id:String,status:Signal<String>,history:Signal<History>)->Element{let o=doc.read().scenes.get(scene).and_then(|s|s.objects.iter().find(|o|o.id==id)).cloned();let Some(o)=o else{return rsx!{}};let mut x=use_signal(||o.x.to_string());let mut y=use_signal(||o.y.to_string());let mut copy=use_signal(||text(&o));rsx!{div{class:"inspectbody",strong{"{o.label}"},small{"{o.kind}"},label{"X",input{value:"{x}",oninput:move|e|x.set(e.value())}},label{"Y",input{value:"{y}",oninput:move|e|y.set(e.value())}},textarea{value:"{copy}",oninput:move|e|copy.set(e.value())},button{class:"apply",onclick:{let mut doc=doc.clone();let mut history=history.clone();let mut status=status.clone();move |_|{let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;if let Some(v)=n.scenes.get_mut(scene).and_then(|s|s.objects.iter_mut().find(|o|o.id==id)){v.x=x.read().parse().unwrap_or(v.x);v.y=y.read().parse().unwrap_or(v.y);v.props=json!({"text":copy.read().clone()});}doc.set(n);status.set("Object updated".into())}},"Apply changes"}}}}
 #[component]
 fn Code(source:Signal<String>,doc:Signal<Document>,history:Signal<History>,status:Signal<String>,mode:Signal<String>)->Element{
