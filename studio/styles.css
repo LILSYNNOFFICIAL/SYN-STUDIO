@@ -289,3 +289,20 @@ body { overflow-x: hidden; }
   .stage { touch-action:none; }
   .syn-object { touch-action:none; }
 }
+/* Editor manipulation layer */
+.syn-object { cursor: grab; user-select: none; }
+.syn-object:active { cursor: grabbing; }
+.syn-object[hidden] { display: none !important; }
+.syn-object.selected { outline: 1px solid #8faeff; outline-offset: 3px; box-shadow: 0 0 0 1px #8faeff44, 0 10px 30px #0007; }
+.syn-object:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+.resize-handle { position:absolute; z-index:60; width:9px; height:9px; border:1px solid #09101c; background:#dce5ff; border-radius:2px; transform:translate(-50%,-50%); touch-action:none; }
+.resize-nw { cursor:nwse-resize; }
+.resize-ne { cursor:nesw-resize; }
+.resize-sw { cursor:nesw-resize; }
+.resize-se { cursor:nwse-resize; }
+.stage { touch-action:none; }
+.inline-edit { position:absolute; z-index:90; margin:0; padding:6px; border:1px solid #8faeff; background:#0b1017; color:#fff; resize:none; }
+@media (max-width:900px) {
+  .resize-handle { width:13px; height:13px; }
+  .syn-object { min-width:20px; min-height:20px; }
+}
