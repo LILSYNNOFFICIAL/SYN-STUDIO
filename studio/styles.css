@@ -42,9 +42,9 @@ button { font: inherit; }
 .brand-mark, .empty-icon {
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255,79,216,.55);
+  border: 1px solid rgba(120,169,255,.42);
   color: var(--accent);
-  background: rgba(255,79,216,.08);
+  background: rgba(120,169,255,.09);
   border-radius: 10px;
   font-weight: 800;
 }
