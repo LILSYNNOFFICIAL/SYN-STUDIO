@@ -35,15 +35,29 @@ function addCanvasObject(kind) {
   render();
 }
 
+function renderDocumentInspector() {
+  inspector.innerHTML = `
+    <div class="eyebrow">DOCUMENT</div>
+    <label class="field">Title<input id="documentTitle" value="${escapeHtml(state.document.meta.title)}"></label>
+    <label class="field">Scene name<input id="sceneNameInput" value="${escapeHtml(scene().name)}"></label>
+    <div class="interaction"><div>Scenes</div><code>${state.document.scenes.length}</code></div>
+    <div class="interaction"><div>Objects</div><code>${scene().objects.length}</code></div>
+  `;
+  inspector.querySelector("#documentTitle").addEventListener("input", event => {
+    state.document.meta.title = event.target.value || "Untitled SYN";
+  });
+  inspector.querySelector("#sceneNameInput").addEventListener("input", event => {
+    scene().name = event.target.value || "Scene";
+    sceneLabel.textContent = scene().name;
+  });
+}
+
 function selectObject(id) {
   state.selectedObjectId = id;
   document.querySelectorAll(".syn-object").forEach(el => el.classList.toggle("selected", el.dataset.id === id));
   deleteButton.disabled = !id;
   const object = selected();
-  if (!object) {
-    inspector.innerHTML = '<div class="inspector-empty"><span>◇</span><p>Select an object to edit its properties.</p></div>';
-    return;
-  }
+  if (!object) { renderDocumentInspector(); return; }
 
   inspector.innerHTML = `
     <div class="eyebrow">OBJECT</div>
@@ -245,6 +259,30 @@ deleteButton.addEventListener("click", deleteSelectedObject);
 document.querySelector("#addInteraction").addEventListener("click", addNewInteraction);
 document.querySelector("#export").addEventListener("click", exportSyn);
 document.querySelector("#newScene").addEventListener("click", addNewScene);
+document.querySelector("#newDocument").addEventListener("click", () => {
+  if (!confirm("Start a new SYN document? Unsaved work will be lost.")) return;
+  state.document = createSynDocument({ title: "Untitled SYN" });
+  addScene(state.document, { name: "Scene 1" });
+  state.sceneIndex = 0;
+  state.selectedObjectId = null;
+  render();
+});
+document.querySelector("#openSyn").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const source = await file.text();
+    const runtime = createRuntimeState(JSON.parse(source));
+    state.document = runtime.document;
+    state.sceneIndex = 0;
+    state.selectedObjectId = null;
+    render();
+  } catch (error) {
+    alert(error instanceof Error ? error.message : "Unable to open SYN document.");
+  }
+  event.target.value = "";
+});
+
 document.querySelector("#preview").addEventListener("click", preview);
 document.querySelector("#prevScene").addEventListener("click", () => changeScene(-1));
 document.querySelector("#nextScene").addEventListener("click", () => changeScene(1));
