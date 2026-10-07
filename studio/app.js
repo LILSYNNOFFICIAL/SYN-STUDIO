@@ -693,7 +693,9 @@ function selectObject(id, additive = false) {
     </div></details>
     <details class="inspector-section" open><summary>Appearance</summary><div class="inspector-section-body">
       <div class="field-row"><label class="field">Font<select id="objectFont"><option>Inter</option><option>Georgia</option><option>Arial</option><option>Courier New</option><option>Trebuchet MS</option><option>Times New Roman</option><option>system-ui</option></select></label><label class="field">Size<input id="objectFontSize" type="number" min="8" value="${object.styles?.fontSize ?? 16}"></label></div>
+      <div class="field-row"><label class="field">Weight<select id="objectFontWeight"><option value="400">Regular</option><option value="500">Medium</option><option value="600">Semibold</option><option value="700">Bold</option><option value="800">Heavy</option></select></label><label class="field">Align<select id="objectTextAlign"><option>left</option><option>center</option><option>right</option></select></label></div>
       <div class="field-row"><label class="field">Color<input id="objectColor" type="color" value="${/^#[0-9a-f]{6}$/i.test(object.styles?.color ?? "") ? object.styles.color : "#eef1f6"}"></label><label class="field">Radius<input id="objectRadius" type="number" min="0" value="${object.styles?.borderRadius ?? 0}"></label></div>
+      <div class="field-row"><label class="field">Opacity<input id="objectOpacity" type="number" min="0" max="1" step="0.05" value="${object.styles?.opacity ?? 1}"></label><label class="field">Tracking<input id="objectLetterSpacing" type="number" min="-4" max="20" step="0.5" value="${object.styles?.letterSpacing ?? 0}"></label></div>
       <label class="field">Background<input id="objectBackground" value="${escapeHtml(object.styles?.background ?? "")}"></label>
     </div></details>
     <details class="inspector-section"><summary>Actions</summary><div class="inspector-section-body inspector-actions">
@@ -714,12 +716,14 @@ function selectObject(id, additive = false) {
     <div class="interaction"><div>Kind</div><code>${escapeHtml(object.kind)}</code></div>\n    <div class="inspector-actions">\n      <button type="button" id="duplicateSelected">Duplicate</button>\n      <button type="button" id="frontSelected">Bring front</button>\n      <button type="button" id="backSelected">Send back</button>\n      <button type="button" id="lockSelected">${object.locked ? "Unlock" : "Lock"}</button>\n      <button type="button" id="hideSelected">${object.hidden ? "Show" : "Hide"}</button>\n    </div>
   `;
   const font=inspector.querySelector("#objectFont"); font.value=object.styles?.fontFamily || "Inter";
+  const weight=inspector.querySelector("#objectFontWeight"); if(weight) weight.value=String(object.styles?.fontWeight || 400);
+  const align=inspector.querySelector("#objectTextAlign"); if(align) align.value=object.styles?.textAlign || "left";
   inspector.querySelector("#duplicateSelected").addEventListener("click", duplicateSelected);
   inspector.querySelector("#frontSelected").addEventListener("click", () => moveSelectedLayer("front"));
   inspector.querySelector("#backSelected").addEventListener("click", () => moveSelectedLayer("back"));
   inspector.querySelector("#lockSelected").addEventListener("click", toggleSelectedLock);
   inspector.querySelector("#hideSelected").addEventListener("click", toggleSelectedVisibility);
-  for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectRotation","objectText","objectFont","objectFontSize","objectColor","objectRadius","objectBackground"]) {
+  for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectRotation","objectText","objectFont","objectFontSize","objectFontWeight","objectTextAlign","objectColor","objectRadius","objectOpacity","objectLetterSpacing","objectBackground"]) {
     inspector.querySelector("#"+id).addEventListener("focus", () => { state._editingInspector = false; });
     inspector.querySelector("#"+id).addEventListener("input", updateSelectedObject);
   }
@@ -735,7 +739,18 @@ function updateSelectedObject() {
   object.height = Math.max(20, Number(inspector.querySelector("#objectH").value) || 20);
   object.rotation = Number(inspector.querySelector("#objectRotation").value) || 0;
   object.props = { ...object.props, text: inspector.querySelector("#objectText").value };
-  object.styles = { ...object.styles, fontFamily: inspector.querySelector("#objectFont").value, fontSize: Number(inspector.querySelector("#objectFontSize").value) || 16, color: inspector.querySelector("#objectColor").value, borderRadius: Number(inspector.querySelector("#objectRadius").value) || 0, background: inspector.querySelector("#objectBackground").value };
+  object.styles = {
+    ...object.styles,
+    fontFamily: inspector.querySelector("#objectFont").value,
+    fontSize: Number(inspector.querySelector("#objectFontSize").value) || 16,
+    fontWeight: Number(inspector.querySelector("#objectFontWeight")?.value) || 400,
+    textAlign: inspector.querySelector("#objectTextAlign")?.value || "left",
+    color: inspector.querySelector("#objectColor").value,
+    borderRadius: Number(inspector.querySelector("#objectRadius").value) || 0,
+    opacity: Math.max(0,Math.min(1,Number(inspector.querySelector("#objectOpacity")?.value ?? 1))),
+    letterSpacing: Number(inspector.querySelector("#objectLetterSpacing")?.value ?? 0),
+    background: inspector.querySelector("#objectBackground").value
+  };
   render(false);
 }
 function deleteSelectedObject() {
