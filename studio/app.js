@@ -212,12 +212,17 @@ function openCodeWorkspace(){
     panel=document.createElement("section");
     panel.id="syn-code-workspace";
     panel.className="code-workspace";
-    panel.innerHTML='<div class="code-head"><strong>SYN SOURCE</strong><span>Live document model</span><div class="code-actions"><input id="syn-source-search" placeholder="Find"><button id="format-syn-source">Format</button><button id="apply-syn-source" class="primary">Apply</button></div></div><textarea id="syn-source" spellcheck="false" aria-label="SYN source editor"></textarea><div class="code-foot"><span id="syn-source-status">Visual and source views target the same SYN document.</span></div>';
+    panel.innerHTML='<div class="code-head"><strong>SYN SOURCE</strong><span>Live document model</span><div class="code-actions"><input id="syn-source-search" placeholder="Find"><button id="format-syn-source">Format</button><button id="apply-syn-source" class="primary">Apply</button></div></div><div class="code-editor-shell"><pre id="syn-source-lines" aria-hidden="true">1</pre><textarea id="syn-source" spellcheck="false" aria-label="SYN source editor"></textarea></div><div class="code-foot"><span id="syn-source-status">Visual and source views target the same SYN document.</span></div>';
     document.querySelector(".timeline").parentElement.appendChild(panel);
     panel.querySelector("#format-syn-source").addEventListener("click",()=>{
       try { panel.querySelector("#syn-source").value=JSON.stringify(JSON.parse(panel.querySelector("#syn-source").value),null,2)+"\n"; panel.querySelector("#syn-source-status").textContent="Formatted."; }
       catch(error) { panel.querySelector("#syn-source-status").textContent=error.message; }
     });
+    const source=panel.querySelector("#syn-source");
+    const lines=panel.querySelector("#syn-source-lines");
+    const syncLines=()=>{ lines.textContent=Array.from({length:Math.max(1,source.value.split("\n").length)},(_,i)=>i+1).join("\n"); lines.scrollTop=source.scrollTop; };
+    source.addEventListener("input",syncLines);
+    source.addEventListener("scroll",()=>{ lines.scrollTop=source.scrollTop; });
     panel.querySelector("#syn-source-search").addEventListener("input",event=>{
       const source=panel.querySelector("#syn-source");
       const q=event.target.value;
@@ -244,6 +249,7 @@ function openCodeWorkspace(){
   }
   panel.hidden=false;
   panel.querySelector("#syn-source").value=serializeSynDocument(state.document);
+  const source=panel.querySelector("#syn-source"); const lines=panel.querySelector("#syn-source-lines"); lines.textContent=Array.from({length:Math.max(1,source.value.split("\n").length)},(_,i)=>i+1).join("\n"); lines.scrollTop=source.scrollTop;
   panel.scrollIntoView({behavior:"smooth"});
 }
 
