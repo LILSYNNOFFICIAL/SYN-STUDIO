@@ -320,3 +320,9 @@ body { overflow-x: hidden; }
 .code-actions { display:flex; gap:6px; align-items:center; margin-left:auto; }
 .code-actions input { width:120px; min-width:0; padding:6px 8px; border:1px solid #303949; border-radius:6px; background:#0b1017; color:#dbe4f2; }
 @media (max-width:560px) { .code-head { flex-wrap:wrap; } .code-actions { width:100%; } .code-actions input { flex:1; } }
+
+.layers-browser { width:min(520px,calc(100vw - 24px)); max-height:min(70vh,680px); overflow:auto; padding:16px; border:1px solid #303949; border-radius:14px; background:#0c1118; box-shadow:0 30px 100px #000b; }
+#layer-list { display:flex; flex-direction:column; gap:4px; margin-top:12px; }
+.layer-row { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; padding:10px 12px; border:1px solid #273140; border-radius:8px; background:#111722; color:#dbe4f2; cursor:pointer; text-align:left; }
+.layer-row:hover { border-color:#65799b; background:#17202e; }
+.layer-row small { color:#7f8ca1; }
