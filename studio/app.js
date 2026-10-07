@@ -2,30 +2,125 @@ import { createSynDocument, addScene, addObject, addInteraction, serializeSynDoc
 import { createRuntimeState, currentScene, dispatchEvent, renderScene } from "../src/runtime.js";
 
 const state = {
-  document: createSynDocument({ title: "Untitled SYN" }),
+  document: createSynDocument({ title: "SYN Studio Showcase" }),
   sceneIndex: 0,
   selectedObjectId: null,
   drag: null
 };
-addScene(state.document, { id: "scene-1", name: "Home", background: "#0d1017" });
-const home = state.document.scenes[0];
-const story = addScene(state.document, { id: "scene-2", name: "Interactive Story", background: "#111827" });
-const mediaScene = addScene(state.document, { id: "scene-3", name: "Media Room", background: "#120f18" });
-addObject(home,{id:"demo-kicker",kind:"text",label:"THE CREATIVE MEDIUM",x:70,y:55,width:430,height:28,props:{text:"THE CREATIVE MEDIUM"},styles:{fontSize:12,fontWeight:800,color:"#9caee9",letterSpacing:4}});
-addObject(home,{id:"demo-title",kind:"text",label:"SYN",x:65,y:88,width:600,height:120,props:{text:"SYN"},styles:{fontSize:92,fontWeight:900,color:"#f4f6fb"}});
-addObject(home,{id:"demo-copy",kind:"text",label:"One document. Infinite experiences.",x:74,y:218,width:560,height:55,props:{text:"One document. Infinite experiences."},styles:{fontSize:24,fontWeight:500,color:"#b9c1d1"}});
-addObject(home,{id:"demo-card",kind:"shape",label:"Capability Card",x:710,y:72,width:300,height:255,props:{text:"DESIGN  •  CODE  •  MEDIA"},styles:{background:"linear-gradient(145deg,#26324b,#121721)",borderColor:"#4c5d7f",borderWidth:1,borderRadius:18,boxShadow:"0 22px 60px #0008",color:"#dce5ff",fontSize:15,fontWeight:800}});
-addObject(home,{id:"demo-enter",kind:"button",label:"Explore SYN",x:74,y:320,width:185,height:52,props:{text:"Explore SYN"},styles:{background:"linear-gradient(180deg,#f2f5ff,#b9c8ff)",color:"#0b1020",fontSize:14,fontWeight:800,borderRadius:10}});
-addObject(home,{id:"demo-code",kind:"button",label:"Open Code",x:272,y:320,width:145,height:52,props:{text:"Open Code"},styles:{background:"#161c27",color:"#dce4f8",fontSize:13,fontWeight:700,borderRadius:10,borderColor:"#3c4961",borderWidth:1}});
-addInteraction(home,{event:{type:"click",target:"demo-enter"},actions:[{type:"scene.goto",target:"scene-2"}]});
-addInteraction(home,{event:{type:"click",target:"demo-code"},actions:[{type:"scene.goto",target:"scene-3"}]});
-addObject(story,{id:"story-title",kind:"text",label:"Interactive Story",x:75,y:70,width:650,height:70,props:{text:"Interactive Story"},styles:{fontSize:52,fontWeight:850,color:"#f4f6fb"}});
-addObject(story,{id:"story-body",kind:"text",label:"Every object can become part of the story.",x:80,y:155,width:550,height:80,props:{text:"Every object can become part of the story. Scenes, media, typography and behavior live together."},styles:{fontSize:18,lineHeight:1.5,color:"#b9c1d1"}});
-addObject(story,{id:"story-card",kind:"shape",label:"Story Card",x:80,y:265,width:600,height:130,props:{text:"CLICK THE BUTTON TO CHANGE THE STORY"},styles:{background:"#171d28",borderColor:"#3d4b63",borderWidth:1,borderRadius:14,color:"#9fb0d7",fontSize:13,fontWeight:800}});
-addObject(story,{id:"story-button",kind:"button",label:"Continue",x:80,y:425,width:160,height:50,props:{text:"Continue"},styles:{background:"#dce5ff",color:"#0b1020",fontWeight:800,borderRadius:9}});
-addInteraction(story,{event:{type:"click",target:"story-button"},actions:[{type:"object.setText",target:"story-card",value:"You just changed the document at runtime."}]});
-addObject(mediaScene,{id:"media-title",kind:"text",label:"Media Room",x:70,y:65,width:620,height:70,props:{text:"Media Room"},styles:{fontSize:54,fontWeight:850,color:"#f7f1ff"}});
-addObject(mediaScene,{id:"media-placeholder",kind:"shape",label:"Media Placeholder",x:72,y:160,width:620,height:240,props:{text:"IMPORT AN IMAGE TO REPLACE THIS"},styles:{background:"linear-gradient(135deg,#2a1f3b,#14111d)",borderColor:"#594b78",borderWidth:1,borderRadius:18,color:"#c7bce3",fontSize:16,fontWeight:800}});
+
+const home = addScene(state.document, { id: "scene-1", name: "SYN / Showcase", background: "#080b10" });
+const architecture = addScene(state.document, { id: "scene-2", name: "SYN / Architecture", background: "#0a0e14" });
+const interactive = addScene(state.document, { id: "scene-3", name: "SYN / Interactive", background: "#090c12" });
+const source = addScene(state.document, { id: "scene-4", name: "SYN / Source", background: "#080b10" });
+
+function text(scene, id, label, x, y, width, height, styles, value=label) {
+  return addObject(scene, { id, kind:"text", label, x, y, width, height, props:{text:value}, styles });
+}
+function card(scene, id, label, x, y, width, height, styles, value=label) {
+  return addObject(scene, { id, kind:"shape", label, x, y, width, height, props:{text:value}, styles });
+}
+function button(scene, id, label, x, y, width, height, styles) {
+  return addObject(scene, { id, kind:"button", label, x, y, width, height, props:{text:label}, styles });
+}
+
+const muted = "#8f9bad";
+const soft = "#c8d0dc";
+const white = "#f4f7fb";
+const line = "#273140";
+const blue = "#8faeff";
+const panel = "#10151d";
+
+text(home,"home-kicker","SYN / CREATIVE RUNTIME",72,54,500,24,{fontSize:11,fontWeight:800,color:blue,letterSpacing:3});
+text(home,"home-title","SYN",68,92,560,112,{fontSize:96,fontWeight:900,color:white,letterSpacing:-5});
+text(home,"home-headline","A new canvas for interactive media.",74,205,620,42,{fontSize:25,fontWeight:650,color:soft});
+text(home,"home-copy","Design a document. Add behavior. Ship an experience.\nSYN brings visual authoring, media, navigation and logic into one portable creative object.",76,252,600,76,{fontSize:15,fontWeight:450,color:muted,lineHeight:1.55});
+card(home,"home-hero-panel","",720,62,330,285,{background:"linear-gradient(145deg,#182131,#0e131b)",borderColor:"#34445b",borderWidth:1,borderRadius:22,boxShadow:"0 28px 80px #0009"});
+text(home,"home-panel-label","DOCUMENT",748,92,160,22,{fontSize:10,fontWeight:800,color:blue,letterSpacing:2});
+text(home,"home-panel-value","01",748,120,120,78,{fontSize:64,fontWeight:850,color:white});
+text(home,"home-panel-rule","────────────────",748,198,220,18,{fontSize:12,color:"#425069"});
+text(home,"home-panel-copy","One file can contain scenes,\nobjects, assets, links, behavior\nand presentation logic.",748,224,245,76,{fontSize:14,color:soft,lineHeight:1.45});
+button(home,"home-explore","Explore the document",76,360,190,48,{background:"linear-gradient(180deg,#eef3ff,#b8c7ff)",color:"#09101c",fontSize:13,fontWeight:800,borderRadius:10,boxShadow:"0 12px 30px #0007"});
+button(home,"home-source","Open source view",278,360,160,48,{background:panel,color:soft,fontSize:13,fontWeight:750,borderRadius:10,borderColor:line,borderWidth:1});
+card(home,"home-stat-1","",72,438,300,84,{background:"#0d1219",borderColor:line,borderWidth:1,borderRadius:12});
+text(home,"home-stat-1a","04",92,458,58,34,{fontSize:25,fontWeight:850,color:white});
+text(home,"home-stat-1b","scenes in this showcase",155,463,180,22,{fontSize:11,fontWeight:700,color:muted});
+card(home,"home-stat-2","",388,438,300,84,{background:"#0d1219",borderColor:line,borderWidth:1,borderRadius:12});
+text(home,"home-stat-2a","∞",408,456,58,38,{fontSize:28,fontWeight:850,color:blue});
+text(home,"home-stat-2b","creative possibilities",465,463,180,22,{fontSize:11,fontWeight:700,color:muted});
+card(home,"home-stat-3","",704,438,346,84,{background:"#0d1219",borderColor:line,borderWidth:1,borderRadius:12});
+text(home,"home-stat-3a","01",724,458,58,34,{fontSize:25,fontWeight:850,color:white});
+text(home,"home-stat-3b","shared document model",787,463,200,22,{fontSize:11,fontWeight:700,color:muted});
+addInteraction(home,{event:{type:"click",target:"home-explore"},actions:[{type:"scene.goto",target:"scene-2"}]});
+addInteraction(home,{event:{type:"click",target:"home-source"},actions:[{type:"scene.goto",target:"scene-4"}]});
+
+text(architecture,"arch-kicker","01 / ARCHITECTURE",70,52,300,22,{fontSize:10,fontWeight:800,color:blue,letterSpacing:2.5});
+text(architecture,"arch-title","One document.",70,84,650,58,{fontSize:48,fontWeight:850,color:white});
+text(architecture,"arch-sub","Everything you see is part of the same inspectable SYN model.",72,145,650,28,{fontSize:16,color:muted});
+const cards=[
+["Design","VISUAL","Canvas, typography, components and layout.","#16202c"],
+["Behavior","LOGIC","Events, actions, navigation and state.","#151d2a"],
+["Media","ASSETS","Images, audio, video and embedded resources.","#18202a"],
+["Code","SOURCE","Inspectable source with a future sandboxed extension layer.","#171e28"]
+];
+cards.forEach((c,i)=>{
+  const x=72+(i%2)*332,y=205+Math.floor(i/2)*132;
+  card(architecture,"arch-card-"+i,"",x,y,300,108,{background:c[3],borderColor:line,borderWidth:1,borderRadius:14,boxShadow:"0 14px 35px #0006"});
+  text(architecture,"arch-card-k-"+i,c[0].toUpperCase(),x+20,y+17,120,18,{fontSize:10,fontWeight:850,color:blue,letterSpacing:1.5});
+  text(architecture,"arch-card-t-"+i,c[1],x+20,y+40,100,18,{fontSize:15,fontWeight:800,color:white});
+  text(architecture,"arch-card-d-"+i,c[2],x+20,y+66,250,34,{fontSize:11,color:muted,lineHeight:1.3});
+});
+card(architecture,"arch-rail","",760,205,290,240,{background:"linear-gradient(160deg,#111a25,#0c1118)",borderColor:"#34445b",borderWidth:1,borderRadius:16});
+text(architecture,"arch-rail-k","THE RULE",785,230,120,18,{fontSize:10,fontWeight:850,color:blue,letterSpacing:2});
+text(architecture,"arch-rail-t","A SYN file\nis data,\nnot authority.",785,258,220,112,{fontSize:31,fontWeight:850,color:white,lineHeight:1.08});
+text(architecture,"arch-rail-b","Sandboxed runtime • explicit capabilities • declarative behavior",785,382,235,42,{fontSize:10,color:muted,lineHeight:1.35});
+button(architecture,"arch-next","Open interactive scene",72,488,190,46,{background:"#dce5ff",color:"#09101c",fontSize:12,fontWeight:800,borderRadius:9});
+addInteraction(architecture,{event:{type:"click",target:"arch-next"},actions:[{type:"scene.goto",target:"scene-3"}]});
+
+text(interactive,"int-kicker","02 / INTERACTION",70,52,300,22,{fontSize:10,fontWeight:800,color:blue,letterSpacing:2.5});
+text(interactive,"int-title","Behavior is part of the composition.",70,84,720,58,{fontSize:43,fontWeight:850,color:white});
+text(interactive,"int-copy","This button is not a mockup. It is wired to the same declarative runtime that renders the document.",72,147,690,46,{fontSize:15,color:muted,lineHeight:1.45});
+card(interactive,"int-console","",72,220,670,245,{background:"#0b1017",borderColor:"#2c3747",borderWidth:1,borderRadius:16,boxShadow:"0 20px 55px #0008"});
+text(interactive,"int-console-k","EVENT GRAPH",96,244,140,18,{fontSize:10,fontWeight:850,color:blue,letterSpacing:2});
+text(interactive,"int-line-1","WHEN",96,284,70,24,{fontSize:12,fontWeight:850,color:"#d9a7ff"});
+text(interactive,"int-line-2","Button / Continue",170,284,180,24,{fontSize:12,fontWeight:700,color:soft});
+text(interactive,"int-line-3","CLICKED",355,284,90,24,{fontSize:12,fontWeight:850,color:"#9ce5c0"});
+text(interactive,"int-arrow","→",450,282,30,26,{fontSize:16,fontWeight:900,color:"#5c6b80"});
+text(interactive,"int-line-4","SET TEXT",490,284,110,24,{fontSize:12,fontWeight:850,color:blue});
+text(interactive,"int-line-5","StoryCard",96,329,130,24,{fontSize:12,fontWeight:700,color:soft});
+text(interactive,"int-line-6",""Runtime updated."",230,329,230,24,{fontSize:12,color:"#c9d3e3"});
+card(interactive,"int-live","LIVE STATE",785,220,265,245,{background:"linear-gradient(160deg,#162234,#0c121a)",borderColor:"#34445b",borderWidth:1,borderRadius:16});
+text(interactive,"int-live-k","LIVE STATE",810,246,120,18,{fontSize:10,fontWeight:850,color:"#9ce5c0",letterSpacing:2});
+text(interactive,"int-live-v","READY",810,276,180,40,{fontSize:28,fontWeight:850,color:white});
+text(interactive,"int-live-copy","Click Continue to mutate the card below.",810,327,190,45,{fontSize:12,color:muted,lineHeight:1.4});
+card(interactive,"int-story","",72,490,670,82,{background:"#111821",borderColor:line,borderWidth:1,borderRadius:12});
+text(interactive,"int-story-text","The story is waiting for an event.",94,514,610,28,{fontSize:15,fontWeight:650,color:soft});
+button(interactive,"int-continue","Continue",785,500,145,46,{background:"linear-gradient(180deg,#eef3ff,#b8c7ff)",color:"#09101c",fontSize:12,fontWeight:800,borderRadius:9});
+button(interactive,"int-back","Back to architecture",940,500,110,46,{background:"#10151d",color:soft,fontSize:11,fontWeight:750,borderRadius:9,borderColor:line,borderWidth:1});
+addInteraction(interactive,{event:{type:"click",target:"int-continue"},actions:[{type:"object.setText",target:"int-story-text",value:"The story changed at runtime. No page reload. No custom DOM hack."}]});
+addInteraction(interactive,{event:{type:"click",target:"int-back"},actions:[{type:"scene.goto",target:"scene-2"}]});
+
+text(source,"src-kicker","03 / SOURCE",70,52,300,22,{fontSize:10,fontWeight:800,color:blue,letterSpacing:2.5});
+text(source,"src-title","The canvas has a source.",70,84,680,58,{fontSize:48,fontWeight:850,color:white});
+text(source,"src-copy","Visual authoring and source inspection target the same document model.",72,145,650,28,{fontSize:16,color:muted});
+card(source,"src-editor","",72,205,760,335,{background:"#090d13",borderColor:"#2d3949",borderWidth:1,borderRadius:14,boxShadow:"0 24px 60px #0009"});
+text(source,"src-code-1","{  "syn": "0.1",",98,232,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
+text(source,"src-code-2","  "type": "document",",98,258,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
+text(source,"src-code-3","  "scenes": [",98,284,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#8faeff"});
+text(source,"src-code-4","    { "id": "scene-3",",98,310,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
+text(source,"src-code-5","      "objects": [ ... ],",98,336,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#9ce5c0"});
+text(source,"src-code-6","      "interactions": [ ... ]",98,362,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#d9a7ff"});
+text(source,"src-code-7","    }",98,388,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
+text(source,"src-code-8","  ]",98,414,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#8faeff"});
+text(source,"src-code-9","}",98,440,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
+card(source,"src-note","",860,205,190,165,{background:"linear-gradient(155deg,#141b25,#0d1219)",borderColor:"#34445b",borderWidth:1,borderRadius:14});
+text(source,"src-note-k","INSPECTABLE",884,231,130,18,{fontSize:10,fontWeight:850,color:blue,letterSpacing:1.5});
+text(source,"src-note-v","Readable.\nPortable.\nDeterministic.",884,264,140,80,{fontSize:21,fontWeight:800,color:white,lineHeight:1.2});
+text(source,"src-note-b","No arbitrary code execution in the core runtime.",884,345,140,42,{fontSize:10,color:muted,lineHeight:1.35});
+button(source,"src-home","Return home",72,570,145,46,{background:"#10151d",color:soft,fontSize:12,fontWeight:750,borderRadius:9,borderColor:line,borderWidth:1});
+button(source,"src-arch","View architecture",230,570,165,46,{background:"#dce5ff",color:"#09101c",fontSize:12,fontWeight:800,borderRadius:9});
+addInteraction(source,{event:{type:"click",target:"src-home"},actions:[{type:"scene.goto",target:"scene-1"}]});
+addInteraction(source,{event:{type:"click",target:"src-arch"},actions:[{type:"scene.goto",target:"scene-2"}]});
+
 state.selectedObjectId = null;
 
 const MENU_DATA = {
@@ -319,11 +414,24 @@ function render(keepSelection = true) {
   document.querySelector("#nextScene").disabled = state.sceneIndex === state.document.scenes.length - 1;
   for (const object of activeScene.objects) {
     const el = document.createElement("button");
-    el.className = "syn-object";
+    el.className = "syn-object syn-" + object.kind;
     el.dataset.id = object.id;
     el.dataset.kind = object.kind;
     el.textContent = object.props?.text || object.label;
-    if (object.styles) { for (const [key,value] of Object.entries(object.styles)) { const prop = {fontFamily:"fontFamily",fontSize:"fontSize",fontWeight:"fontWeight",color:"color",background:"background",borderRadius:"borderRadius"}[key]; if (prop) el.style[prop] = typeof value === "number" && ["fontSize","borderRadius"].includes(key) ? value + "px" : value; } }
+    if (object.styles) {
+      const supported = {
+        fontFamily:"fontFamily",fontSize:"fontSize",fontWeight:"fontWeight",color:"color",
+        background:"background",borderRadius:"borderRadius",borderColor:"borderColor",
+        borderWidth:"borderWidth",boxShadow:"boxShadow",letterSpacing:"letterSpacing",
+        lineHeight:"lineHeight",opacity:"opacity",textAlign:"textAlign",padding:"padding",
+        textTransform:"textTransform"
+      };
+      for (const [key,value] of Object.entries(object.styles)) {
+        const prop = supported[key];
+        if (!prop || value == null) continue;
+        el.style[prop] = typeof value === "number" && ["fontSize","borderRadius","borderWidth"].includes(key) ? value + "px" : value;
+      }
+    }
     el.style.left = object.x + "px";
     el.style.top = object.y + "px";
     el.style.width = object.width + "px";
@@ -345,10 +453,8 @@ function render(keepSelection = true) {
     stage.appendChild(el);
   }
   renderInteractions();
-  if (keepSelection && state.selectedObjectId && selected()) selectObject(state.selectedObjectId);
-  else if (!selected()) selectObject(null);
+  if (keepSelection && state.selectedObjectId && selectObject) selectObject(state.selectedObjectId);
 }
-
 function beginDrag(event, object) {
   if (event.button !== 0) return;
   event.preventDefault();
