@@ -278,6 +278,7 @@ function renderDocumentInspector() {
 
 function selectObject(id) {
   state.selectedObjectId = id;
+  if (id) document.body.classList.add("show-inspector");
   document.querySelectorAll(".syn-object").forEach(el => el.classList.toggle("selected", el.dataset.id === id));
   deleteButton.disabled = !id;
   const object = selected();
@@ -609,7 +610,9 @@ document.querySelector("#openSyn").addEventListener("change", async event => {
 
 document.querySelector("#preview").addEventListener("click", preview);
 buildApplicationMenus();
+document.querySelector("#inspectorToggle")?.addEventListener("click", () => document.body.classList.toggle("show-inspector"));
 document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openCodePalette()}});
+state.history = createHistory(state.document, { limit: 100 });
 document.querySelector("#prevScene").addEventListener("click", () => changeScene(-1));
 document.querySelector("#nextScene").addEventListener("click", () => changeScene(1));
 render();
