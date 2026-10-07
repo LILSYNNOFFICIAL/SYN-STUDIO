@@ -1515,3 +1515,33 @@ body{
   .syn-object{font-size:max(11px, var(--syn-mobile-font, 14px));}
   .syn-text{line-height:1.35!important;}
 }
+
+/* Showcase specimen: mobile-first composition for the opening SYN scene.
+   The document model remains desktop-sized; these presentation overrides keep the
+   example legible and intentional on a phone instead of showing a squeezed desktop page. */
+@media (max-width:560px){
+  #stage{min-height:680px!important;}
+  #stage .syn-object[data-id="home-kicker"]{left:20px!important;top:18px!important;width:330px!important;height:18px!important;font-size:10px!important;}
+  #stage .syn-object[data-id="home-title"]{left:20px!important;top:43px!important;width:330px!important;height:58px!important;font-size:58px!important;line-height:.95!important;letter-spacing:-3px!important;}
+  #stage .syn-object[data-id="home-headline"]{left:22px!important;top:108px!important;width:340px!important;height:46px!important;font-size:19px!important;line-height:1.15!important;}
+  #stage .syn-object[data-id="home-copy"]{left:22px!important;top:158px!important;width:340px!important;height:58px!important;font-size:12px!important;line-height:1.45!important;}
+  #stage .syn-object[data-id="home-hero-panel"]{left:20px!important;top:228px!important;width:340px!important;height:132px!important;border-radius:16px!important;}
+  #stage .syn-object[data-id="home-panel-label"]{left:42px!important;top:248px!important;width:130px!important;height:16px!important;font-size:9px!important;}
+  #stage .syn-object[data-id="home-panel-value"]{left:42px!important;top:270px!important;width:100px!important;height:48px!important;font-size:38px!important;}
+  #stage .syn-object[data-id="home-panel-rule"]{left:42px!important;top:316px!important;width:220px!important;height:14px!important;font-size:9px!important;}
+  #stage .syn-object[data-id="home-panel-copy"]{left:178px!important;top:254px!important;width:148px!important;height:76px!important;font-size:10px!important;line-height:1.35!important;text-align:left!important;}
+  #stage .syn-object[data-id="home-explore"]{left:20px!important;top:380px!important;width:164px!important;height:40px!important;font-size:11px!important;}
+  #stage .syn-object[data-id="home-source"]{left:196px!important;top:380px!important;width:164px!important;height:40px!important;font-size:11px!important;}
+  #stage .syn-object[data-id="home-stat-1"]{left:20px!important;top:438px!important;width:340px!important;height:54px!important;border-radius:10px!important;}
+  #stage .syn-object[data-id="home-stat-1a"]{left:34px!important;top:448px!important;width:44px!important;height:28px!important;font-size:21px!important;}
+  #stage .syn-object[data-id="home-stat-1b"]{left:82px!important;top:454px!important;width:240px!important;height:18px!important;font-size:10px!important;}
+  #stage .syn-object[data-id="home-stat-2"]{left:20px!important;top:502px!important;width:164px!important;height:54px!important;border-radius:10px!important;}
+  #stage .syn-object[data-id="home-stat-2a"]{left:34px!important;top:512px!important;width:42px!important;height:28px!important;font-size:21px!important;}
+  #stage .syn-object[data-id="home-stat-2b"]{left:78px!important;top:516px!important;width:92px!important;height:28px!important;font-size:9px!important;line-height:1.2!important;}
+  #stage .syn-object[data-id="home-stat-3"]{left:196px!important;top:502px!important;width:164px!important;height:54px!important;border-radius:10px!important;}
+  #stage .syn-object[data-id="home-stat-3a"]{left:210px!important;top:512px!important;width:38px!important;height:28px!important;font-size:21px!important;}
+  #stage .syn-object[data-id="home-stat-3b"]{left:254px!important;top:516px!important;width:94px!important;height:28px!important;font-size:9px!important;line-height:1.2!important;}
+  #stage .resize-handle{display:none!important;}
+  #stage .syn-object[data-id="home-hero-panel"]{box-shadow:0 18px 55px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06)!important;}
+  #stage .syn-object[data-id="home-stat-1"],#stage .syn-object[data-id="home-stat-2"],#stage .syn-object[data-id="home-stat-3"]{box-shadow:0 10px 26px rgba(0,0,0,.3)!important;}
+}
