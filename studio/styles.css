@@ -697,3 +697,198 @@ body.code-mode .stage-toolbar{position:relative;z-index:600}
   opacity:.75;
   z-index:100;
 }
+
+
+/* Final SYN Studio presentation pass */
+.topbar{
+  height:54px;
+  background:linear-gradient(180deg,rgba(10,15,23,.98),rgba(8,12,18,.96));
+  border-bottom:1px solid #1d2939;
+}
+.brand-mark{
+  width:30px;height:30px;border-radius:8px;
+  border-color:#42679e;color:#9dbdff;
+  background:linear-gradient(145deg,#16243a,#0d1521);
+}
+.brand strong{font-size:13px;letter-spacing:.015em}
+.menu-bar{gap:2px}
+.menu-trigger{
+  color:#8d9bb0;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.01em;
+  padding:7px 8px;
+}
+.menu-trigger:hover,.menu.open .menu-trigger{
+  color:#edf4ff;
+  background:#172235;
+}
+.menu-panel{
+  width:min(760px,calc(100vw - 24px)) !important;
+  max-width:min(760px,calc(100vw - 24px));
+  min-width:0;
+  padding:10px;
+  border-color:#30415a;
+  border-radius:13px;
+  background:rgba(10,16,24,.985);
+  box-shadow:0 32px 100px rgba(0,0,0,.7),0 0 0 1px rgba(130,170,255,.04);
+}
+.menu.open .menu-panel{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.menu-section{
+  background:linear-gradient(180deg,rgba(22,31,44,.78),rgba(14,21,31,.72));
+  border-color:#26364c;
+  padding:5px;
+}
+.menu-section-title{
+  color:#7186a5;
+  padding:5px 7px 7px;
+}
+.menu-item{
+  min-height:25px;
+  padding:5px 7px;
+  font-size:10px;
+  color:#c9d4e4;
+}
+.menu-item:hover{
+  background:#1d2d45;
+  color:#fff;
+}
+.workspace{
+  grid-template-columns:minmax(0,1fr) 290px;
+}
+.stage-area{
+  background:
+    radial-gradient(700px 360px at 50% 35%,rgba(59,94,150,.09),transparent 72%),
+    #090e15;
+}
+.stage-toolbar{
+  min-height:48px;
+  height:48px;
+  padding:0 12px;
+  background:rgba(10,16,24,.88);
+  border-bottom:1px solid #1e2b3c;
+}
+.scene-switcher{
+  min-width:142px;
+  height:32px;
+  border-radius:9px;
+  border-color:#26364b;
+  background:#0c131d;
+}
+.editor-tools{
+  justify-content:center;
+}
+.editor-tool,.workspace-control{
+  min-height:30px;
+  border-radius:8px;
+}
+.workspace-controls{
+  height:34px;
+  border-radius:9px;
+}
+.stage{
+  margin:16px;
+  border-radius:16px;
+  border-color:#2a3a50;
+  background-color:#080e15;
+  box-shadow:0 28px 90px rgba(0,0,0,.3),inset 0 0 0 1px rgba(134,172,255,.035);
+}
+.stage::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  box-shadow:inset 0 0 80px rgba(0,0,0,.12);
+}
+.syn-object{
+  border-color:#34455d;
+  background:#131c29;
+  border-radius:10px;
+}
+.syn-object:hover{border-color:#526b8d}
+.syn-object.selected{
+  outline:2px solid #89adff;
+  outline-offset:3px;
+  box-shadow:0 0 0 5px rgba(113,157,235,.11),0 16px 40px rgba(0,0,0,.35);
+}
+.inspector{
+  padding:14px;
+  background:linear-gradient(180deg,#0d141e,#0b1119);
+  border-left-color:#1f2d40;
+}
+.inspector .eyebrow{
+  color:#6f85a5;
+  padding-bottom:10px;
+  margin-bottom:14px;
+  border-bottom:1px solid #202e41;
+}
+.inspector-content{max-width:100%}
+.field{font-size:9px;color:#8392a7}
+.field input,.field select,.field textarea{
+  border-color:#25364c;
+  border-radius:8px;
+  background:#080f17;
+  color:#e5edf9;
+}
+.field textarea{resize:vertical}
+.interaction{
+  border-color:#25364b;
+  background:#0d1621;
+}
+.code-workspace{
+  inset:48px 0 0 !important;
+  background:#070c12;
+}
+body.code-mode .stage-toolbar{
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+}
+.code-head{
+  min-height:62px;
+  padding:11px 16px;
+  background:#0c141f;
+}
+.code-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.code-actions input{height:30px}
+.code-editor-shell{
+  background:#070c12;
+}
+#syn-source-lines{
+  user-select:none;
+  text-align:right;
+}
+#syn-source::selection{background:rgba(102,145,224,.28)}
+.code-foot{padding:8px 14px;color:#687a94}
+.capability-card{
+  border-color:#33465f;
+  background:#0b121b;
+}
+.capability-head{background:#0e1722}
+@media(max-width:1100px){
+  .menu.open .menu-panel{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .workspace{grid-template-columns:minmax(0,1fr) 260px}
+}
+@media(max-width:900px){
+  .menu.open .menu-panel{grid-template-columns:1fr}
+  .workspace{grid-template-columns:1fr}
+  .inspector{display:none}
+  .stage-toolbar{min-height:48px;height:auto}
+  .editor-tools{justify-content:flex-start}
+}
+@media(max-width:560px){
+  .menu-panel{width:calc(100vw - 14px)!important;max-width:calc(100vw - 14px)}
+  .menu-trigger{font-size:10px;padding:6px}
+  .stage{margin:8px;border-radius:11px}
+}
+
+/* Inserted text should look like authored content, not draggable chrome. */
+.syn-text{
+  min-width:80px;
+  min-height:30px;
+  border:1px dashed transparent !important;
+}
+.syn-text.selected{border-color:#5f7fac !important}
+.syn-text:hover{border-color:#334a69 !important}
