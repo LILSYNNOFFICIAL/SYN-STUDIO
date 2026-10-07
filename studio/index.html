@@ -43,8 +43,29 @@
 
     <section class="stage-area">
       <div class="stage-toolbar">
-        <div class="scene-switcher"><button id="prevScene" class="icon-button" aria-label="Previous scene">‹</button><span id="sceneLabel">Scene 1</span><button id="nextScene" class="icon-button" aria-label="Next scene">›</button></div>
-        <span class="zoom">100%</span><button id="inspectorToggle" class="mobile-inspector-toggle" aria-label="Toggle inspector">Inspector</button>
+        <div class="scene-switcher">
+          <button id="prevScene" class="icon-button" aria-label="Previous scene">‹</button>
+          <span id="sceneLabel">Scene 1</span>
+          <button id="nextScene" class="icon-button" aria-label="Next scene">›</button>
+        </div>
+        <div class="editor-tools" role="toolbar" aria-label="Canvas tools">
+          <button class="editor-tool active" data-studio-tool="select" title="Select">↖<span>Select</span></button>
+          <button class="editor-tool" data-studio-tool="move" title="Move">✥<span>Move</span></button>
+          <button class="editor-tool" data-studio-tool="pan" title="Pan canvas">✋<span>Pan</span></button>
+          <span class="toolbar-divider"></span>
+          <button class="editor-tool" data-studio-tool="text" title="Insert text">T<span>Text</span></button>
+          <button class="editor-tool" data-studio-tool="shape" title="Insert shape">◇<span>Shape</span></button>
+          <button class="editor-tool" data-studio-tool="button" title="Insert button">▣<span>Button</span></button>
+          <button class="editor-tool" data-studio-tool="media" title="Import media">▧<span>Media</span></button>
+        </div>
+        <div class="workspace-controls">
+          <button class="workspace-control" data-workspace-mode="design">Design</button>
+          <button class="workspace-control" data-workspace-mode="code">Code</button>
+          <button id="toolbarPreview" class="workspace-control preview-control">Preview</button>
+          <button id="toolbarFit" class="workspace-control" title="Fit canvas">Fit</button>
+          <span class="zoom">100%</span>
+          <button id="inspectorToggle" class="mobile-inspector-toggle" aria-label="Toggle inspector">Inspector</button>
+        </div>
       </div>
       <div id="stage" class="stage">
         <div id="emptyState" class="empty-state">
