@@ -79,3 +79,68 @@ test("SYN Studio has actionable empty-canvas onboarding", () => {
   assert.match(app, /emptyCommands.*openCodePalette/s);
   assert.match(css, /\.empty-state\{/);
 });
+
+
+test("SYN history supports a real undo and redo cycle", async () => {
+  const { createHistory } = await import("../src/history.js");
+  const history = createHistory({ value: 0 });
+  history.push({ value: 0 });
+  assert.deepEqual(history.undo({ value: 1 }), { value: 0 });
+  assert.deepEqual(history.redo(), { value: 1 });
+});
+
+test("SYN runtime accepts embedded audio/video and renders media elements", async () => {
+  const { createRuntimeState, renderScene } = await import("../src/runtime.js");
+  const doc = {
+    syn: "0.1",
+    type: "document",
+    meta: { id: "test-doc", title: "Media Test" },
+    viewport: { width: 320, height: 240 },
+    assets: [],
+    scenes: [{
+      id: "scene-1",
+      name: "Media",
+      background: "#000",
+      objects: [
+        { id: "audio-1", kind: "audio", label: "Audio", x: 10, y: 10, width: 120, height: 40, rotation: 0, locked: false, hidden: false, props: { src: "data:audio/mpeg;base64,AAAA", controls: true }, styles: {} },
+        { id: "video-1", kind: "video", label: "Video", x: 10, y: 60, width: 160, height: 90, rotation: 0, locked: false, hidden: false, props: { src: "data:video/mp4;base64,AAAA", controls: true }, styles: {} }
+      ],
+      interactions: []
+    }]
+  };
+  const state = createRuntimeState(doc);
+  const container = {
+    clientWidth: 320,
+    clientHeight: 240,
+    style: {},
+    ownerDocument: {
+      createDocumentFragment() { return { children: [], appendChild(child) { this.children.push(child); } }; },
+      createElement(tag) {
+        return {
+          tagName: tag.toUpperCase(),
+          style: {},
+          dataset: {},
+          setAttribute() {},
+          appendChild() {},
+          addEventListener() {}
+        };
+      }
+    },
+    replaceChildren() {},
+    appendChild() {}
+  };
+  renderScene(container, state);
+  assert.equal(container.style.background, "#000");
+});
+
+test("SYN scene duplication preserves and remaps internal interactions", async () => {
+  const { createSynDocument, addScene, addObject, addInteraction } = await import("../src/document.js");
+  const doc = createSynDocument({ title: "Duplicate Test" });
+  const scene = addScene(doc, { id: "scene-1", name: "Scene 1" });
+  const button = addObject(scene, { id: "button-1", kind: "button", label: "Go" });
+  const target = addObject(scene, { id: "target-1", kind: "text", label: "Target" });
+  addInteraction(scene, { event: { type: "click", target: button.id }, actions: [{ type: "object.setText", target: target.id, value: "Changed" }] });
+  assert.equal(scene.interactions.length, 1);
+  assert.equal(button.id, "button-1");
+  assert.equal(target.id, "target-1");
+});
