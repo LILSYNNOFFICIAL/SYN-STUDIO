@@ -53,3 +53,15 @@ test("SYN Studio has product-level authoring controls and contextual inspector s
   assert.doesNotMatch(css, /#ff4fd8/i);
   assert.match(css, /\.inspector-heading/);
 });
+
+
+test("SYN Studio exposes real link actions and richer visual controls", () => {
+  const app = read("studio/app.js");
+  assert.match(app, /value="link\.openUrl"/);
+  assert.match(app, /value="link\.openSyn"/);
+  assert.match(app, /class="interaction-link"/);
+  assert.match(app, /objectFontWeight/);
+  assert.match(app, /objectTextAlign/);
+  assert.match(app, /objectOpacity/);
+  assert.match(app, /objectLetterSpacing/);
+});
