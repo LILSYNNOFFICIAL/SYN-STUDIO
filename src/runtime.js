@@ -133,7 +133,8 @@ export function renderScene(container, state, { onEvent } = {}) {
     element.dataset.id = object.id;
     element.dataset.kind = object.kind;
     element.setAttribute("aria-label", object.label || object.kind);
-    element.setAttribute("aria-hidden", state.visible.get(object.id) === false ? "true" : "false");
+    const isVisible = state.visible.get(object.id) ?? !object.hidden;
+    element.setAttribute("aria-hidden", isVisible ? "false" : "true");
     element.textContent = state.text.get(object.id) ?? object.props?.text ?? object.label ?? object.kind;
     if (object.kind === "audio" || object.kind === "video") {
       if (!object.props?.src) throw new Error("SYN media object is missing its source");
@@ -156,7 +157,7 @@ export function renderScene(container, state, { onEvent } = {}) {
       element.style.backgroundSize = "cover";
       element.style.backgroundPosition = "center";
     }
-    if (state.visible.get(object.id) === false) element.hidden = true;
+    if (!isVisible) element.hidden = true;
     if (object.kind === "button") {
       element.type = "button";
       element.addEventListener("click", () => onEvent?.({ type: "click", target: object.id }));
