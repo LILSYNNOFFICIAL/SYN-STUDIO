@@ -25,13 +25,33 @@ export function validateRuntimeDocument(document) {
     if (!Array.isArray(scene.objects) || !Array.isArray(scene.interactions)) {
       throw new Error("Invalid SYN scene graph");
     }
+    for (const object of scene.objects) {
+      if (!object || typeof object.id !== "string" || typeof object.kind !== "string") {
+        throw new Error("Invalid SYN object");
+      }
+      if (!Number.isFinite(object.x) || !Number.isFinite(object.y) || !Number.isFinite(object.width) || !Number.isFinite(object.height)) {
+        throw new Error("Invalid SYN object geometry");
+      }
+      if (object.props?.src && !String(object.props.src).startsWith("data:image/")) {
+        throw new Error("SYN media must use embedded image data");
+      }
+    }
     for (const interaction of scene.interactions) {
       if (!interaction?.event?.type || !interaction?.event?.target || !Array.isArray(interaction.actions)) {
         throw new Error("Invalid SYN interaction");
       }
+      if (interaction.event.type === "click" && !scene.objects.some(object => object.id === interaction.event.target)) {
+        throw new Error("SYN interaction target not found");
+      }
       for (const action of interaction.actions) {
         if (!action?.type || !ACTIONS.has(action.type)) {
           throw new Error("Unsupported SYN action");
+        }
+        if (action.type === "scene.goto" && !document.scenes.some(target => target.id === action.target)) {
+          throw new Error("SYN action target not found");
+        }
+        if (["object.show", "object.hide", "object.setText"].includes(action.type) && !scene.objects.some(object => object.id === action.target)) {
+          throw new Error("SYN action target not found");
         }
       }
     }
@@ -114,7 +134,7 @@ export function renderScene(container, state, { onEvent } = {}) {
     element.style.top = (object.y ?? 80) + "px";
     element.style.width = (object.width ?? 180) + "px";
     element.style.minHeight = (object.height ?? 60) + "px";
-    if (object.props?.src) element.style.backgroundImage = `url("${object.props.src}")`;
+    if (object.props?.src?.startsWith("data:image/")) element.style.backgroundImage = `url("${object.props.src}")`;
     if (state.visible.get(object.id) === false) element.hidden = true;
 
     if (object.kind === "button") {
