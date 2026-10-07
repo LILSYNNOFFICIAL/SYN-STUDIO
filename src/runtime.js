@@ -123,17 +123,20 @@ export function renderScene(container, state, { onEvent } = {}) {
   container.replaceChildren();
   const doc = container.ownerDocument || document;
   const fragment = doc.createDocumentFragment();
+  const logical = state.document.viewport || { width: 1120, height: 640 };
+  const scale = Math.min(1, responsiveScale(logical.width, logical.height, Math.max(1, container.clientWidth - 2), Math.max(1, container.clientHeight - 2)));
   for (const object of scene.objects) {
     const element = doc.createElement(object.kind === "button" ? "button" : "div");
     element.className = "syn-runtime-object";
     element.dataset.id = object.id;
     element.dataset.kind = object.kind;
     element.textContent = state.text.get(object.id) ?? object.props?.text ?? object.label ?? object.kind;
-    element.style.left = (object.x ?? 80) + "px";
-    element.style.top = (object.y ?? 80) + "px";
-    element.style.width = (object.width ?? 180) + "px";
-    element.style.height = (object.height ?? 60) + "px";
+    element.style.left = Math.round((object.x ?? 80) * scale) + "px";
+    element.style.top = Math.round((object.y ?? 80) * scale) + "px";
+    element.style.width = Math.max(20, Math.round((object.width ?? 180) * scale)) + "px";
+    element.style.height = Math.max(20, Math.round((object.height ?? 60) * scale)) + "px";
     applyStyles(element, object);
+    if (object.styles?.fontSize) element.style.fontSize = Math.max(8, object.styles.fontSize * scale) + "px";
     if (object.props?.src?.startsWith("data:image/")) {
       element.style.backgroundImage = `url("${object.props.src}")`;
       element.style.backgroundSize = "cover";
