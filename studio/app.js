@@ -1041,7 +1041,10 @@ function beginDrag(event, object, scale) {
     const dy = (e.clientY - startY) / Math.max(scale, 0.01);
     if (Math.abs(dx) + Math.abs(dy) > 1 && !changed) { recordHistory(); changed = true; }
     if (!changed) return;
-    moveObject(object, originX + dx, originY + dy, viewport());
+    const snap = state.snap ? 8 : 1;
+    const nextX = Math.round((originX + dx) / snap) * snap;
+    const nextY = Math.round((originY + dy) / snap) * snap;
+    moveObject(object, nextX, nextY, viewport());
     render(false);
   };
   const end = () => {
