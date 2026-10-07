@@ -1046,7 +1046,12 @@ function render(keepSelection = true) {
   stage.querySelectorAll(".syn-object,.resize-handle").forEach(el => el.remove());
   const activeScene = scene();
   const logical = viewport();
-  const scale = responsiveScale(logical.width, logical.height, Math.max(1, stage.clientWidth - 2), Math.max(1, stage.clientHeight - 2)) * state.zoom;
+  const fitScale = responsiveScale(logical.width, logical.height, Math.max(1, stage.clientWidth - 2), Math.max(1, stage.clientHeight - 2));
+  const mobile = window.innerWidth <= 560;
+  // Phones need an authoring canvas, not a microscopic desktop screenshot. Keep a readable
+  // minimum scale and let the artboard pan/scroll instead of shrinking the work to illegible text.
+  const scale = (mobile ? Math.max(0.64, fitScale) : fitScale) * state.zoom;
+  stage.classList.toggle("mobile-canvas", mobile);
   stage.style.backgroundPosition = state.pan.x+"px "+state.pan.y+"px";
   emptyState.hidden = activeScene.objects.some(object => !object.hidden);
   sceneLabel.textContent = activeScene.name;
