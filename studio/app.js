@@ -534,7 +534,7 @@ const deleteButton = document.querySelector("#deleteObject");
 function scene() { return state.document.scenes[state.sceneIndex]; }
 function selected() { return scene().objects.find(item => item.id === state.selectedObjectId) ?? null; }
 
-function addCanvasObject(kind) {
+function addCanvasObject(kind, variant="") {
   if (kind === "media") {
     document.querySelector("#mediaInput").click();
     return;
@@ -542,15 +542,25 @@ function addCanvasObject(kind) {
   recordHistory();
   const labels = { text: "Text", media: "Media", shape: "Shape", button: "Button" };
   const count = scene().objects.length;
+  const textVariants={
+    "Rich Text":{text:"Rich text",fontSize:20,fontWeight:500,lineHeight:1.5},
+    "Heading":{text:"Heading",fontSize:36,fontWeight:800},
+    "Paragraph":{text:"Paragraph text",fontSize:16,fontWeight:400,lineHeight:1.55},
+    "Markdown":{text:"**Markdown**",fontSize:16,fontWeight:400},
+    "Code Block":{text:"const syn = true;",fontSize:13,fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",background:"#0a1018",borderRadius:8},
+    "Dynamic Text":{text:"Dynamic text",fontSize:18,fontWeight:600}
+  };
+  const variantStyle=textVariants[variant]||{fontSize:16};
   const object = addObject(scene(), {
     kind,
-    label: labels[kind] ?? "Object",
+    label: variant || labels[kind] || "Object",
     x: 60 + (count % 5) * 34,
     y: 60 + (count % 5) * 34,
-    width: kind === "text" ? 220 : 160,
-    height: kind === "text" ? 64 : 56,
-    props: kind === "text" ? { text: "Double-click to edit" } : {}
+    width: kind === "text" ? 260 : 160,
+    height: kind === "text" ? 72 : 56,
+    props: kind === "text" ? { text: textVariants[variant]?.text || "Double-click to edit", ...(variant?{textType:variant}: {}) } : {}
   });
+  object.styles={...object.styles,...variantStyle};
   state.selectedObjectId = object.id;
   state.selectedObjectIds = [object.id];
   render();
@@ -641,6 +651,47 @@ function addNewScene() {
   addScene(state.document, { name: `Scene ${next}` });
   state.sceneIndex = state.document.scenes.length - 1;
   state.selectedObjectId = null;
+  render();
+}
+
+function duplicateCurrentScene(){
+  const current=scene();
+  if(!current)return;
+  recordHistory();
+  const copy=structuredClone(current);
+  copy.id="scene-"+Date.now().toString(36);
+  copy.name=current.name+" Copy";
+  copy.objects=copy.objects.map(object=>({...object,id:object.id+"-"+Date.now().toString(36)}));
+  copy.interactions=[];
+  state.document.scenes.splice(state.sceneIndex+1,0,copy);
+  state.sceneIndex+=1;
+  state.selectedObjectId=null;
+  state.selectedObjectIds=[];
+  render();
+}
+function deleteCurrentScene(){
+  if(state.document.scenes.length<=1){showToast("A SYN document must keep at least one scene.");return;}
+  recordHistory();
+  state.document.scenes.splice(state.sceneIndex,1);
+  state.sceneIndex=Math.max(0,Math.min(state.sceneIndex,state.document.scenes.length-1));
+  state.selectedObjectId=null;
+  state.selectedObjectIds=[];
+  render();
+}
+function renameCurrentScene(){
+  const value=window.prompt("Scene name",scene().name);
+  if(value===null)return;
+  recordHistory();
+  scene().name=value.trim()||scene().name;
+  render();
+}
+function renameSelectedObject(){
+  const object=selected();
+  if(!object){showToast("Select an object first.");return;}
+  const value=window.prompt("Object label",object.label);
+  if(value===null)return;
+  recordHistory();
+  object.label=value.trim()||object.label;
   render();
 }
 
@@ -879,6 +930,13 @@ function render(keepSelection = true) {
       el.style.backgroundImage = 'url("' + object.props.src + '")';
       el.style.backgroundSize = "cover";
       el.style.backgroundPosition = "center";
+      el.textContent = "";
+    }
+    if (object.kind==="audio") {
+      el.textContent = "♫  " + (object.label || "Audio");
+    }
+    if (object.kind==="video") {
+      el.textContent = "▶  " + (object.label || "Video");
     }
     el.addEventListener("click", event => {
       event.stopPropagation();
@@ -1055,34 +1113,35 @@ function openAssetBrowser() {
   panel.hidden = false;
 }
 document.querySelector("#mediaInput").addEventListener("change", async event => {
-  const files = [...(event.target.files || [])].filter(file => file.type.startsWith("image/"));
-  if (!files.length) { event.target.value = ""; return; }
-  for (const file of files) {
-    const reader = new FileReader();
-    await new Promise(resolve => {
-      reader.onload = () => {
+  const files=[...(event.target.files||[])].filter(file=>/^(image|audio|video)\//.test(file.type));
+  if(!files.length){event.target.value="";return;}
+  for(const file of files){
+    const reader=new FileReader();
+    await new Promise(resolve=>{
+      reader.onload=()=>{
         recordHistory();
-        const asset = { id: "asset-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,7), name: file.name, type: file.type, size: file.size, embedded: true };
+        const asset={id:"asset-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7),name:file.name,type:file.type,size:file.size,embedded:true};
         state.document.assets.push(asset);
-        const count = scene().objects.length;
-        const object = addObject(scene(), {
-          kind: "media",
-          label: file.name.replace(/\.[^.]+$/, "") || "Image",
-          x: 60 + (count % 4) * 40,
-          y: 60 + (count % 4) * 40,
-          width: 220,
-          height: 160,
-          props: { src: String(reader.result), assetId: asset.id, alt: file.name.replace(/\.[^.]+$/, "") || "Image" }
+        const count=scene().objects.length;
+        const kind=file.type.startsWith("audio/")?"audio":file.type.startsWith("video/")?"video":"media";
+        const object=addObject(scene(),{
+          kind,
+          label:file.name.replace(/\.[^.]+$/,"")||"Media",
+          x:60+(count%4)*40,
+          y:60+(count%4)*40,
+          width:220,
+          height:160,
+          props:{src:String(reader.result),assetId:asset.id,alt:file.name.replace(/\.[^.]+$/,"")||"Media",mediaType:file.type}
         });
-        state.selectedObjectId = object.id;
-        state.selectedObjectIds = [object.id];
+        state.selectedObjectId=object.id;
+        state.selectedObjectIds=[object.id];
         resolve();
       };
       reader.readAsDataURL(file);
     });
   }
   render();
-  event.target.value = "";
+  event.target.value="";
 });
 
 document.querySelectorAll(".tool").forEach(button => {
