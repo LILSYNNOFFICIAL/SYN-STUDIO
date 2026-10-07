@@ -862,8 +862,10 @@ document.addEventListener("keydown", event => {
     event.preventDefault();
     recordHistory();
     const step = event.shiftKey ? 10 : 1;
-    const object = selected();
-    moveObject(object, object.x + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0), object.y + (event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0), viewport());
+    recordHistory();
+    const dx = event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0;
+    const dy = event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0;
+    selectedObjects().forEach(object => moveObject(object, object.x + dx, object.y + dy, viewport()));
     render();
   }
 });
