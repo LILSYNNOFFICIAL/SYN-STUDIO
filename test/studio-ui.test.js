@@ -35,3 +35,21 @@ test("SYN Studio responsive stylesheet contains phone-specific authoring control
   assert.match(css, /\.resize-handle\s*\{\s*width:13px;\s*height:13px;\s*\}/);
   assert.match(css, /\.code-workspace\{inset:92px 0 0 !important\}/);
 });
+
+
+test("SYN Studio has product-level authoring controls and contextual inspector structure", () => {
+  const html = read("studio/index.html");
+  const app = read("studio/app.js");
+  const css = read("studio/styles.css");
+  assert.match(html, /id="toolbarZoomIn"/);
+  assert.match(html, /id="toolbarZoomOut"/);
+  assert.match(html, /id="toolbarCommand"/);
+  assert.match(html, /canvas-hud-top/);
+  assert.match(html, /studio-statusbar/);
+  assert.match(app, /function setZoom\(value\).*zoom-value/);
+  assert.match(app, /const shortcuts=\{v:"select",m:"move",h:"pan",t:"text",r:"shape"\}/);
+  assert.match(app, /event\.key==="Enter".*selected\(\)\?\.kind==="text"/s);
+  assert.match(app, /inspector-section/);
+  assert.doesNotMatch(css, /#ff4fd8/i);
+  assert.match(css, /\.inspector-heading/);
+});
