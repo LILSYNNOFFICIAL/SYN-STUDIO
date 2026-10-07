@@ -86,6 +86,6 @@ test("supports bounded document history with undo and redo", async () => {
   history.push({ value: { version: 3 } });
   assert.deepEqual(history.undo(), { value: { version: 2 } });
   assert.deepEqual(history.redo(), { value: { version: 3 } });
-  assert.equal(history.undo(), null);
-  assert.equal(history.canUndo(), false);
+  assert.deepEqual(history.undo(), { value: { version: 2 } });
+  assert.equal(history.canUndo(), true);
 });
