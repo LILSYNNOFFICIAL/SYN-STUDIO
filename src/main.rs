@@ -266,7 +266,7 @@ fn App()->Element{
                         }
                         div { class:"zoom",
                             button { onclick:move |_| { let current_zoom=*zoom.read();
-                                    zoom.set((current_zoom-0.1).max(.5)); }, "−" }
+                                    zoom.set((current_zoom-0.1).max(0.5)); }, "−" }
                             span { "{zoom_label}" }
                             button { onclick:move |_| { let current_zoom=*zoom.read();
                                     zoom.set((current_zoom+0.1).min(2.)); }, "+" }
