@@ -143,13 +143,13 @@ fn demo() -> Document {
         json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":2})));
     home.objects.push(object("text", "04", 694., 99., 120., 62.,
         json!({"fontSize":58,"fontWeight":950,"color":"#ffffff"})));
-    home.objects.push(object("text", "SCENES", 694., 161., 100., 18,
+    home.objects.push(object("text", "SCENES", 694., 161., 100., 18.,
         json!({"fontSize":9,"fontWeight":800,"color":"#6e829c","letterSpacing":2})));
     home.objects.push(object("text", "18", 830., 99., 120., 62.,
         json!({"fontSize":58,"fontWeight":950,"color":"#ffffff"})));
     home.objects.push(object("text", "OBJECTS", 830., 161., 100., 18,
         json!({"fontSize":9,"fontWeight":800,"color":"#6e829c","letterSpacing":2})));
-    home.objects.push(object("text", "SOURCE  •  MEDIA  •  MOTION  •  EVENTS", 694., 204., 300., 20,
+    home.objects.push(object("text", "SOURCE  •  MEDIA  •  MOTION  •  EVENTS", 694., 204., 300., 20.
         json!({"fontSize":10,"fontWeight":750,"color":"#c4d0df","letterSpacing":1})));
 
     let btn = object("button", "Explore architecture", 58., 228., 190., 48.,
@@ -173,7 +173,7 @@ fn demo() -> Document {
             json!({"background":"#0e1722","borderColor":"#263b55","borderWidth":1,"borderRadius":14})));
         home.objects.push(object("text", k, x+18., y+15., 220., 18.,
             json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":1.5})));
-        home.objects.push(object("text", v, x+18., y+40., 235., 30,
+        home.objects.push(object("text", v, x+18., y+40., 235., 30.
             json!({"fontSize":11,"fontWeight":650,"color":"#b8c6d7"})));
     }
 
@@ -371,10 +371,10 @@ fn App()->Element {
                                 "Undo" => {let cur=doc.read().clone();if let Some(n)=history.write().undo(&cur){doc.set(n);selected.set(None);status.set("Undo".into())}},
                                 "Redo" => {if let Some(n)=history.write().redo(){doc.set(n);status.set("Redo".into())}},
                                 "Delete Selected" => {
-                                    if let Some(id)=selected.read().clone(){let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;if let Some(s)=n.scenes.get_mut(*scene.read()){s.objects.retain(|o|o.id!=id)}selected.set(None);doc.set(n);status.set("Object deleted".into())}
+                                    let selected_id=selected.read().clone();if let Some(id)=selected_id{let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;let current_scene=*scene.read();if let Some(s)=n.scenes.get_mut(current_scene){s.objects.retain(|o|o.id!=id)}selected.set(None);doc.set(n);status.set("Object deleted".into())}
                                 },
                                 "Duplicate Selected" => {
-                                    if let Some(id)=selected.read().clone(){duplicate_selected(&mut doc,&mut history,*scene.read(),&id,&mut selected,&mut status)}
+                                    let selected_id=selected.read().clone();if let Some(id)=selected_id{let current_scene=*scene.read();duplicate_selected(&mut doc,&mut history,current_scene,&id,&mut selected,&mut status)}
                                 },
                                 "Text"|"Rich Text"|"Heading"|"Paragraph" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"text",item,&mut status),
                                 "Button" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"button",item,&mut status),
@@ -382,7 +382,7 @@ fn App()->Element {
                                 "Component" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"component",item,&mut status),
                                 "Image"|"SVG"|"GIF"|"Audio"|"Video"|"Import Media" => modal.set(Some(item)),
                                 "New Scene" => new_scene(&mut doc,&mut history,&mut scene,&mut selected,&mut status),
-                                "Duplicate Scene" => duplicate_scene(&mut doc,&mut history,*scene.read(),&mut scene,&mut status),
+                                "Duplicate Scene" => {let current_scene=*scene.read();duplicate_scene(&mut doc,&mut history,current_scene,&mut scene,&mut status)},
                                 "Delete Scene" => delete_scene(&mut doc,&mut history,&mut scene,&mut selected,&mut status),
                                 "Design Inspector"|"Object Inspector"|"Layers"|"Scene Graph"|"Asset Library"|"Timeline"|"Interaction Graph"|"Data"|"Console"|"Output"|"Code Editor"|"Validation"|"AI Workbench" => {
                                     panel.set(panel_for(item.as_str()));
@@ -414,16 +414,16 @@ fn App()->Element {
 
                 section { class:"center",
                     div { class:"bar",
-                        div { button{onclick:move |_|{if *scene.read()>0{scene.set(*scene.read()-1);selected.set(None)}},"‹"} strong{"{active.as_ref().map(|s|s.name.clone()).unwrap_or_default()}"} button{onclick:move |_|{if *scene.read()+1<scene_count{scene.set(*scene.read()+1);selected.set(None)}},"›"} }
+                        div { button{onclick:move |_|{let current_scene=*scene.read();if current_scene>0{scene.set(current_scene-1);selected.set(None)}},"‹"} strong{"{active.as_ref().map(|s|s.name.clone()).unwrap_or_default()}"} button{onclick:move |_|{let current_scene=*scene.read();if current_scene+1<scene_count{scene.set(current_scene+1);selected.set(None)}},"›"} }
                         div { class:"modes",
                             button{class:if *mode.read()=="design"{"active"}else{""},onclick:move |_|mode.set("design".into()),"Design"}
                             button{class:if *mode.read()=="code"{"active"}else{""},onclick:{let mut mode=mode.clone();let mut source=source.clone();let d=doc.clone();move |_|{source.set(serde_json::to_string_pretty(&*d.read()).unwrap());mode.set("code".into())}},"Code"}
                             button{onclick:move |_|preview.set(true),"Preview"}
                         }
                         div { class:"zoom",
-                            button{onclick:move |_|zoom.set((*zoom.read()-0.1).max(0.5)),"−"}
+                            button{onclick:move |_|{let current_zoom=*zoom.read();zoom.set((current_zoom-0.1).max(0.5))},"−"}
                             span{"{zoom_label}"}
-                            button{onclick:move |_|zoom.set((*zoom.read()+0.1).min(1.5)),"+"}
+                            button{onclick:move |_|{let current_zoom=*zoom.read();zoom.set((current_zoom+0.1).min(1.5))},"+"}
                         }
                     }
                     if *mode.read()=="code" {
@@ -555,7 +555,7 @@ fn duplicate_scene(doc:&mut Signal<Document>,history:&mut Signal<History>,scene:
 
 fn delete_scene(doc:&mut Signal<Document>,history:&mut Signal<History>,scene:&mut Signal<usize>,selected:&mut Signal<Option<String>>,status:&mut Signal<String>) {
     let cur=doc.read().clone();if cur.scenes.len()<=1{status.set("A document needs at least one scene".into());return}
-    history.write().push(&cur);let mut n=cur;n.scenes.remove(*scene);if *scene>=n.scenes.len(){scene.set(n.scenes.len()-1)}selected.set(None);doc.set(n);status.set("Scene deleted".into());
+    history.write().push(&cur);let mut n=cur;let current_scene=*scene;n.scenes.remove(current_scene);if current_scene>=n.scenes.len(){scene.set(n.scenes.len()-1)}selected.set(None);doc.set(n);status.set("Scene deleted".into());
 }
 
 #[component]
@@ -644,7 +644,7 @@ fn AiPanel(status:Signal<String>)->Element {
 fn Code(source:Signal<String>,doc:Signal<Document>,history:Signal<History>,status:Signal<String>,mode:Signal<String>)->Element {
     rsx!{div{class:"code",
         div{class:"codehead",span{"SOURCE / SYN 0.1"},div{
-            button{onclick:{let mut source=source.clone();move |_|{if let Ok(v)=serde_json::from_str::<Value>(&source.read()){source.set(serde_json::to_string_pretty(&v).unwrap())}}},"Format"},
+            button{onclick:{let mut source=source.clone();move |_|{let raw=source.read().clone();if let Ok(v)=serde_json::from_str::<Value>(&raw){source.set(serde_json::to_string_pretty(&v).unwrap())}}},"Format"},
             button{onclick:{let mut status=status.clone();let source=source.clone();move |_|{
                 let message=if serde_json::from_str::<Document>(&source.read()).is_ok(){"Valid SYN document"}else{"Invalid SYN document"};
                 status.set(message.into());
