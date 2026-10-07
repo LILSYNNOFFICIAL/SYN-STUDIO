@@ -310,3 +310,9 @@ body { overflow-x: hidden; }
 .inspector-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:10px; }
 .inspector-actions button { min-height:32px; padding:6px 8px; border:1px solid #303949; border-radius:7px; background:#111722; color:#cbd4e2; cursor:pointer; }
 .inspector-actions button:hover { border-color:#65799b; background:#17202e; }
+
+.asset-browser { width:min(760px,calc(100vw - 24px)); max-height:min(70vh,680px); overflow:auto; padding:16px; border:1px solid #303949; border-radius:14px; background:#0c1118; box-shadow:0 30px 100px #000b; }
+.asset-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin-top:12px; }
+.asset-card { min-height:76px; padding:12px; border:1px solid #273140; border-radius:10px; background:#111722; display:flex; flex-direction:column; gap:5px; }
+.asset-card strong { color:#eef3fb; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.asset-card small { color:#7f8ca1; font-size:10px; }
