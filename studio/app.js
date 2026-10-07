@@ -87,7 +87,7 @@ text(interactive,"int-line-3","CLICKED",355,284,90,24,{fontSize:12,fontWeight:85
 text(interactive,"int-arrow","→",450,282,30,26,{fontSize:16,fontWeight:900,color:"#5c6b80"});
 text(interactive,"int-line-4","SET TEXT",490,284,110,24,{fontSize:12,fontWeight:850,color:blue});
 text(interactive,"int-line-5","StoryCard",96,329,130,24,{fontSize:12,fontWeight:700,color:soft});
-text(interactive,"int-line-6",""Runtime updated."",230,329,230,24,{fontSize:12,color:"#c9d3e3"});
+text(interactive,"int-line-6","Runtime updated.",230,329,230,24,{fontSize:12,color:"#c9d3e3"});
 card(interactive,"int-live","LIVE STATE",785,220,265,245,{background:"linear-gradient(160deg,#162234,#0c121a)",borderColor:"#34445b",borderWidth:1,borderRadius:16});
 text(interactive,"int-live-k","LIVE STATE",810,246,120,18,{fontSize:10,fontWeight:850,color:"#9ce5c0",letterSpacing:2});
 text(interactive,"int-live-v","READY",810,276,180,40,{fontSize:28,fontWeight:850,color:white});
@@ -105,10 +105,10 @@ text(source,"src-copy","Visual authoring and source inspection target the same d
 card(source,"src-editor","",72,205,760,335,{background:"#090d13",borderColor:"#2d3949",borderWidth:1,borderRadius:14,boxShadow:"0 24px 60px #0009"});
 text(source,"src-code-1","{  "syn": "0.1",",98,232,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
 text(source,"src-code-2","  "type": "document",",98,258,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
-text(source,"src-code-3","  "scenes": [",98,284,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#8faeff"});
+text(source,"src-code-3",'  "scenes": [',98,284,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#8faeff"});
 text(source,"src-code-4","    { "id": "scene-3",",98,310,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
 text(source,"src-code-5","      "objects": [ ... ],",98,336,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#9ce5c0"});
-text(source,"src-code-6","      "interactions": [ ... ]",98,362,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#d9a7ff"});
+text(source,"src-code-6",'      "interactions": [ ... ]',98,362,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#d9a7ff"});
 text(source,"src-code-7","    }",98,388,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
 text(source,"src-code-8","  ]",98,414,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#8faeff"});
 text(source,"src-code-9","}",98,440,620,22,{fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace",fontSize:12,color:"#c8d2e3"});
