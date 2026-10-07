@@ -26,7 +26,296 @@ fn export(d:&Document){#[cfg(target_arch="wasm32")] {let raw=serde_json::to_stri
 fn style(o:&Object)->String{let mut s=format!("left:{}px;top:{}px;width:{}px;height:{}px;transform:rotate({}deg);",o.x,o.y,o.width,o.height,o.rotation);if let Some(m)=o.styles.as_object(){for(k,v)in m{match(k,v){("fontSize",Value::Number(n))=>s+=&format!("font-size:{}px;",n),("fontWeight",Value::Number(n))=>s+=&format!("font-weight:{};",n),("color",Value::String(v))=>s+=&format!("color:{};",v),("background",Value::String(v))=>s+=&format!("background:{};",v),("borderRadius",Value::Number(n))=>s+=&format!("border-radius:{}px;",n),("borderWidth",Value::Number(n))=>s+=&format!("border-width:{}px;",n),("borderColor",Value::String(v))=>s+=&format!("border-color:{};",v),("boxShadow",Value::String(v))=>s+=&format!("box-shadow:{};",v),("letterSpacing",Value::Number(n))=>s+=&format!("letter-spacing:{}px;",n),_=>{}}}}s}
 #[cfg(feature="web")]fn main(){dioxus::launch(App)}
 #[cfg(not(feature="web"))]fn main(){}
-#[component]fn App()->Element{let mut doc=use_signal(initial);let mut scene=use_signal(||0usize);let mut selected=use_signal(||None::<String>);let mut tool=use_signal(||"select".to_string());let mut mode=use_signal(||"design".to_string());let mut preview=use_signal(||false);let mut zoom=use_signal(||1.0f32);let mut menu=use_signal(||None::<String>);let mut search=use_signal(String::new);let mut modal=use_signal(||None::<String>);let mut status=use_signal(||"Ready".to_string());let mut history=use_signal(||History::new(&initial()));let mut source=use_signal(String::new);let active=doc.read().scenes.get(*scene.read()).cloned();let selected_id=selected.read().clone();let scene_count=doc.read().scenes.len();if *preview.read(){return rsx!{Preview{doc:doc.read().clone(),scene:*scene.read(),close:move |_|preview.set(false)}}}rsx!{document::Stylesheet{href:CSS}div{class:"app",header{class:"top",div{class:"brand",b{"S"},div{strong{"SYN Studio"},small{"RUST CREATIVE IDE"}}}nav{for(name,_)in menus(){button{class:if menu.read().as_deref()==Some(name){"topmenu active"}else{"topmenu"},onclick:{let n=name.to_string();let mut menu=menu.clone();let mut search=search.clone();move |_|{search.set(String::new());menu.set(if menu.read().as_deref()==Some(n.as_str()){None}else{Some(n.clone())})}},"{name}"}}}div{class:"topbuttons",button{onclick:{let mut status=status.clone();let d=doc.clone();move |_|{save(&d.read());status.set("Saved locally".into())}},"Save"},button{class:"primary",onclick:{let d=doc.clone();move |_|export(&d.read())},"Export .syn"}}}if let Some(open)=menu.read().clone(){Mega{open,search:search.clone(),pick:{let mut menu=menu.clone();let mut modal=modal.clone();let mut mode=mode.clone();let mut source=source.clone();let mut preview=preview.clone();let mut doc=doc.clone();let mut history=history.clone();let mut scene=scene.clone();let mut selected=selected.clone();let mut status=status.clone();move |item:String|{menu.set(None);match item.as_str(){"Save"=>save(&doc.read()),"Preview"=>preview.set(true),"Code Editor"=>{source.set(serde_json::to_string_pretty(&*doc.read()).unwrap());mode.set("code".into())},"Video"|"Audio"|"Image"|"Import Media"=>modal.set(Some(item)),"New Scene"=>{let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;n.scenes.push(Scene{id:id("scene"),name:format!("Scene {}",n.scenes.len()+1),background:"#0a1018".into(),objects:vec![],interactions:vec![]});scene.set(n.scenes.len()-1);selected.set(None);doc.set(n)},"Text"|"Rich Text"|"Heading"=>insert(&mut doc,&mut history,&mut scene,&mut selected,"text",item,&mut status),"Button"=>insert(&mut doc,&mut history,&mut scene,&mut selected,"button",item,&mut status),"Shape"=>insert(&mut doc,&mut history,&mut scene,&mut selected,"shape",item,&mut status),"Undo"=>{if let Some(n)=history.write().undo(&doc.read()){doc.set(n);}},"Redo"=>{if let Some(n)=history.write().redo(){doc.set(n);}},_=>modal.set(Some(item))}}}}}main{class:"work",aside{class:"rail",span{"TOOLS"},for(n,t)in[("↖","select"),("✥","move"),("✋","pan"),("T","text"),("◇","shape"),("▣","button"),("◈","media")]{button{class:if *tool.read()==t{"railbtn active"}else{"railbtn"},onclick:{let t=t.to_string();let mut tool=tool.clone();let mut modal=modal.clone();move |_|{tool.set(t.clone());if t=="text"||t=="shape"||t=="button"{modal.set(Some(t.clone()))}else if t=="media"{modal.set(Some("Image".into()))}},span{class:"ico",n},small{"{t}"}}}},section{class:"center",div{class:"bar",div{button{onclick:move |_|if *scene.read()>0{scene.set(*scene.read()-1);selected.set(None)},"‹"},strong{active.as_ref().map(|s|s.name.clone()).unwrap_or_default()},button{onclick:move |_|if *scene.read()+1<scene_count{scene.set(*scene.read()+1);selected.set(None)},"›"}},div{class:"modes",button{class:if *mode.read()=="design"{"active"}else{""},onclick:move |_|mode.set("design".into()),"Design"},button{class:if *mode.read()=="code"{"active"}else{""},onclick:{let mut mode=mode.clone();let mut source=source.clone();let d=doc.clone();move |_|{source.set(serde_json::to_string_pretty(&*d.read()).unwrap());mode.set("code".into())}},"Code"},button{onclick:move |_|preview.set(true),"Preview"}},div{class:"zoom",button{onclick:move |_|zoom.set((*zoom.read()-0.1).max(.5)),"−"},span{format!("{}%",(*zoom.read()*100.)as i32)},button{onclick:move |_|zoom.set((*zoom.read()+0.1).min(2.)),"+"}}},if *mode.read()=="code"{Code{source:source.clone(),doc:doc.clone(),history:history.clone(),status:status.clone(),mode:mode.clone()}}else{Canvas{doc:doc.clone(),scene:*scene.read(),selected:selected.clone(),zoom:*zoom.read(),pick:move |id|selected.set(id)}},div{class:"status",span{class:"led"},status.read().clone(),span{class:"grow"},"Rust · Dioxus · SYN 0.1"}}aside{class:"inspector",div{class:"inspecthead","INSPECTOR"},if let Some(id)=selected_id{Inspect{doc:doc.clone(),scene:*scene.read(),id,status:status.clone(),history:history.clone()}}else{div{class:"empty",b{"◇"},strong{"Select an object"},p{"Geometry, content and presentation live here."}}}}}footer{class:"dock","INTERACTION GRAPH",span{format!("{} objects · {} scenes",active.as_ref().map(|s|s.objects.len()).unwrap_or(0),scene_count)}}if let Some(kind)=modal.read().clone(){Dialog{kind,close:move |_|modal.set(None),doc:doc.clone(),scene:scene.clone(),history:history.clone(),selected:selected.clone(),status:status.clone()}}}}
+#[component]
+fn App()->Element{
+    let mut doc=use_signal(initial);
+    let mut scene=use_signal(||0usize);
+    let mut selected=use_signal(||None::<String>);
+    let mut tool=use_signal(||"select".to_string());
+    let mut mode=use_signal(||"design".to_string());
+    let mut preview=use_signal(||false);
+    let mut zoom=use_signal(||1.0f32);
+    let mut menu=use_signal(||None::<String>);
+    let mut search=use_signal(String::new);
+    let mut modal=use_signal(||None::<String>);
+    let mut status=use_signal(||"Ready".to_string());
+    let mut history=use_signal(||History::new(&initial()));
+    let mut source=use_signal(String::new);
+    let active=doc.read().scenes.get(*scene.read()).cloned();
+    let selected_id=selected.read().clone();
+    let scene_count=doc.read().scenes.len();
+
+    if *preview.read() {
+        return rsx! {
+            Preview {
+                doc:doc.read().clone(),
+                scene:*scene.read(),
+                close:move |_|preview.set(false)
+            }
+        };
+    }
+
+    rsx! {
+        document::Stylesheet { href:CSS }
+        div { class:"app",
+            header { class:"top",
+                div { class:"brand",
+                    b { "S" }
+                    div {
+                        strong { "SYN Studio" }
+                        small { "RUST CREATIVE IDE" }
+                    }
+                }
+                nav {
+                    for (name,_) in menus() {
+                        button {
+                            class:if menu.read().as_deref()==Some(name){"topmenu active"}else{"topmenu"},
+                            onclick:{
+                                let n=name.to_string();
+                                let mut menu=menu.clone();
+                                let mut search=search.clone();
+                                move |_| {
+                                    search.set(String::new());
+                                    if menu.read().as_deref()==Some(n.as_str()) {
+                                        menu.set(None);
+                                    } else {
+                                        menu.set(Some(n.clone()));
+                                    }
+                                }
+                            },
+                            "{name}"
+                        }
+                    }
+                }
+                div { class:"topbuttons",
+                    button {
+                        onclick:{
+                            let mut status=status.clone();
+                            let d=doc.clone();
+                            move |_| {
+                                save(&d.read());
+                                status.set("Saved locally".into());
+                            }
+                        },
+                        "Save"
+                    }
+                    button {
+                        class:"primary",
+                        onclick:{
+                            let d=doc.clone();
+                            move |_|export(&d.read())
+                        },
+                        "Export .syn"
+                    }
+                }
+            }
+
+            if let Some(open)=menu.read().clone() {
+                Mega {
+                    open,
+                    search:search.clone(),
+                    pick:{
+                        let mut menu=menu.clone();
+                        let mut modal=modal.clone();
+                        let mut mode=mode.clone();
+                        let mut source=source.clone();
+                        let mut preview=preview.clone();
+                        let mut doc=doc.clone();
+                        let mut history=history.clone();
+                        let mut scene=scene.clone();
+                        let mut selected=selected.clone();
+                        let mut status=status.clone();
+                        move |item:String| {
+                            menu.set(None);
+                            match item.as_str() {
+                                "Save" => save(&doc.read()),
+                                "Preview" => preview.set(true),
+                                "Code Editor" => {
+                                    source.set(serde_json::to_string_pretty(&*doc.read()).unwrap());
+                                    mode.set("code".into());
+                                }
+                                "Video"|"Audio"|"Image"|"Import Media" => modal.set(Some(item)),
+                                "New Scene" => {
+                                    let cur=doc.read().clone();
+                                    history.write().push(&cur);
+                                    let mut n=cur;
+                                    n.scenes.push(Scene {
+                                        id:id("scene"),
+                                        name:format!("Scene {}",n.scenes.len()+1),
+                                        background:"#0a1018".into(),
+                                        objects:vec![],
+                                        interactions:vec![]
+                                    });
+                                    scene.set(n.scenes.len()-1);
+                                    selected.set(None);
+                                    doc.set(n);
+                                    status.set("New scene".into());
+                                }
+                                "Text"|"Rich Text"|"Heading" => insert(&mut doc,&mut history,&mut scene,&mut selected,"text",item,&mut status),
+                                "Button" => insert(&mut doc,&mut history,&mut scene,&mut selected,"button",item,&mut status),
+                                "Shape" => insert(&mut doc,&mut history,&mut scene,&mut selected,"shape",item,&mut status),
+                                "Undo" => {
+                                    if let Some(n)=history.write().undo(&doc.read()) {
+                                        doc.set(n);
+                                        selected.set(None);
+                                        status.set("Undo".into());
+                                    }
+                                }
+                                "Redo" => {
+                                    if let Some(n)=history.write().redo() {
+                                        doc.set(n);
+                                        status.set("Redo".into());
+                                    }
+                                }
+                                _ => modal.set(Some(item))
+                            }
+                        }
+                    }
+                }
+            }
+
+            main { class:"work",
+                aside { class:"rail",
+                    span { "TOOLS" }
+                    for (glyph,name) in [("↖","select"),("✥","move"),("✋","pan"),("T","text"),("◇","shape"),("▣","button"),("◈","media")] {
+                        button {
+                            class:if *tool.read()==name{"railbtn active"}else{"railbtn"},
+                            onclick:{
+                                let name=name.to_string();
+                                let mut tool=tool.clone();
+                                let mut modal=modal.clone();
+                                move |_| {
+                                    tool.set(name.clone());
+                                    if name=="text"||name=="shape"||name=="button" {
+                                        modal.set(Some(name.clone()));
+                                    } else if name=="media" {
+                                        modal.set(Some("Image".into()));
+                                    }
+                                }
+                            },
+                            span { class:"ico", "{glyph}" }
+                            small { "{name}" }
+                        }
+                    }
+                }
+
+                section { class:"center",
+                    div { class:"bar",
+                        div {
+                            button {
+                                onclick:move |_| {
+                                    if *scene.read()>0 {
+                                        scene.set(*scene.read()-1);
+                                        selected.set(None);
+                                    }
+                                },
+                                "‹"
+                            }
+                            strong { active.as_ref().map(|s|s.name.clone()).unwrap_or_default() }
+                            button {
+                                onclick:move |_| {
+                                    if *scene.read()+1<scene_count {
+                                        scene.set(*scene.read()+1);
+                                        selected.set(None);
+                                    }
+                                },
+                                "›"
+                            }
+                        }
+                        div { class:"modes",
+                            button {
+                                class:if *mode.read()=="design"{"active"}else{""},
+                                onclick:move |_|mode.set("design".into()),
+                                "Design"
+                            }
+                            button {
+                                class:if *mode.read()=="code"{"active"}else{""},
+                                onclick:{
+                                    let mut mode=mode.clone();
+                                    let mut source=source.clone();
+                                    let d=doc.clone();
+                                    move |_| {
+                                        source.set(serde_json::to_string_pretty(&*d.read()).unwrap());
+                                        mode.set("code".into());
+                                    }
+                                },
+                                "Code"
+                            }
+                            button { onclick:move |_|preview.set(true), "Preview" }
+                        }
+                        div { class:"zoom",
+                            button { onclick:move |_|zoom.set((*zoom.read()-0.1).max(.5)), "−" }
+                            span { format!("{}%",(*zoom.read()*100.) as i32) }
+                            button { onclick:move |_|zoom.set((*zoom.read()+0.1).min(2.)), "+" }
+                        }
+                    }
+
+                    if *mode.read()=="code" {
+                        Code {
+                            source:source.clone(),
+                            doc:doc.clone(),
+                            history:history.clone(),
+                            status:status.clone(),
+                            mode:mode.clone()
+                        }
+                    } else {
+                        Canvas {
+                            doc:doc.clone(),
+                            scene:*scene.read(),
+                            selected:selected.clone(),
+                            zoom:*zoom.read(),
+                            pick:move |value|selected.set(value)
+                        }
+                    }
+
+                    div { class:"status",
+                        span { class:"led" }
+                        status.read().clone()
+                        span { class:"grow" }
+                        "Rust · Dioxus · SYN 0.1"
+                    }
+                }
+
+                aside { class:"inspector",
+                    div { class:"inspecthead", "INSPECTOR" }
+                    if let Some(id)=selected_id {
+                        Inspect {
+                            doc:doc.clone(),
+                            scene:*scene.read(),
+                            id,
+                            status:status.clone(),
+                            history:history.clone()
+                        }
+                    } else {
+                        div { class:"empty",
+                            b { "◇" }
+                            strong { "Select an object" }
+                            p { "Geometry, content and presentation live here." }
+                        }
+                    }
+                }
+            }
+
+            footer { class:"dock",
+                "INTERACTION GRAPH"
+                span { format!("{} objects · {} scenes",active.as_ref().map(|s|s.objects.len()).unwrap_or(0),scene_count) }
+            }
+
+            if let Some(kind)=modal.read().clone() {
+                Dialog {
+                    kind,
+                    close:move |_|modal.set(None),
+                    doc:doc.clone(),
+                    scene:scene.clone(),
+                    history:history.clone(),
+                    selected:selected.clone(),
+                    status:status.clone()
+                }
+            }
+        }
+    }
+}
+
 fn insert(doc:&mut Signal<Document>,history:&mut Signal<History>,scene:&mut Signal<usize>,selected:&mut Signal<Option<String>>,kind:&str,label:String,status:&mut Signal<String>){let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;if let Some(s)=n.scenes.get_mut(*scene.read()){let oid=id("obj");let st=match kind{"button"=>json!({"background":"linear-gradient(180deg,#eef3ff,#b7c8ff)","color":"#07101c","fontSize":13,"fontWeight":850,"borderRadius":10}),"text"=>json!({"fontSize":22,"fontWeight":750,"color":"#f4f7fb"}),_=>json!({"background":"#121b27","color":"#eaf0fa","borderColor":"#2b405b","borderWidth":1,"borderRadius":12,"fontSize":18})};let mut o=object(kind,&label,80.+s.objects.len()as f32*12.,110.+s.objects.len()as f32*10.,if kind=="text"{360.}else{220.},if kind=="text"{64.}else{120.},st);o.id=oid.clone();s.objects.push(o);selected.set(Some(oid));}doc.set(n);status.set(format!("Inserted {label}"))}
 #[component]fn Mega(open:String,search:Signal<String>,pick:EventHandler<String>)->Element{let q=search.read().to_lowercase();rsx!{div{class:"mega",div{class:"megahead",strong{"{open}"},input{placeholder:"Search commands…",value:"{search}",oninput:move|e|search.set(e.value())}},div{class:"grid",for item in commands(&open).into_iter().filter(|x|q.is_empty()||x.to_lowercase().contains(&q)){button{onclick:{let x=item.to_string();let pick=pick.clone();move |_|pick.call(x.clone())},"{item}"}}}}}}
 fn menus()->Vec<(&'static str,&'static str)>{vec![("Project","project"),("Edit","edit"),("Insert","insert"),("Design","design"),("Arrange","arrange"),("Scene","scene"),("Media","media"),("Interact","interact"),("Data","data"),("Code","code"),("AI","ai"),("Publish","publish"),("Tools","tools"),("Help","help")]}
