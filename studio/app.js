@@ -680,6 +680,7 @@ function selectObject(id, additive = false) {
   deleteButton.disabled = !id;
   const object = selected();
   if (!object) { renderDocumentInspector(); return; }
+
   inspector.innerHTML = `
     <div class="inspector-heading"><div><div class="eyebrow">OBJECT</div><strong>${escapeHtml(object.label || object.kind)}</strong></div><span class="inspector-badge">${escapeHtml(object.kind.toUpperCase())}</span></div>
     <details class="inspector-section" open><summary>Transform</summary><div class="inspector-section-body">
@@ -705,16 +706,6 @@ function selectObject(id, additive = false) {
     </div></details>
   `;
 
-    <label class="field">Label<input id="objectLabel" value="${escapeHtml(object.label)}"></label>
-    <div class="field-row"><label class="field">X<input id="objectX" type="number" value="${object.x}"></label><label class="field">Y<input id="objectY" type="number" value="${object.y}"></label></div>
-    <div class="field-row"><label class="field">Width<input id="objectW" type="number" min="20" value="${object.width}"></label><label class="field">Height<input id="objectH" type="number" min="20" value="${object.height}"></label></div>
-    <label class="field">Rotation<input id="objectRotation" type="number" min="-360" max="360" value="${object.rotation || 0}"></label>
-    <label class="field">Text<textarea id="objectText" rows="3">${escapeHtml(object.props?.text ?? "")}</textarea></label>
-    <div class="field-row"><label class="field">Font<select id="objectFont"><option>Inter</option><option>Georgia</option><option>Arial</option><option>Courier New</option><option>Trebuchet MS</option><option>Times New Roman</option><option>system-ui</option></select></label><label class="field">Size<input id="objectFontSize" type="number" min="8" value="${object.styles?.fontSize ?? 16}"></label></div>
-    <div class="field-row"><label class="field">Color<input id="objectColor" type="color" value="${/^#[0-9a-f]{6}$/i.test(object.styles?.color ?? "") ? object.styles.color : "#eef1f6"}"></label><label class="field">Radius<input id="objectRadius" type="number" min="0" value="${object.styles?.borderRadius ?? 0}"></label></div>
-    <label class="field">Background<input id="objectBackground" value="${escapeHtml(object.styles?.background ?? "")}"></label>
-    <div class="interaction"><div>Kind</div><code>${escapeHtml(object.kind)}</code></div>\n    <div class="inspector-actions">\n      <button type="button" id="duplicateSelected">Duplicate</button>\n      <button type="button" id="frontSelected">Bring front</button>\n      <button type="button" id="backSelected">Send back</button>\n      <button type="button" id="lockSelected">${object.locked ? "Unlock" : "Lock"}</button>\n      <button type="button" id="hideSelected">${object.hidden ? "Show" : "Hide"}</button>\n    </div>
-  `;
   const font=inspector.querySelector("#objectFont"); font.value=object.styles?.fontFamily || "Inter";
   const weight=inspector.querySelector("#objectFontWeight"); if(weight) weight.value=String(object.styles?.fontWeight || 400);
   const align=inspector.querySelector("#objectTextAlign"); if(align) align.value=object.styles?.textAlign || "left";
@@ -729,6 +720,7 @@ function selectObject(id, additive = false) {
   }
   inspector.addEventListener("focusout", () => { state._editingInspector = false; }, { once: true });
 }
+
 function updateSelectedObject() {
   const object = selected(); if (!object) return;
   if (!state._editingInspector) { state._editingInspector = true; recordHistory(); }
