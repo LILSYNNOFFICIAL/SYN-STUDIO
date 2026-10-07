@@ -1,0 +1,11 @@
+{
+  "name": "SYN Studio",
+  "short_name": "SYN",
+  "description": "Create, preview, and export SYN creative documents.",
+  "start_url": "./studio/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090a0d",
+  "theme_color": "#090a0d",
+  "icons": []
+}
