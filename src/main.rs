@@ -15,7 +15,22 @@ static CSS:Asset=asset!("/assets/app.css");
 #[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]struct Event{r#type:String,target:String}
 #[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]#[serde(tag="type")]enum Action{#[serde(rename="scene.next")]Next,#[serde(rename="scene.goto")]Goto{target:String},#[serde(rename="object.setText")]SetText{target:String,value:String}}
 #[derive(Clone,Default)]struct History{past:Vec<Document>,future:Vec<Document>}
-impl History{fn new(d:&Document)->Self{Self{past:vec![d.clone()],future:vec![]}}fn push(&mut self,d:&Document){self.past.push(d.clone());self.future.clear();if self.past.len()>100{self.past.remove(0)}}fn undo(&mut self,d:&Document)->Option<Document>{if self.past.len()<2{return None;}; self.future.insert(0,d.clone());self.past.pop();self.past.last().cloned()}fn redo(&mut self)->Option<Document>{let d=self.future.first().cloned()?;self.future.remove(0);self.past.push(d.clone());Some(d)}}
+impl History{
+    fn new(d:&Document)->Self{Self{past:vec![d.clone()],future:vec![]}}
+    fn push(&mut self,d:&Document){self.past.push(d.clone());self.future.clear();if self.past.len()>100{self.past.remove(0);}}
+    fn undo(&mut self,d:&Document)->Option<Document>{
+        match self.past.len(){0|1=>return None,_=>{}}
+        self.future.insert(0,d.clone());
+        self.past.pop();
+        self.past.last().cloned()
+    }
+    fn redo(&mut self)->Option<Document>{
+        let d=self.future.first().cloned()?;
+        self.future.remove(0);
+        self.past.push(d.clone());
+        Some(d)
+    }
+}
 fn id(p:&str)->String{format!("{}-{}",&p,&Uuid::new_v4().simple().to_string()[..8])}
 fn text(o:&Object)->String{o.props.get("text").and_then(Value::as_str).unwrap_or(&o.label).into()}
 fn object(kind:&str,label:&str,x:f32,y:f32,w:f32,h:f32,styles:Value)->Object{Object{id:id("obj"),kind:kind.into(),label:label.into(),x,y,width:w,height:h,rotation:0.,locked:false,hidden:false,props:json!({"text":label}),styles}}
@@ -329,34 +344,47 @@ fn object_class(selected:&Signal<Option<String>>,id:&str)->&'static str{
 
 #[component]
 fn Canvas(doc:Signal<Document>,scene:usize,selected:Signal<Option<String>>,zoom:f32,pick:EventHandler<Option<String>>)->Element{
-    let s=doc.read().scenes.get(scene).cloned();
+    let scene_data=doc.read().scenes.get(scene).cloned();
+    let background=scene_data.as_ref().map(|x|x.background.clone()).unwrap_or_default();
+    let objects=scene_data.map(|x|x.objects).unwrap_or_default();
     rsx! {
         div { class:"canvas",
             div {
                 class:"art",
-                style:format!("transform:scale({});background:{};",zoom,s.as_ref().map(|x|x.background.clone()).unwrap_or_default()),
+                style:format!("transform:scale({});background:{};",zoom,background),
                 onclick:move |_|pick.call(None),
-                if let Some(s)=s {
-                    for o in s.objects.iter().filter(|o|!o.hidden) {
-                        div {
-                            class:object_class(&selected,&o.id),
-                            style:style(o),
-                            onclick:move |e|{e.stop_propagation();pick.call(Some(o.id.clone()));},
-                            if o.kind=="video" {
-                                video { src:o.props.get("src").and_then(Value::as_str), controls:true }
-                            } else if o.kind=="audio" {
-                                audio { src:o.props.get("src").and_then(Value::as_str), controls:true }
-                            } else if o.kind=="media" {
-                                img { src:o.props.get("src").and_then(Value::as_str) }
-                            } else {
-                                span { "{text(o)}" }
-                            }
-                        }
-                    }
+                for object in objects.into_iter().filter(|o|!o.hidden) {
+                    ObjectNode { object, selected:selected.clone(), pick:pick.clone() }
                 }
             }
         }
     }
+}
+
+#[component]
+fn ObjectNode(object:Object,selected:Signal<Option<String>>,pick:EventHandler<Option<String>>)->Element{
+    let class_name=object_class(&selected,&object.id);
+    let oid=object.id.clone();
+    rsx! {
+        div {
+            class:class_name,
+            style:style(&object),
+            onclick:move |e|{e.stop_propagation();pick.call(Some(oid.clone()));},
+            if object.kind=="video" {
+                video { src:object.props.get("src").and_then(Value::as_str), controls:true }
+            } else if object.kind=="audio" {
+                audio { src:object.props.get("src").and_then(Value::as_str), controls:true }
+            } else if object.kind=="media" {
+                img { src:object.props.get("src").and_then(Value::as_str) }
+            } else {
+                span { "{text(&object)}" }
+            }
+        }
+    }
+}
+
+fn object_class(selected:&Signal<Option<String>>,id:&str)->&'static str{
+    if selected.read().as_deref()==Some(id){"obj selected"}else{"obj"}
 }
 #[component]fn Inspect(doc:Signal<Document>,scene:usize,id:String,status:Signal<String>,history:Signal<History>)->Element{let o=doc.read().scenes.get(scene).and_then(|s|s.objects.iter().find(|o|o.id==id)).cloned();let Some(o)=o else{return rsx!{}};let mut x=use_signal(||o.x.to_string());let mut y=use_signal(||o.y.to_string());let mut copy=use_signal(||text(&o));rsx!{div{class:"inspectbody",strong{"{o.label}"},small{"{o.kind}"},label{"X",input{value:"{x}",oninput:move|e|x.set(e.value())}},label{"Y",input{value:"{y}",oninput:move|e|y.set(e.value())}},textarea{value:"{copy}",oninput:move|e|copy.set(e.value())},button{class:"apply",onclick:{let mut doc=doc.clone();let mut history=history.clone();let mut status=status.clone();move |_|{let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;if let Some(v)=n.scenes.get_mut(scene).and_then(|s|s.objects.iter_mut().find(|o|o.id==id)){v.x=x.read().parse().unwrap_or(v.x);v.y=y.read().parse().unwrap_or(v.y);v.props=json!({"text":copy.read().clone()});}doc.set(n);status.set("Object updated".into())}},"Apply changes"}}}}
 #[component]
