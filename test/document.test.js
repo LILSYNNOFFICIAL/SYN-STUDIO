@@ -18,6 +18,8 @@ test("creates a minimal SYN document with identity and empty scene graph", () =>
     syn: "0.1",
     type: "document",
     meta: { id: "00000000-0000-0000-0000-000000000001", title: "Hello SYN" },
+    viewport: { width: 1120, height: 640 },
+    assets: [],
     scenes: []
   });
 });
@@ -69,4 +71,10 @@ test("round-trips rich object styles and navigation metadata", () => {
   const parsed = parseSynDocument(serializeSynDocument(document));
   assert.deepEqual(parsed.scenes[0].objects[0].styles, object.styles);
   assert.equal(parsed.scenes[0].objects[0].props.target, "./other.syn");
+});
+
+test("creates a stable responsive viewport and asset registry", () => {
+  const document = createSynDocument({ id: "doc-responsive" });
+  assert.deepEqual(document.viewport, { width: 1120, height: 640 });
+  assert.deepEqual(document.assets, []);
 });
