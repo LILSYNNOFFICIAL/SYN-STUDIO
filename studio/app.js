@@ -177,18 +177,16 @@ function selectObject(id) {
   for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectText","objectFont","objectFontSize","objectColor","objectRadius","objectBackground"]) inspector.querySelector("#"+id).addEventListener("input", updateSelectedObject);
 }
 function updateSelectedObject() {
-  const object = selected();
-  if (!object) return;
+  const object = selected(); if (!object) return;
   object.label = inspector.querySelector("#objectLabel").value;
   object.x = Math.max(0, Number(inspector.querySelector("#objectX").value) || 0);
   object.y = Math.max(0, Number(inspector.querySelector("#objectY").value) || 0);
   object.width = Math.max(20, Number(inspector.querySelector("#objectW").value) || 20);
   object.height = Math.max(20, Number(inspector.querySelector("#objectH").value) || 20);
   object.props = { ...object.props, text: inspector.querySelector("#objectText").value };
-  render(false);
-  selectObject(object.id);
+  object.styles = { ...object.styles, fontFamily: inspector.querySelector("#objectFont").value, fontSize: Number(inspector.querySelector("#objectFontSize").value) || 16, color: inspector.querySelector("#objectColor").value, borderRadius: Number(inspector.querySelector("#objectRadius").value) || 0, background: inspector.querySelector("#objectBackground").value };
+  render(false); selectObject(object.id);
 }
-
 function deleteSelectedObject() {
   if (!state.selectedObjectId) return;
   const id = state.selectedObjectId;
