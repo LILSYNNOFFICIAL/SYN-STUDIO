@@ -1,17 +1,20 @@
-name: Test
-
+name: Rust Build
 on:
   push:
     branches: ["main"]
   pull_request:
-
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          node-version: 22
-      - run: npm test
-      - run: node --check studio/app.js
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Dioxus CLI
+        run: cargo install dioxus-cli --version 0.7.10 --locked
+      - name: Native Rust tests
+        run: cargo test --no-default-features
+      - name: Web compile
+        run: dx build --web --release --features web
