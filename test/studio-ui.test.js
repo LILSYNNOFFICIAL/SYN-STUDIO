@@ -180,6 +180,12 @@ test("SYN Studio app code remaps duplicated scene object and interaction targets
   assert.match(app, /event:\{\.\.\.item\.event,target:idMap\.get/);
   assert.match(app, /actions:item\.actions\.map/);
   assert.match(app, /action\.type === "scene\.goto" && action\.target === current\.id/);
+  assert.match(app, /state\.history=createHistory\(previousDocument/);
+});
+
+test("SYN Studio clears stale multi-selection when changing scenes", () => {
+  const app = read("studio/app.js");
+  assert.match(app, /function changeScene\(delta\)[\s\S]*state\.selectedObjectIds = \[\][\s\S]*render\(\)/);
 });
 
 test("SYN runtime rejects executable link schemes", async () => {
