@@ -22,7 +22,7 @@ export function duplicateObject(scene, objectId) {
   const source = scene.objects.find(object => object.id === objectId);
   if (!source) return null;
   const copy = structuredClone(source);
-  copy.id = crypto.randomUUID ? crypto.randomUUID() : "syn-copy-" + Date.now().toString(36);
+  copy.id = globalThis.crypto?.randomUUID?.() || "syn-copy-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
   copy.label = (source.label || "Object") + " Copy";
   copy.x += 24;
   copy.y += 24;
