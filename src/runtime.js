@@ -55,6 +55,11 @@ export function createRuntimeState(document) {
   return { document, sceneIndex: 0, visible: new Map(), text: new Map() };
 }
 
+export function responsiveScale(documentWidth, documentHeight, viewportWidth, viewportHeight) {
+  if (![documentWidth, documentHeight, viewportWidth, viewportHeight].every(Number.isFinite) || documentWidth <= 0 || documentHeight <= 0 || viewportWidth <= 0 || viewportHeight <= 0) return 1;
+  return Math.min(viewportWidth / documentWidth, viewportHeight / documentHeight);
+}
+
 export function currentScene(state) {
   return state.document.scenes[state.sceneIndex] ?? null;
 }
