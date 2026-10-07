@@ -32,7 +32,19 @@ jobs:
         run: |
           rm -rf studio/*
           cp -R build/public/. studio/
-          printf '\n<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js", { updateViaCache: "none" }).catch(() => {});</script>\n' >> studio/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("studio/index.html")
+          s = p.read_text()
+          lines = [
+              line for line in s.splitlines()
+              if '<meta http-equiv="refresh"' not in line
+              and 'navigator.serviceWorker.register' not in line
+          ]
+          s = "\\n".join(lines).rstrip() + '\\n'
+          s += '<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js", { updateViaCache: "none" }).catch(() => {});</script>\\n'
+          p.write_text(s)
+          PY
           cp studio/index.html studio/404.html
       - name: Configure Pages
         uses: actions/configure-pages@v5
