@@ -44,21 +44,22 @@ jobs:
           s = "\n".join(lines).rstrip() + '\n'
           s += '<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js", { updateViaCache: "none" }).catch(() => {});</script>\n'
           p.write_text(s)
-          Path("studio/404.html").write_text(s)
-          Path("index.html").write_text('''<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=/SYN-STUDIO/studio/">
-  <title>SYN Studio</title>
-</head>
-<body>
-  <p>Opening <a href="/SYN-STUDIO/studio/">SYN Studio</a>…</p>
-</body>
-</html>
-''')
           PY
+          cp studio/index.html studio/404.html
+          cat > index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta http-equiv="refresh" content="0; url=/SYN-STUDIO/studio/">
+            <title>SYN Studio</title>
+          </head>
+          <body>
+            <p>Opening <a href="/SYN-STUDIO/studio/">SYN Studio</a>…</p>
+          </body>
+          </html>
+          EOF
       - name: Verify assembled Pages site
         run: |
           test -f index.html
