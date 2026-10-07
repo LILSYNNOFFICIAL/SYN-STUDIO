@@ -32,5 +32,6 @@ test("SYN Studio responsive stylesheet contains phone-specific authoring control
   assert.doesNotMatch(css, /\\n/);
   assert.match(css, /@media \(max-width:560px\)/);
   assert.match(css, /\.editor-tools\{[\s\S]*overflow-x:auto/);
-  assert.match(css, /\.resize-handle\s*\{\s*width:13px;\s*height:13px;\s*\}/);\n  assert.match(css, /\.code-workspace\{inset:92px 0 0 !important\}/);
+  assert.match(css, /\.resize-handle\s*\{\s*width:13px;\s*height:13px;\s*\}/);
+  assert.match(css, /\.code-workspace\{inset:92px 0 0 !important\}/);
 });
