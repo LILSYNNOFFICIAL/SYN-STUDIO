@@ -1,6 +1,9 @@
-import { randomUUID } from "node:crypto";
+function makeId() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") return globalThis.crypto.randomUUID();
+  return "syn-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+}
 
-export function createSynDocument({ title = "Untitled SYN", id = randomUUID() } = {}) {
+export function createSynDocument({ title = "Untitled SYN", id = makeId() } = {}) {
   return {
     syn: "0.1",
     type: "document",
@@ -9,7 +12,7 @@ export function createSynDocument({ title = "Untitled SYN", id = randomUUID() } 
   };
 }
 
-export function addScene(document, { name = "Scene", id = randomUUID() } = {}) {
+export function addScene(document, { name = "Scene", id = makeId() } = {}) {
   const scene = { id, name, objects: [], interactions: [] };
   document.scenes.push(scene);
   return scene;
@@ -17,7 +20,7 @@ export function addScene(document, { name = "Scene", id = randomUUID() } = {}) {
 
 export function addObject(
   scene,
-  { kind, label = "Object", id = randomUUID(), x = 80, y = 80, width = 180, height = 60, props = {} } = {}
+  { kind, label = "Object", id = makeId(), x = 80, y = 80, width = 180, height = 60, props = {} } = {}
 ) {
   if (!kind) throw new TypeError("Object kind is required");
   const object = { id, kind, label, x, y, width, height, props };
@@ -25,7 +28,7 @@ export function addObject(
   return object;
 }
 
-export function addInteraction(scene, { event, actions = [], id = randomUUID() } = {}) {
+export function addInteraction(scene, { event, actions = [], id = makeId() } = {}) {
   if (!event || typeof event !== "object" || !event.type || !event.target) {
     throw new TypeError("Interaction event requires type and target");
   }
