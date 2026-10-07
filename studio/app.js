@@ -59,7 +59,7 @@ function updateSelectedObject() {
 
 function addNewScene() {
   const next = state.document.scenes.length + 1;
-  addScene(state.document, { id: crypto.randomUUID(), name: `Scene ${next}` });
+  addScene(state.document, { name: `Scene ${next}` });
   state.sceneIndex = state.document.scenes.length - 1;
   state.selectedObjectId = null;
   render();
