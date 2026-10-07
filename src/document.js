@@ -8,7 +8,6 @@ export function createSynDocument({ title = "Untitled SYN", id = makeId() } = {}
     syn: "0.1",
     type: "document",
     meta: { id, title },
-    project: { version: "0.4.0", authoring: "SYN Studio" },
     scenes: []
   };
 }
