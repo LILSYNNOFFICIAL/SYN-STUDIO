@@ -306,3 +306,7 @@ body { overflow-x: hidden; }
   .resize-handle { width:13px; height:13px; }
   .syn-object { min-width:20px; min-height:20px; }
 }
+
+.inspector-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:10px; }
+.inspector-actions button { min-height:32px; padding:6px 8px; border:1px solid #303949; border-radius:7px; background:#111722; color:#cbd4e2; cursor:pointer; }
+.inspector-actions button:hover { border-color:#65799b; background:#17202e; }
