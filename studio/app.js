@@ -327,6 +327,7 @@ function selectObject(id, additive = false) {
     <label class="field">Label<input id="objectLabel" value="${escapeHtml(object.label)}"></label>
     <div class="field-row"><label class="field">X<input id="objectX" type="number" value="${object.x}"></label><label class="field">Y<input id="objectY" type="number" value="${object.y}"></label></div>
     <div class="field-row"><label class="field">Width<input id="objectW" type="number" min="20" value="${object.width}"></label><label class="field">Height<input id="objectH" type="number" min="20" value="${object.height}"></label></div>
+    <label class="field">Rotation<input id="objectRotation" type="number" min="-360" max="360" value="${object.rotation || 0}"></label>
     <label class="field">Text<textarea id="objectText" rows="3">${escapeHtml(object.props?.text ?? "")}</textarea></label>
     <div class="field-row"><label class="field">Font<select id="objectFont"><option>Inter</option><option>Georgia</option><option>Arial</option><option>Courier New</option><option>Trebuchet MS</option><option>Times New Roman</option><option>system-ui</option></select></label><label class="field">Size<input id="objectFontSize" type="number" min="8" value="${object.styles?.fontSize ?? 16}"></label></div>
     <div class="field-row"><label class="field">Color<input id="objectColor" type="color" value="${/^#[0-9a-f]{6}$/i.test(object.styles?.color ?? "") ? object.styles.color : "#eef1f6"}"></label><label class="field">Radius<input id="objectRadius" type="number" min="0" value="${object.styles?.borderRadius ?? 0}"></label></div>
@@ -339,7 +340,7 @@ function selectObject(id, additive = false) {
   inspector.querySelector("#backSelected").addEventListener("click", () => moveSelectedLayer("back"));
   inspector.querySelector("#lockSelected").addEventListener("click", toggleSelectedLock);
   inspector.querySelector("#hideSelected").addEventListener("click", toggleSelectedVisibility);
-  for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectText","objectFont","objectFontSize","objectColor","objectRadius","objectBackground"]) {
+  for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectRotation","objectText","objectFont","objectFontSize","objectColor","objectRadius","objectBackground"]) {
     inspector.querySelector("#"+id).addEventListener("focus", () => { state._editingInspector = false; });
     inspector.querySelector("#"+id).addEventListener("input", updateSelectedObject);
   }
@@ -353,6 +354,7 @@ function updateSelectedObject() {
   object.y = Math.max(0, Number(inspector.querySelector("#objectY").value) || 0);
   object.width = Math.max(20, Number(inspector.querySelector("#objectW").value) || 20);
   object.height = Math.max(20, Number(inspector.querySelector("#objectH").value) || 20);
+  object.rotation = Number(inspector.querySelector("#objectRotation").value) || 0;
   object.props = { ...object.props, text: inspector.querySelector("#objectText").value };
   object.styles = { ...object.styles, fontFamily: inspector.querySelector("#objectFont").value, fontSize: Number(inspector.querySelector("#objectFontSize").value) || 16, color: inspector.querySelector("#objectColor").value, borderRadius: Number(inspector.querySelector("#objectRadius").value) || 0, background: inspector.querySelector("#objectBackground").value };
   render(false);
