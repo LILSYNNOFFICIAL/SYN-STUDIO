@@ -1,4 +1,4 @@
-const CACHE = "syn-studio-v2";
+const CACHE = "syn-studio-v4";
 const CORE = [
   "./",
   "./index.html",
@@ -11,7 +11,11 @@ const CORE = [
   "./runtime/runtime.css",
   "./runtime/runtime.js",
   "./src/document.js",
-  "./src/runtime.js"
+  "./src/runtime.js",
+  "./src/history.js",
+  "./src/editor.js",
+  "./manifest.webmanifest",
+  "./icons/syn-512.svg"
 ];
 
 self.addEventListener("install", event => {
