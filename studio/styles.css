@@ -1031,3 +1031,13 @@ body.code-mode .stage-toolbar{
   .field input,.field textarea,.field select,
   #syn-source,#syn-source-search{touch-action:auto}
 }
+
+/* Code mode follows the wrapped mobile toolbar instead of covering it. */
+@media (max-width:900px){
+  .code-workspace{inset:92px 0 0 !important}
+  .code-editor-shell{height:calc(100% - 108px)}
+}
+@media (max-width:560px){
+  .code-workspace{inset:86px 0 0 !important}
+  .code-editor-shell{height:calc(100% - 108px)}
+}
