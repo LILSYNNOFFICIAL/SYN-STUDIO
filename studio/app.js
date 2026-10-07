@@ -1350,6 +1350,14 @@ document.querySelector("#toolbarZoomOut")?.addEventListener("click",()=>setZoom(
 document.querySelector("#toolbarZoomIn")?.addEventListener("click",()=>setZoom(state.zoom+0.1));
 document.querySelector("#toolbarZoomValue")?.addEventListener("click",()=>setZoom(1));
 document.querySelector("#toolbarCommand")?.addEventListener("click",openCodePalette);
+document.querySelector("#emptyText")?.addEventListener("click",()=>addCanvasObject("text"));
+document.querySelector("#emptyShape")?.addEventListener("click",()=>addCanvasObject("shape"));
+document.querySelector("#emptyMedia")?.addEventListener("click",()=>document.querySelector("#mediaInput")?.click());
+document.querySelector("#emptyCommands")?.addEventListener("click",openCodePalette);
+stage.addEventListener("keydown",event=>{
+  if(event.target!==stage || event.metaKey || event.ctrlKey || event.altKey) return;
+  if(event.key===" "){event.preventDefault();state.toolMode=state.toolMode==="pan"?"select":"pan";document.querySelectorAll("[data-studio-tool]").forEach(item=>item.classList.toggle("active",item.dataset.studioTool===state.toolMode));stage.classList.toggle("pan-mode",state.toolMode==="pan");}
+});
 document.querySelectorAll("[data-workspace-mode]").forEach(button=>button.addEventListener("click",()=>setWorkspaceMode(button.dataset.workspaceMode)));
 document.querySelectorAll("[data-studio-tool]").forEach(button=>button.addEventListener("click",()=>{
   const tool=button.dataset.studioTool;
