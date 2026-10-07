@@ -1,28 +1,29 @@
 export function createHistory(initial, { limit = 100 } = {}) {
   const entries = [structuredClone(initial)];
-  let cursor = 0;
-  const max = Math.max(1, limit);
+  const future = [];
+  const max = Math.max(2, limit);
 
   function push(value) {
-    entries.splice(cursor + 1);
     entries.push(structuredClone(value));
+    future.length = 0;
     if (entries.length > max) entries.shift();
-    cursor = entries.length - 1;
   }
 
   return {
     push,
-    undo() {
-      if (cursor === 0) return null;
-      cursor -= 1;
-      return structuredClone(entries[cursor]);
+    undo(currentValue) {
+      if (entries.length <= 1) return null;
+      if (currentValue !== undefined) future.unshift(structuredClone(currentValue));
+      return structuredClone(entries.pop());
     },
     redo() {
-      if (cursor >= entries.length - 1) return null;
-      cursor += 1;
-      return structuredClone(entries[cursor]);
+      if (!future.length) return null;
+      const next = future.shift();
+      entries.push(structuredClone(next));
+      if (entries.length > max) entries.shift();
+      return structuredClone(next);
     },
-    canUndo: () => cursor > 0,
-    canRedo: () => cursor < entries.length - 1
+    canUndo: () => entries.length > 1,
+    canRedo: () => future.length > 0
   };
 }
