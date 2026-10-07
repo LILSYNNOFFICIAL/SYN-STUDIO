@@ -18,7 +18,7 @@
         <span class="status">creative document prototype</span>
       </div>
     </div>
-    <div class="top-actions">
+    <div class="top-actions legacy-actions" aria-hidden="true">
       <button id="newDocument" class="ghost">New</button>
       <label class="ghost file-button">Open .syn<input id="openSyn" type="file" accept=".syn,application/vnd.syn+json,.json"></label>
       <button id="newScene" class="ghost">New Scene</button>
@@ -29,7 +29,7 @@
   </header>
 
   <main class="workspace">
-    <aside class="toolbox panel">
+    <aside class="toolbox panel legacy-toolbox">
       <div class="eyebrow">CREATE</div>
       <button class="tool active" data-tool="select">↖ <span>Select</span></button>
       <button class="tool" data-tool="text">T <span>Text</span></button>
@@ -66,7 +66,7 @@
     </aside>
   </main>
 
-  <section class="timeline panel">
+  <section class="timeline panel legacy-timeline">
     <div class="timeline-head">
       <div>
         <div class="eyebrow">INTERACTION</div>
