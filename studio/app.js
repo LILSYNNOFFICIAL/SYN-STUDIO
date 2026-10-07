@@ -662,7 +662,6 @@ function renderDocumentInspector() {
   inspector.querySelector("#documentTitle").addEventListener("input", event => { state.document.meta.title = event.target.value || "Untitled SYN"; });
   inspector.querySelector("#sceneNameInput").addEventListener("input", event => { scene().name = event.target.value || "Scene"; sceneLabel.textContent = scene().name; });
 }
-}
 
 function selectObject(id, additive = false) {
   if (additive && id) {
