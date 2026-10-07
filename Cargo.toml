@@ -10,7 +10,7 @@ serde_json="1"
 uuid={version="1",features=["v4","js"]}
 base64="0.22"
 wasm-bindgen={version="0.2",optional=true}
-web-sys={version="0.3",optional=true,features=["Window","Document","Storage","Blob","Url","HtmlAnchorElement"]}
+web-sys={version="0.3",optional=true,features=["Window","Document","Storage","Blob","Url","HtmlAnchorElement","Location"]}
 js-sys={version="0.3",optional=true}
 
 [features]
