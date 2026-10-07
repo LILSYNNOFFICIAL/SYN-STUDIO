@@ -200,7 +200,7 @@ function buildApplicationMenus(){
 }
 function runMenuCommand(c){
   document.querySelectorAll(".menu.open").forEach(x=>x.classList.remove("open"));
-  const handlers={"New SYN":()=>document.querySelector("#newDocument").click(),"Open":()=>document.querySelector("#openSyn").click(),"Save":()=>document.querySelector("#export").click(),"Export":()=>document.querySelector("#export").click(),"Delete":()=>document.querySelector("#deleteObject").click(),"New Scene":()=>document.querySelector("#newScene").click(),"Text":()=>addCanvasObject("text"),"Image":()=>document.querySelector("#mediaInput").click(),"Button":()=>addCanvasObject("button"),"Shape":()=>addCanvasObject("shape"),"Preview":()=>document.querySelector("#preview").click(),"Code Editor":openCodeWorkspace,"Command Palette":openCodePalette,"Fullscreen":()=>document.documentElement.requestFullscreen?.(),"Grid":()=>stage.classList.toggle("no-grid"),"Fit Canvas":fitCanvas,"Duplicate":duplicateSelected,"Bring to Front":()=>moveSelectedLayer("front"),"Send to Back":()=>moveSelectedLayer("back"),"Lock":toggleSelectedLock,"Hide":toggleSelectedVisibility,"Show":toggleSelectedVisibility};
+  const handlers={"New SYN":()=>document.querySelector("#newDocument").click(),"Open":()=>document.querySelector("#openSyn").click(),"Save":()=>document.querySelector("#export").click(),"Export":()=>document.querySelector("#export").click(),"Delete":()=>document.querySelector("#deleteObject").click(),"New Scene":()=>document.querySelector("#newScene").click(),"Text":()=>addCanvasObject("text"),"Image":()=>document.querySelector("#mediaInput").click(),"Button":()=>addCanvasObject("button"),"Shape":()=>addCanvasObject("shape"),"Preview":()=>document.querySelector("#preview").click(),"Code Editor":openCodeWorkspace,"Assets":openAssetBrowser,"Asset Browser":openAssetBrowser,"Command Palette":openCodePalette,"Fullscreen":()=>document.documentElement.requestFullscreen?.(),"Grid":()=>stage.classList.toggle("no-grid"),"Fit Canvas":fitCanvas,"Duplicate":duplicateSelected,"Bring to Front":()=>moveSelectedLayer("front"),"Send to Back":()=>moveSelectedLayer("back"),"Lock":toggleSelectedLock,"Hide":toggleSelectedVisibility,"Show":toggleSelectedVisibility};
   if(handlers[c])handlers[c]();else showToast(c+" is part of the SYN capability surface and is not enabled in this prototype yet.");
 }
 function showToast(message){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";document.body.appendChild(t)}t.textContent=message;t.classList.add("show");clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove("show"),2200)}
@@ -674,33 +674,49 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char]));
 }
 
-document.querySelector("#mediaInput").addEventListener("change", async event => {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  if (!file.type.startsWith("image/")) {
-    alert("SYN currently embeds images as media assets.");
-    event.target.value = "";
-    return;
+function openAssetBrowser() {
+  let panel = document.querySelector("#syn-assets-panel");
+  if (!panel) {
+    panel = document.createElement("section");
+    panel.id = "syn-assets-panel";
+    panel.className = "modal";
+    panel.innerHTML = '<div class="asset-browser"><div class="code-head"><strong>ASSETS</strong><button id="close-assets">Close</button></div><div id="asset-grid" class="asset-grid"></div></div>';
+    document.body.appendChild(panel);
+    panel.querySelector("#close-assets").addEventListener("click", () => panel.hidden = true);
+    panel.addEventListener("click", event => { if (event.target === panel) panel.hidden = true; });
   }
-  const reader = new FileReader();
-  reader.onload = () => {
-    const count = scene().objects.length;
-    recordHistory();
-    const asset = { id: "asset-" + Date.now().toString(36), name: file.name, type: file.type, size: file.size, embedded: true };
-    state.document.assets.push(asset);
-    const object = addObject(scene(), {
-      kind: "media",
-      label: file.name.replace(/\.[^.]+$/, "") || "Image",
-      x: 60 + (count % 4) * 40,
-      y: 60 + (count % 4) * 40,
-      width: 220,
-      height: 160,
-      props: { src: String(reader.result), assetId: asset.id }
+  const grid = panel.querySelector("#asset-grid");
+  grid.innerHTML = state.document.assets.length ? state.document.assets.map(asset => '<div class="asset-card"><strong>' + escapeHtml(asset.name) + '</strong><small>' + escapeHtml(asset.type || "unknown") + '</small><small>' + Math.max(1, Math.round((asset.size || 0) / 1024)) + ' KB</small></div>').join("") : '<div class="interaction empty">No embedded assets yet.</div>';
+  panel.hidden = false;
+}
+document.querySelector("#mediaInput").addEventListener("change", async event => {
+  const files = [...(event.target.files || [])].filter(file => file.type.startsWith("image/"));
+  if (!files.length) { event.target.value = ""; return; }
+  for (const file of files) {
+    const reader = new FileReader();
+    await new Promise(resolve => {
+      reader.onload = () => {
+        recordHistory();
+        const asset = { id: "asset-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,7), name: file.name, type: file.type, size: file.size, embedded: true };
+        state.document.assets.push(asset);
+        const count = scene().objects.length;
+        const object = addObject(scene(), {
+          kind: "media",
+          label: file.name.replace(/\.[^.]+$/, "") || "Image",
+          x: 60 + (count % 4) * 40,
+          y: 60 + (count % 4) * 40,
+          width: 220,
+          height: 160,
+          props: { src: String(reader.result), assetId: asset.id, alt: file.name.replace(/\.[^.]+$/, "") || "Image" }
+        });
+        state.selectedObjectId = object.id;
+        state.selectedObjectIds = [object.id];
+        resolve();
+      };
+      reader.readAsDataURL(file);
     });
-    state.selectedObjectId = object.id;
-    render();
-  };
-  reader.readAsDataURL(file);
+  }
+  render();
   event.target.value = "";
 });
 
