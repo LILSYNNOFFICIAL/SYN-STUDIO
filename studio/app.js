@@ -162,26 +162,20 @@ function selectObject(id) {
   deleteButton.disabled = !id;
   const object = selected();
   if (!object) { renderDocumentInspector(); return; }
-
   inspector.innerHTML = `
     <div class="eyebrow">OBJECT</div>
     <label class="field">Label<input id="objectLabel" value="${escapeHtml(object.label)}"></label>
-    <div class="field-row">
-      <label class="field">X<input id="objectX" type="number" value="${object.x}"></label>
-      <label class="field">Y<input id="objectY" type="number" value="${object.y}"></label>
-    </div>
-    <div class="field-row">
-      <label class="field">Width<input id="objectW" type="number" min="20" value="${object.width}"></label>
-      <label class="field">Height<input id="objectH" type="number" min="20" value="${object.height}"></label>
-    </div>
-    <label class="field">Text<input id="objectText" value="${escapeHtml(object.props?.text ?? "")}"></label>
+    <div class="field-row"><label class="field">X<input id="objectX" type="number" value="${object.x}"></label><label class="field">Y<input id="objectY" type="number" value="${object.y}"></label></div>
+    <div class="field-row"><label class="field">Width<input id="objectW" type="number" min="20" value="${object.width}"></label><label class="field">Height<input id="objectH" type="number" min="20" value="${object.height}"></label></div>
+    <label class="field">Text<textarea id="objectText" rows="3">${escapeHtml(object.props?.text ?? "")}</textarea></label>
+    <div class="field-row"><label class="field">Font<select id="objectFont"><option>Inter</option><option>Georgia</option><option>Arial</option><option>Courier New</option><option>Trebuchet MS</option><option>Times New Roman</option><option>system-ui</option></select></label><label class="field">Size<input id="objectFontSize" type="number" min="8" value="${object.styles?.fontSize ?? 16}"></label></div>
+    <div class="field-row"><label class="field">Color<input id="objectColor" type="color" value="${/^#[0-9a-f]{6}$/i.test(object.styles?.color ?? "") ? object.styles.color : "#eef1f6"}"></label><label class="field">Radius<input id="objectRadius" type="number" min="0" value="${object.styles?.borderRadius ?? 0}"></label></div>
+    <label class="field">Background<input id="objectBackground" value="${escapeHtml(object.styles?.background ?? "")}"></label>
     <div class="interaction"><div>Kind</div><code>${escapeHtml(object.kind)}</code></div>
   `;
-  for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectText"]) {
-    inspector.querySelector("#" + id).addEventListener("input", updateSelectedObject);
-  }
+  const font=inspector.querySelector("#objectFont"); font.value=object.styles?.fontFamily || "Inter";
+  for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectText","objectFont","objectFontSize","objectColor","objectRadius","objectBackground"]) inspector.querySelector("#"+id).addEventListener("input", updateSelectedObject);
 }
-
 function updateSelectedObject() {
   const object = selected();
   if (!object) return;
@@ -313,14 +307,24 @@ function render(keepSelection = true) {
     el.className = "syn-object";
     el.dataset.id = object.id;
     el.dataset.kind = object.kind;
-    el.textContent = object.props?.text || object.label;\n    if (object.styles) { for (const [key,value] of Object.entries(object.styles)) { const prop = {fontFamily:"fontFamily",fontSize:"fontSize",fontWeight:"fontWeight",color:"color",background:"background",borderRadius:"borderRadius"}[key]; if (prop) el.style[prop] = typeof value === "number" && ["fontSize","borderRadius"].includes(key) ? value + "px" : value; } }
+    el.textContent = object.props?.text || object.label;
+    if (object.styles) { for (const [key,value] of Object.entries(object.styles)) { const prop = {fontFamily:"fontFamily",fontSize:"fontSize",fontWeight:"fontWeight",color:"color",background:"background",borderRadius:"borderRadius"}[key]; if (prop) el.style[prop] = typeof value === "number" && ["fontSize","borderRadius"].includes(key) ? value + "px" : value; } }
     el.style.left = object.x + "px";
     el.style.top = object.y + "px";
     el.style.width = object.width + "px";
     el.style.height = object.height + "px";
-    el.addEventListener("click", event => {
+    el.addEventListener("click", event => { event.stopPropagation(); selectObject(object.id); });
+    el.addEventListener("dblclick", event => {
+      if (object.kind !== "text") return;
       event.stopPropagation();
-      selectObject(object.id);
+      const input = document.createElement("textarea");
+      input.className = "inline-edit"; input.value = object.props?.text ?? object.label;
+      input.style.left = object.x + "px"; input.style.top = object.y + "px"; input.style.width = object.width + "px"; input.style.height = object.height + "px";
+      input.style.fontFamily = object.styles?.fontFamily || "Inter"; input.style.fontSize = (object.styles?.fontSize || 24) + "px";
+      stage.appendChild(input); input.focus(); input.select();
+      const commit = () => { object.props = { ...object.props, text: input.value }; input.remove(); render(); };
+      input.addEventListener("blur", commit, { once: true });
+      input.addEventListener("keydown", event => { if (event.key === "Escape") { input.remove(); render(); } if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); commit(); } });
     });
     el.addEventListener("pointerdown", event => beginDrag(event, object));
     stage.appendChild(el);
