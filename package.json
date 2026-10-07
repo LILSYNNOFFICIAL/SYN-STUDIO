@@ -1,0 +1,13 @@
+{
+  "name": "syn-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SYN Studio and the open SYN creative document format.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
