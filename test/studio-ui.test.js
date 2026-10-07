@@ -200,3 +200,29 @@ test("SYN runtime rejects executable link schemes", async () => {
   };
   assert.throws(() => createRuntimeState(doc), /relative target/);
 });
+
+test("SYN runtime carries editor rotation and typography styles into preview", async () => {
+  const { createRuntimeState, renderScene } = await import("../src/runtime.js");
+  const doc = {
+    syn: "0.1", type: "document", meta: { id: "style-doc", title: "Style Test" },
+    viewport: { width: 200, height: 120 }, assets: [],
+    scenes: [{
+      id: "scene-1", name: "Scene", background: "#000",
+      objects: [{ id: "shape", kind: "shape", label: "Styled", x: 10, y: 10, width: 60, height: 40, rotation: 27, locked: false, hidden: false, props: {}, styles: { padding: 8, textTransform: "uppercase" } }],
+      interactions: []
+    }]
+  };
+  const state = createRuntimeState(doc);
+  let created;
+  const container = {
+    clientWidth: 200, clientHeight: 120, style: {}, ownerDocument: {
+      createDocumentFragment() { return { appendChild() {} }; },
+      createElement() { created = { style: {}, dataset: {}, setAttribute() {}, appendChild() {}, addEventListener() {} }; return created; }
+    },
+    replaceChildren() {}, appendChild() {}
+  };
+  renderScene(container, state);
+  assert.equal(created.style.transform, "rotate(27deg)");
+  assert.equal(created.style.padding, "8px");
+  assert.equal(created.style.textTransform, "uppercase");
+});
