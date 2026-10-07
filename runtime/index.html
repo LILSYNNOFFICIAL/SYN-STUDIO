@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090a0d">
+  <title>SYN Runtime</title>
+  <link rel="stylesheet" href="./runtime.css">
+</head>
+<body>
+  <header class="runtime-bar">
+    <div>
+      <span class="runtime-mark">S</span>
+      <strong id="title">SYN Runtime</strong>
+    </div>
+    <label class="load">
+      Open .syn
+      <input id="file" type="file" accept=".syn,application/vnd.syn+json,.json">
+    </label>
+  </header>
+
+  <main>
+    <div class="scene-meta">
+      <span id="sceneName">No document loaded</span>
+      <span id="sceneCount"></span>
+    </div>
+    <section id="stage" class="stage">
+      <div id="empty" class="empty">
+        <div class="mark">S</div>
+        <h1>Open a SYN.</h1>
+        <p>Choose a .syn file to run it in the sandboxed prototype runtime.</p>
+      </div>
+    </section>
+    <p id="error" class="error" hidden></p>
+  </main>
+
+  <script type="module" src="./runtime.js"></script>
+</body>
+</html>
