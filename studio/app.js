@@ -20,6 +20,10 @@ function scene() { return state.document.scenes[state.sceneIndex]; }
 function selected() { return scene().objects.find(item => item.id === state.selectedObjectId) ?? null; }
 
 function addCanvasObject(kind) {
+  if (kind === "media") {
+    document.querySelector("#mediaInput").click();
+    return;
+  }
   const labels = { text: "Text", media: "Media", shape: "Shape", button: "Button" };
   const count = scene().objects.length;
   const object = addObject(scene(), {
@@ -243,6 +247,33 @@ function exportSyn() {
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char]));
 }
+
+document.querySelector("#mediaInput").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    alert("SYN currently embeds images as media assets.");
+    event.target.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const count = scene().objects.length;
+    const object = addObject(scene(), {
+      kind: "media",
+      label: file.name.replace(/\.[^.]+$/, "") || "Image",
+      x: 60 + (count % 4) * 40,
+      y: 60 + (count % 4) * 40,
+      width: 220,
+      height: 160,
+      props: { src: String(reader.result) }
+    });
+    state.selectedObjectId = object.id;
+    render();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = "";
+});
 
 document.querySelectorAll(".tool").forEach(button => {
   button.addEventListener("click", () => {
