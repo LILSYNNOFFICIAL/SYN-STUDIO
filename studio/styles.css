@@ -280,3 +280,12 @@ body { overflow-x: hidden; }
     min-height: calc(100vh - var(--studio-header-height) - 52px);
   }
 }
+
+.mobile-inspector-toggle { display:none; }
+@media (max-width:900px) {
+  .mobile-inspector-toggle { display:block; padding:5px 8px; font-size:10px; }
+  .inspector { display:none; position:fixed; z-index:700; left:8px; right:8px; bottom:8px; width:auto; max-height:48vh; overflow:auto; border:1px solid #394252; border-radius:12px; box-shadow:0 25px 80px #000c; padding:14px; }
+  body.show-inspector .inspector { display:block; }
+  .stage { touch-action:none; }
+  .syn-object { touch-action:none; }
+}
