@@ -25,11 +25,15 @@ The current 0.3 prototype demonstrates:
 - Declarative event → action interactions
 - `.syn` export and import
 - A browser-based SYN Runtime
-- Embedded image media
+- Embedded image media and multi-asset registry
+- Responsive canvas scaling with touch-safe resize handles
+- Multi-selection, duplication, layer ordering, locking, hiding, and keyboard nudging
+- Grouped inspector editing with contextual object controls
+- Source workspace formatting, search, validation, and apply
 - Structural document validation
 - Runtime validation of interactions and targets
 - Sandboxed, declarative behavior with no arbitrary JavaScript execution from a SYN file
-- PWA/offline shell support
+- PWA/offline shell support with installable icon and cache versioning
 - Professional desktop-style menu system with a large developer-oriented capability surface
 - Contextual typography and appearance controls
 - Double-click text editing on the canvas
