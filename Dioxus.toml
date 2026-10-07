@@ -2,7 +2,6 @@
 name="SYN Studio"
 default_platform="web"
 out_dir="studio"
-asset_dir="public"
 
 [web.app]
 title="SYN Studio"
