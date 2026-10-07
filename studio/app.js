@@ -219,6 +219,18 @@ function buildApplicationMenus(){
   }).join("");
   document.querySelector(".brand").after(nav);
 
+  // On phones, keep high-frequency menus visible and move the rest into one overflow menu.
+  const mobileMore=document.createElement("div");
+  mobileMore.className="menu mobile-more-menu";
+  mobileMore.innerHTML='<button class="menu-trigger mobile-more-trigger" aria-haspopup="true" aria-expanded="false">More <span aria-hidden="true">⌄</span></button><div class="menu-panel mobile-more-panel"></div>';
+  const mobilePanel=mobileMore.querySelector(".menu-panel");
+  mobilePanel.innerHTML=Object.entries(MENU_DATA).map(([section,items])=>
+    '<section class="menu-section"><div class="menu-section-title">'+escMenu(section)+'</div>'+
+    items.map(item=>'<button class="menu-item" data-command="'+escMenu(item)+'" data-menu="'+escMenu(section)+'">'+escMenu(item)+'</button>').join("")+
+    '</section>'
+  ).join("");
+  nav.appendChild(mobileMore);
+
   const closeMenus=except=>{
     nav.querySelectorAll(".menu.open").forEach(m=>{
       if(m!==except){
@@ -253,6 +265,15 @@ function buildApplicationMenus(){
   nav.querySelectorAll(".menu-item").forEach(button=>button.addEventListener("click",()=>{
     runMenuCommand(button.dataset.command,button.dataset.menu);
   }));
+
+  mobileMore.querySelector(".menu-trigger").addEventListener("click",event=>{
+    event.stopPropagation();
+    const opening=!mobileMore.classList.contains("open");
+    closeMenus(mobileMore);
+    mobileMore.classList.toggle("open",opening);
+    mobileMore.querySelector(".menu-trigger").setAttribute("aria-expanded",String(opening));
+    if(opening)positionPanel(mobileMore,mobileMore.querySelector(".menu-trigger"));
+  });
 
   window.addEventListener("resize",()=>{
     nav.querySelectorAll(".menu.open").forEach(menu=>positionPanel(menu,menu.querySelector(".menu-trigger")));
@@ -1301,7 +1322,6 @@ document.addEventListener("keydown", event => {
     event.preventDefault();
     recordHistory();
     const step = event.shiftKey ? 10 : 1;
-    recordHistory();
     const dx = event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0;
     const dy = event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0;
     selectedObjects().forEach(object => moveObject(object, object.x + dx, object.y + dy, viewport()));
@@ -1309,8 +1329,24 @@ document.addEventListener("keydown", event => {
   }
 });
 buildApplicationMenus();
-document.querySelector("#inspectorToggle")?.addEventListener("click", () => document.body.classList.toggle("show-inspector"));
-document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openCodePalette()}});
+const inspectorToggle=document.querySelector("#inspectorToggle");
+inspectorToggle?.addEventListener("click",()=>{
+  document.body.classList.toggle("show-inspector");
+  inspectorToggle.setAttribute("aria-expanded",String(document.body.classList.contains("show-inspector")));
+});
+document.addEventListener("click",event=>{
+  if(document.body.classList.contains("show-inspector") && !event.target.closest(".inspector,.mobile-inspector-toggle")){
+    document.body.classList.remove("show-inspector");
+    inspectorToggle?.setAttribute("aria-expanded","false");
+  }
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && document.body.classList.contains("show-inspector")){
+    document.body.classList.remove("show-inspector");
+    inspectorToggle?.setAttribute("aria-expanded","false");
+  }
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openCodePalette()}
+});
 state.history = createHistory(state.document, { limit: 100 });
 document.querySelector("#prevScene").addEventListener("click", () => changeScene(-1));
 document.querySelector("#nextScene").addEventListener("click", () => changeScene(1));
