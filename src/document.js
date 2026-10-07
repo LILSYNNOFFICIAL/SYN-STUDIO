@@ -8,6 +8,8 @@ export function createSynDocument({ title = "Untitled SYN", id = makeId() } = {}
     syn: "0.1",
     type: "document",
     meta: { id, title },
+    viewport: { width: 1120, height: 640 },
+    assets: [],
     scenes: []
   };
 }
