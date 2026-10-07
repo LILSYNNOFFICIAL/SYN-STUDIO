@@ -1,12 +1,17 @@
 import { createSynDocument, addScene, addObject, addInteraction, serializeSynDocument } from "../src/document.js";
-import { createRuntimeState, currentScene, dispatchEvent, renderScene } from "../src/runtime.js";
+import { createRuntimeState, currentScene, dispatchEvent, renderScene, responsiveScale } from "../src/runtime.js";
+import { createHistory } from "../src/history.js";
 
 const state = {
   document: createSynDocument({ title: "SYN Studio Showcase" }),
   sceneIndex: 0,
   selectedObjectId: null,
-  drag: null
+  drag: null,
+  history: null,
+  future: null,
+  zoom: 1
 };
+state.history = createHistory(state.document, { limit: 100 });
 
 const home = addScene(state.document, { id: "scene-1", name: "SYN / Showcase", background: "#080b10" });
 const architecture = addScene(state.document, { id: "scene-2", name: "SYN / Architecture", background: "#0a0e14" });
@@ -233,6 +238,7 @@ function addCanvasObject(kind) {
     document.querySelector("#mediaInput").click();
     return;
   }
+  recordHistory();
   const labels = { text: "Text", media: "Media", shape: "Shape", button: "Button" };
   const count = scene().objects.length;
   const object = addObject(scene(), {
@@ -246,6 +252,11 @@ function addCanvasObject(kind) {
   });
   state.selectedObjectId = object.id;
   render();
+window.addEventListener("resize", () => render(false));
+document.addEventListener("keydown", event => {
+  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z") { event.preventDefault(); undo(); }
+  else if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "z") { event.preventDefault(); redo(); }
+});
 }
 
 function renderDocumentInspector() {
@@ -287,6 +298,7 @@ function selectObject(id) {
 }
 function updateSelectedObject() {
   const object = selected(); if (!object) return;
+  if (!state._editingInspector) { state._editingInspector = true; recordHistory(); }
   object.label = inspector.querySelector("#objectLabel").value;
   object.x = Math.max(0, Number(inspector.querySelector("#objectX").value) || 0);
   object.y = Math.max(0, Number(inspector.querySelector("#objectY").value) || 0);
@@ -295,9 +307,11 @@ function updateSelectedObject() {
   object.props = { ...object.props, text: inspector.querySelector("#objectText").value };
   object.styles = { ...object.styles, fontFamily: inspector.querySelector("#objectFont").value, fontSize: Number(inspector.querySelector("#objectFontSize").value) || 16, color: inspector.querySelector("#objectColor").value, borderRadius: Number(inspector.querySelector("#objectRadius").value) || 0, background: inspector.querySelector("#objectBackground").value };
   render(false); selectObject(object.id);
+  state._editingInspector = false;
 }
 function deleteSelectedObject() {
   if (!state.selectedObjectId) return;
+  recordHistory();
   const id = state.selectedObjectId;
   scene().objects = scene().objects.filter(object => object.id !== id);
   scene().interactions = scene().interactions.filter(item => item.event.target !== id && !item.actions.some(action => action.target === id));
@@ -306,6 +320,7 @@ function deleteSelectedObject() {
 }
 
 function addNewScene() {
+  recordHistory();
   const next = state.document.scenes.length + 1;
   addScene(state.document, { name: `Scene ${next}` });
   state.sceneIndex = state.document.scenes.length - 1;
@@ -322,6 +337,7 @@ function changeScene(delta) {
 function addNewInteraction() {
   const button = scene().objects.find(item => item.kind === "button");
   if (!button) return alert("Add a Button first.");
+  recordHistory();
   const target = state.document.scenes[state.sceneIndex + 1];
   addInteraction(scene(), {
     event: { type: "click", target: button.id },
@@ -331,6 +347,7 @@ function addNewInteraction() {
 }
 
 function removeInteraction(id) {
+  recordHistory();
   scene().interactions = scene().interactions.filter(item => item.id !== id);
   renderInteractions();
 }
@@ -402,9 +419,17 @@ function renderInteractions() {
   });
 }
 
+function snapshotDocument() { return structuredClone(state.document); }
+function recordHistory() { if (state.history) state.history.push(snapshotDocument()); }
+function restoreDocument(document) { state.document = structuredClone(document); state.sceneIndex = Math.min(state.sceneIndex, Math.max(0, state.document.scenes.length - 1)); state.selectedObjectId = null; render(false); }
+function undo() { const previous = state.history?.undo(); if (previous) restoreDocument(previous); }
+function redo() { const next = state.history?.redo(); if (next) restoreDocument(next); }
+
 function render(keepSelection = true) {
   stage.querySelectorAll(".syn-object").forEach(el => el.remove());
   const activeScene = scene();
+  const logical = state.document.viewport || { width: 1120, height: 640 };
+  const scale = Math.min(1, responsiveScale(logical.width, logical.height, Math.max(1, stage.clientWidth - 2), Math.max(1, stage.clientHeight - 2)));
   emptyState.hidden = activeScene.objects.length > 0;
   sceneLabel.textContent = activeScene.name;
   document.querySelector("#prevScene").disabled = state.sceneIndex === 0;
@@ -429,10 +454,11 @@ function render(keepSelection = true) {
         el.style[prop] = typeof value === "number" && ["fontSize","borderRadius","borderWidth"].includes(key) ? value + "px" : value;
       }
     }
-    el.style.left = object.x + "px";
-    el.style.top = object.y + "px";
-    el.style.width = object.width + "px";
-    el.style.height = object.height + "px";
+    el.style.left = Math.round(object.x * scale) + "px";
+    el.style.top = Math.round(object.y * scale) + "px";
+    el.style.width = Math.max(20, Math.round(object.width * scale)) + "px";
+    el.style.height = Math.max(20, Math.round(object.height * scale)) + "px";
+    if (object.styles?.fontSize) el.style.fontSize = Math.max(8, object.styles.fontSize * scale) + "px";
     el.addEventListener("click", event => { event.stopPropagation(); selectObject(object.id); });
     el.addEventListener("dblclick", event => {
       if (object.kind !== "text") return;
