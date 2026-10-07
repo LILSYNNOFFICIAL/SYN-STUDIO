@@ -147,9 +147,9 @@ fn demo() -> Document {
         json!({"fontSize":9,"fontWeight":800,"color":"#6e829c","letterSpacing":2})));
     home.objects.push(object("text", "18", 830., 99., 120., 62.,
         json!({"fontSize":58,"fontWeight":950,"color":"#ffffff"})));
-    home.objects.push(object("text", "OBJECTS", 830., 161., 100., 18.
+    home.objects.push(object("text", "OBJECTS", 830., 161., 100., 18.,
         json!({"fontSize":9,"fontWeight":800,"color":"#6e829c","letterSpacing":2})));
-    home.objects.push(object("text", "SOURCE  •  MEDIA  •  MOTION  •  EVENTS", 694., 204., 300., 20.
+    home.objects.push(object("text", "SOURCE  •  MEDIA  •  MOTION  •  EVENTS", 694., 204., 300., 20.,
         json!({"fontSize":10,"fontWeight":750,"color":"#c4d0df","letterSpacing":1})));
 
     let btn = object("button", "Explore architecture", 58., 228., 190., 48.,
@@ -173,7 +173,7 @@ fn demo() -> Document {
             json!({"background":"#0e1722","borderColor":"#263b55","borderWidth":1,"borderRadius":14})));
         home.objects.push(object("text", k, x+18., y+15., 220., 18.,
             json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":1.5})));
-        home.objects.push(object("text", v, x+18., y+40., 235., 30.
+        home.objects.push(object("text", v, x+18., y+40., 235., 30.,
             json!({"fontSize":11,"fontWeight":650,"color":"#b8c6d7"})));
     }
 
