@@ -8,7 +8,7 @@ The goal is bigger than a file container: one shareable SYN document should be a
 
 Open [SYN Studio](./studio/) to use the visual prototype.
 
-It currently demonstrates a visual canvas, text/media/shape/button tools, object selection, direct `.syn` export, and declarative event → action interactions.
+It currently demonstrates a visual canvas, text/media/shape/button tools, scene creation, object selection, direct `.syn` export, declarative event → action interactions, and a browser runtime for opening exported `.syn` files.
 
 The core document model in `src/document.js` now supports documents, scenes, objects, interactions, serialization, parsing, and structural validation.
 
@@ -16,7 +16,7 @@ The core document model in `src/document.js` now supports documents, scenes, obj
 
 - **SYN Studio**: visual authoring environment
 - **SYN Format**: portable creative document model
-- **SYN Runtime**: future sandboxed renderer/player
+- **SYN Runtime**: sandboxed renderer/player prototype
 - **SYN AI**: future native authoring assistant that edits the SYN model itself
 
 ## Security direction
