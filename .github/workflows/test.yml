@@ -8,12 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: ealmloff/dioxus-ci/actions/setup-dioxus@main
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
-      - name: Install Dioxus CLI
-        run: cargo install dioxus-cli --version 0.7.10 --locked
+      - uses: ealmloff/dioxus-ci/actions/install-dioxus-cli@main
+        with:
+          version: 0.7.10
       - name: Native Rust tests
         run: cargo test --no-default-features
       - name: Web compile
