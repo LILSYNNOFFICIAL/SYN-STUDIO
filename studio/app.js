@@ -461,7 +461,9 @@ document.querySelector("#openSyn").addEventListener("change", async event => {
   event.target.value = "";
 });
 
-document.querySelector("#preview").addEventListener("click", preview);\nbuildApplicationMenus();\ndocument.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openCodePalette()}});
+document.querySelector("#preview").addEventListener("click", preview);
+buildApplicationMenus();
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openCodePalette()}});
 document.querySelector("#prevScene").addEventListener("click", () => changeScene(-1));
 document.querySelector("#nextScene").addEventListener("click", () => changeScene(1));
 render();
