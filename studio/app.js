@@ -200,7 +200,7 @@ function buildApplicationMenus(){
 }
 function runMenuCommand(c){
   document.querySelectorAll(".menu.open").forEach(x=>x.classList.remove("open"));
-  const handlers={"New SYN":()=>document.querySelector("#newDocument").click(),"Open":()=>document.querySelector("#openSyn").click(),"Save":()=>document.querySelector("#export").click(),"Export":()=>document.querySelector("#export").click(),"Delete":()=>document.querySelector("#deleteObject").click(),"New Scene":()=>document.querySelector("#newScene").click(),"Text":()=>addCanvasObject("text"),"Image":()=>document.querySelector("#mediaInput").click(),"Button":()=>addCanvasObject("button"),"Shape":()=>addCanvasObject("shape"),"Preview":()=>document.querySelector("#preview").click(),"Code Editor":openCodeWorkspace,"Assets":openAssetBrowser,"Asset Browser":openAssetBrowser,"Command Palette":openCodePalette,"Fullscreen":()=>document.documentElement.requestFullscreen?.(),"Grid":()=>stage.classList.toggle("no-grid"),"Fit Canvas":fitCanvas,"Duplicate":duplicateSelected,"Bring to Front":()=>moveSelectedLayer("front"),"Send to Back":()=>moveSelectedLayer("back"),"Lock":toggleSelectedLock,"Hide":toggleSelectedVisibility,"Show":toggleSelectedVisibility};
+  const handlers={"New SYN":()=>document.querySelector("#newDocument").click(),"Open":()=>document.querySelector("#openSyn").click(),"Save":()=>document.querySelector("#export").click(),"Export":()=>document.querySelector("#export").click(),"Delete":()=>document.querySelector("#deleteObject").click(),"New Scene":()=>document.querySelector("#newScene").click(),"Text":()=>addCanvasObject("text"),"Image":()=>document.querySelector("#mediaInput").click(),"Button":()=>addCanvasObject("button"),"Shape":()=>addCanvasObject("shape"),"Preview":()=>document.querySelector("#preview").click(),"Code Editor":openCodeWorkspace,"Assets":openAssetBrowser,"Asset Browser":openAssetBrowser,"Command Palette":openCodePalette,"Fullscreen":()=>document.documentElement.requestFullscreen?.(),"Grid":()=>stage.classList.toggle("no-grid"),"Fit Canvas":fitCanvas,"Layers":openLayersPanel,"Align Left":()=>alignSelected("left"),"Align Center":()=>alignSelected("centerX"),"Align Right":()=>alignSelected("right"),"Align Top":()=>alignSelected("top"),"Align Middle":()=>alignSelected("centerY"),"Align Bottom":()=>alignSelected("bottom"),"Distribute Horizontally":()=>distributeSelected("x"),"Distribute Vertically":()=>distributeSelected("y"),"Duplicate":duplicateSelected,"Bring to Front":()=>moveSelectedLayer("front"),"Send to Back":()=>moveSelectedLayer("back"),"Lock":toggleSelectedLock,"Hide":toggleSelectedVisibility,"Show":toggleSelectedVisibility};
   if(handlers[c])handlers[c]();else showToast(c+" is part of the SYN capability surface and is not enabled in this prototype yet.");
 }
 function showToast(message){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";document.body.appendChild(t)}t.textContent=message;t.classList.add("show");clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove("show"),2200)}
@@ -510,6 +510,56 @@ function toggleSelectedVisibility() {
   render();
 }
 function fitCanvas() { state.zoom = 1; render(false); }
+function selectedObjects() { return state.selectedObjectIds.map(id => scene().objects.find(object => object.id === id)).filter(Boolean); }
+function alignSelected(mode) {
+  const objects = selectedObjects();
+  if (objects.length < 2) return;
+  recordHistory();
+  const vp = viewport();
+  if (mode === "left") { const x = Math.min(...objects.map(o => o.x)); objects.forEach(o => moveObject(o, x, o.y, vp)); }
+  if (mode === "right") { const right = Math.max(...objects.map(o => o.x + o.width)); objects.forEach(o => moveObject(o, right - o.width, o.y, vp)); }
+  if (mode === "top") { const y = Math.min(...objects.map(o => o.y)); objects.forEach(o => moveObject(o, o.x, y, vp)); }
+  if (mode === "bottom") { const bottom = Math.max(...objects.map(o => o.y + o.height)); objects.forEach(o => moveObject(o, o.x, bottom - o.height, vp)); }
+  if (mode === "centerX") { const center = (Math.min(...objects.map(o => o.x)) + Math.max(...objects.map(o => o.x + o.width))) / 2; objects.forEach(o => moveObject(o, center - o.width / 2, o.y, vp)); }
+  if (mode === "centerY") { const center = (Math.min(...objects.map(o => o.y)) + Math.max(...objects.map(o => o.y + o.height))) / 2; objects.forEach(o => moveObject(o, o.x, center - o.height / 2, vp)); }
+  render();
+}
+function distributeSelected(axis) {
+  const objects = selectedObjects();
+  if (objects.length < 3) return;
+  recordHistory();
+  const ordered = [...objects].sort((a,b) => axis === "x" ? a.x-b.x : a.y-b.y);
+  const first = ordered[0], last = ordered.at(-1);
+  const spanStart = axis === "x" ? first.x : first.y;
+  const spanEnd = axis === "x" ? (last.x + last.width) : (last.y + last.height);
+  const totalSize = ordered.reduce((sum,o) => sum + (axis === "x" ? o.width : o.height), 0);
+  const gap = (spanEnd - spanStart - totalSize) / (ordered.length - 1);
+  let cursor = spanStart;
+  const vp = viewport();
+  for (const object of ordered) {
+    if (axis === "x") moveObject(object, cursor, object.y, vp);
+    else moveObject(object, object.x, cursor, vp);
+    cursor += (axis === "x" ? object.width : object.height) + gap;
+  }
+  render();
+}
+function openLayersPanel() {
+  let panel = document.querySelector("#syn-layers-panel");
+  if (!panel) {
+    panel = document.createElement("section");
+    panel.id = "syn-layers-panel";
+    panel.className = "modal";
+    panel.innerHTML = '<div class="layers-browser"><div class="code-head"><strong>LAYERS</strong><button id="close-layers">Close</button></div><div id="layer-list"></div></div>';
+    document.body.appendChild(panel);
+    panel.querySelector("#close-layers").addEventListener("click", () => panel.hidden = true);
+    panel.addEventListener("click", event => { if (event.target === panel) panel.hidden = true; });
+  }
+  const list = panel.querySelector("#layer-list");
+  list.innerHTML = scene().objects.slice().reverse().map(object => '<button class="layer-row" data-layer="' + escapeHtml(object.id) + '"><span>' + escapeHtml(object.label) + '</span><small>' + (object.hidden ? "Hidden" : object.locked ? "Locked" : object.kind) + '</small></button>').join("") || '<div class="interaction empty">No objects in this scene.</div>';
+  list.querySelectorAll(".layer-row").forEach(row => row.addEventListener("click", () => { state.selectedObjectId = row.dataset.layer; state.selectedObjectIds = [row.dataset.layer]; panel.hidden = true; render(); }));
+  panel.hidden = false;
+}
+
 
 function render(keepSelection = true) {
   stage.querySelectorAll(".syn-object,.resize-handle").forEach(el => el.remove());
