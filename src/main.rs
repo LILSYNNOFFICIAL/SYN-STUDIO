@@ -645,8 +645,15 @@ fn Code(source:Signal<String>,doc:Signal<Document>,history:Signal<History>,statu
     rsx!{div{class:"code",
         div{class:"codehead",span{"SOURCE / SYN 0.1"},div{
             button{onclick:{let mut source=source.clone();move |_|{if let Ok(v)=serde_json::from_str::<Value>(&source.read()){source.set(serde_json::to_string_pretty(&v).unwrap())}}},"Format"},
-            button{onclick:{let mut status=status.clone();let source=source.clone();move |_|status.set(if serde_json::from_str::<Document>(&source.read()).is_ok(){"Valid SYN document".into()}else{"Invalid SYN document".into()}))},"Validate"},
-            button{class:"primary",onclick:{let mut doc=doc.clone();let mut history=history.clone();let source=source.clone();let mut status=status.clone();move |_|{if let Ok(n)=serde_json::from_str::<Document>(&source.read()){let cur=doc.read().clone();history.write().push(&cur);doc.set(n);status.set("Source applied".into())}else{status.set("Source rejected: invalid SYN".into())}}},"Apply"},
+            button{onclick:{let mut status=status.clone();let source=source.clone();move |_|{
+                let message=if serde_json::from_str::<Document>(&source.read()).is_ok(){"Valid SYN document"}else{"Invalid SYN document"};
+                status.set(message.into());
+            }},"Validate"},
+            button{class:"primary",onclick:{let mut doc=doc.clone();let mut history=history.clone();let source=source.clone();let mut status=status.clone();move |_|{
+                if let Ok(n)=serde_json::from_str::<Document>(&source.read()){
+                    let cur=doc.read().clone();history.write().push(&cur);doc.set(n);status.set("Source applied".into());
+                }else{status.set("Source rejected: invalid SYN".into());}
+            }},"Apply"},
             button{onclick:move |_|mode.set("design".into()),"Design"}
         }},
         textarea{value:"{source}",oninput:move|e|source.set(e.value())},
