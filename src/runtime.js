@@ -121,6 +121,7 @@ export function renderScene(container, state, { onEvent } = {}) {
   const scene = currentScene(state);
   if (!scene) { container.replaceChildren(); return; }
   container.replaceChildren();
+  if (scene.background) container.style.background = scene.background;
   const doc = container.ownerDocument || document;
   const fragment = doc.createDocumentFragment();
   const logical = state.document.viewport || { width: 1120, height: 640 };
