@@ -745,12 +745,13 @@ function updateSelectedObject() {
   render(false);
 }
 function deleteSelectedObject() {
-  if (!state.selectedObjectId) return;
+  const ids = new Set(state.selectedObjectIds.length ? state.selectedObjectIds : (state.selectedObjectId ? [state.selectedObjectId] : []));
+  if (!ids.size) return;
   recordHistory();
-  const id = state.selectedObjectId;
-  scene().objects = scene().objects.filter(object => object.id !== id);
-  scene().interactions = scene().interactions.filter(item => item.event.target !== id && !item.actions.some(action => action.target === id));
+  scene().objects = scene().objects.filter(object => !ids.has(object.id));
+  scene().interactions = scene().interactions.filter(item => !ids.has(item.event.target) && !item.actions.some(action => ids.has(action.target)));
   state.selectedObjectId = null;
+  state.selectedObjectIds = [];
   render();
 }
 
@@ -768,10 +769,20 @@ function duplicateCurrentScene(){
   if(!current)return;
   recordHistory();
   const copy=structuredClone(current);
-  copy.id="scene-"+Date.now().toString(36);
+  const suffix=Date.now().toString(36);
+  const idMap=new Map(current.objects.map(object=>[object.id,object.id+"-"+suffix]));
+  copy.id="scene-"+suffix;
   copy.name=current.name+" Copy";
-  copy.objects=copy.objects.map(object=>({...object,id:object.id+"-"+Date.now().toString(36)}));
-  copy.interactions=[];
+  copy.objects=copy.objects.map(object=>({...object,id:idMap.get(object.id)}));
+  copy.interactions=copy.interactions.map(item=>({
+    ...item,
+    id:item.id+"-"+suffix,
+    event:{...item.event,target:idMap.get(item.event.target) ?? item.event.target},
+    actions:item.actions.map(action=>({
+      ...action,
+      ...(action.target && idMap.has(action.target) ? {target:idMap.get(action.target)} : {})
+    }))
+  }));
   state.document.scenes.splice(state.sceneIndex+1,0,copy);
   state.sceneIndex+=1;
   state.selectedObjectId=null;
@@ -923,7 +934,7 @@ function restoreDocument(document) {
   state.selectedObjectIds = [];
   render(false);
 }
-function undo() { const previous = state.history?.undo(); if (previous) restoreDocument(previous); }
+function undo() { const previous = state.history?.undo(snapshotDocument()); if (previous) restoreDocument(previous); }
 function redo() { const next = state.history?.redo(); if (next) restoreDocument(next); }
 function viewport() { return state.document.viewport || { width: 1120, height: 640 }; }
 function duplicateSelected() {
