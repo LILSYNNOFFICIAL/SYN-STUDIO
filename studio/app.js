@@ -208,9 +208,45 @@ function openCodePalette(){let p=document.querySelector("#syn-command-palette");
 function renderCommandResults(){const p=document.querySelector("#syn-command-palette"),q=p.querySelector("input").value.toLowerCase(),rows=Object.entries(MENU_DATA).flatMap(([menu,items])=>items.map(name=>({menu,name}))).filter(x=>!q||(x.name+" "+x.menu).toLowerCase().includes(q)).slice(0,50);p.querySelector("#command-results").innerHTML=rows.map(x=>'<button class="command-row" data-command="'+escMenu(x.name)+'"><span>'+escMenu(x.name)+'</span><small>'+escMenu(x.menu)+'</small></button>').join("");p.querySelectorAll(".command-row").forEach(b=>b.addEventListener("click",()=>{p.hidden=true;runMenuCommand(b.dataset.command)}))}
 function openCodeWorkspace(){
   let panel=document.querySelector("#syn-code-workspace");
-  if(!panel){panel=document.createElement("section");panel.id="syn-code-workspace";panel.className="code-workspace";panel.innerHTML='<div class="code-head"><strong>SYN SOURCE</strong><span>Live document model</span></div><textarea id="syn-source" spellcheck="false"></textarea><div class="code-foot"><button id="apply-syn-source" class="primary">Apply Source</button><span>Visual editing and source editing target the same SYN document. JavaScript remains sandboxed and capability-gated.</span></div>';document.querySelector(".timeline").parentElement.appendChild(panel);panel.querySelector("#apply-syn-source").addEventListener("click",()=>{try{const parsed=JSON.parse(panel.querySelector("#syn-source").value);createRuntimeState(parsed);recordHistory();state.document=parsed;state.sceneIndex=0;state.selectedObjectId=null;render();showToast("Source applied to the live document.")}catch(e){showToast(e.message)}})}
-  panel.hidden=false;panel.querySelector("#syn-source").value=serializeSynDocument(state.document);panel.scrollIntoView({behavior:"smooth"});
+  if(!panel){
+    panel=document.createElement("section");
+    panel.id="syn-code-workspace";
+    panel.className="code-workspace";
+    panel.innerHTML='<div class="code-head"><strong>SYN SOURCE</strong><span>Live document model</span><div class="code-actions"><input id="syn-source-search" placeholder="Find"><button id="format-syn-source">Format</button><button id="apply-syn-source" class="primary">Apply</button></div></div><textarea id="syn-source" spellcheck="false" aria-label="SYN source editor"></textarea><div class="code-foot"><span id="syn-source-status">Visual and source views target the same SYN document.</span></div>';
+    document.querySelector(".timeline").parentElement.appendChild(panel);
+    panel.querySelector("#format-syn-source").addEventListener("click",()=>{
+      try { panel.querySelector("#syn-source").value=JSON.stringify(JSON.parse(panel.querySelector("#syn-source").value),null,2)+"\n"; panel.querySelector("#syn-source-status").textContent="Formatted."; }
+      catch(error) { panel.querySelector("#syn-source-status").textContent=error.message; }
+    });
+    panel.querySelector("#syn-source-search").addEventListener("input",event=>{
+      const source=panel.querySelector("#syn-source");
+      const q=event.target.value;
+      if(!q) { source.focus(); return; }
+      const index=source.value.toLowerCase().indexOf(q.toLowerCase());
+      if(index>=0) { source.focus(); source.setSelectionRange(index,index+q.length); }
+    });
+    panel.querySelector("#apply-syn-source").addEventListener("click",()=>{
+      try {
+        const parsed=JSON.parse(panel.querySelector("#syn-source").value);
+        createRuntimeState(parsed);
+        recordHistory();
+        state.document=parsed;
+        state.sceneIndex=0;
+        state.selectedObjectId=null;
+        state.selectedObjectIds=[];
+        state.history=createHistory(state.document,{limit:100});
+        render();
+        panel.querySelector("#syn-source-status").textContent="Applied and validated.";
+      } catch(error) {
+        panel.querySelector("#syn-source-status").textContent=error.message;
+      }
+    });
+  }
+  panel.hidden=false;
+  panel.querySelector("#syn-source").value=serializeSynDocument(state.document);
+  panel.scrollIntoView({behavior:"smooth"});
 }
+
 function addStyleInspector(){
   const object=selected();if(!object)return;
   let section=inspector.querySelector(".style-section");
