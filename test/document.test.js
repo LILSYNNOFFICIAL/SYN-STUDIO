@@ -53,3 +53,20 @@ test("rejects malformed SYN documents at the public parsing boundary", () => {
     /Invalid SYN document/
   );
 });
+
+
+test("round-trips rich object styles and navigation metadata", () => {
+  const document = createSynDocument({ title: "Styled SYN", id: "doc-style" });
+  const scene = addScene(document, { id: "scene-style", name: "Styled" });
+  const object = addObject(scene, {
+    id: "headline",
+    kind: "text",
+    label: "Headline",
+    props: { text: "Hello" },
+    styles: { fontFamily: "Georgia", fontSize: 48, color: "#ffffff", borderRadius: 12 }
+  });
+  object.props.target = "./other.syn";
+  const parsed = parseSynDocument(serializeSynDocument(document));
+  assert.deepEqual(parsed.scenes[0].objects[0].styles, object.styles);
+  assert.equal(parsed.scenes[0].objects[0].props.target, "./other.syn");
+});
