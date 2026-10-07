@@ -780,7 +780,8 @@ function duplicateCurrentScene(){
     event:{...item.event,target:idMap.get(item.event.target) ?? item.event.target},
     actions:item.actions.map(action=>({
       ...action,
-      ...(action.target && idMap.has(action.target) ? {target:idMap.get(action.target)} : {})
+      ...(action.type === "scene.goto" && action.target === current.id ? {target:copy.id} :
+        action.target && idMap.has(action.target) ? {target:idMap.get(action.target)} : {})
     }))
   }));
   state.document.scenes.splice(state.sceneIndex+1,0,copy);
