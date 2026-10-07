@@ -4,14 +4,73 @@ export function createSynDocument({ title = "Untitled SYN", id = randomUUID() } 
   return {
     syn: "0.1",
     type: "document",
-    meta: {
-      id,
-      title
-    },
+    meta: { id, title },
     scenes: []
   };
 }
 
+export function addScene(document, { name = "Scene", id = randomUUID() } = {}) {
+  const scene = { id, name, objects: [], interactions: [] };
+  document.scenes.push(scene);
+  return scene;
+}
+
+export function addObject(
+  scene,
+  { kind, label = "Object", id = randomUUID(), x = 80, y = 80, width = 180, height = 60, props = {} } = {}
+) {
+  if (!kind) throw new TypeError("Object kind is required");
+  const object = { id, kind, label, x, y, width, height, props };
+  scene.objects.push(object);
+  return object;
+}
+
+export function addInteraction(scene, { event, actions = [], id = randomUUID() } = {}) {
+  if (!event || typeof event !== "object" || !event.type || !event.target) {
+    throw new TypeError("Interaction event requires type and target");
+  }
+  const interaction = { id, event, actions };
+  scene.interactions.push(interaction);
+  return interaction;
+}
+
 export function serializeSynDocument(document) {
+  validateSynDocument(document);
   return JSON.stringify(document, null, 2) + "\n";
+}
+
+export function parseSynDocument(source) {
+  let document;
+  try {
+    document = JSON.parse(source);
+  } catch {
+    throw new Error("Invalid SYN document: malformed JSON");
+  }
+  validateSynDocument(document);
+  return document;
+}
+
+function validateSynDocument(document) {
+  if (
+    !document ||
+    document.syn !== "0.1" ||
+    document.type !== "document" ||
+    !document.meta ||
+    typeof document.meta.id !== "string" ||
+    typeof document.meta.title !== "string" ||
+    !Array.isArray(document.scenes)
+  ) {
+    throw new Error("Invalid SYN document");
+  }
+  for (const scene of document.scenes) {
+    if (
+      !scene ||
+      typeof scene.id !== "string" ||
+      typeof scene.name !== "string" ||
+      !Array.isArray(scene.objects) ||
+      !Array.isArray(scene.interactions)
+    ) {
+      throw new Error("Invalid SYN document");
+    }
+  }
 }
