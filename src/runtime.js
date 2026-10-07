@@ -41,8 +41,11 @@ export function validateRuntimeDocument(document) {
         if (action.type === "link.openUrl" && (!/^https?:\/\//i.test(String(action.url || "")))) {
           throw new Error("SYN URL links must use http or https");
         }
-        if (action.type === "link.openSyn" && typeof action.target !== "string") {
-          throw new Error("SYN document link target is required");
+        if (action.type === "link.openSyn") {
+          const target = String(action.target ?? "").trim();
+          if (!target || (/^[a-z][a-z0-9+.-]*:/i.test(target) && !/^https?:\/\//i.test(target))) {
+            throw new Error("SYN document links must use http(s) or a relative target");
+          }
         }
       }
     }
