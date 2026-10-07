@@ -66,3 +66,14 @@ test("rejects broken interaction targets", () => {
   invalid.scenes[0].interactions[0].event.target = "missing";
   assert.throws(() => validateRuntimeDocument(invalid), /target not found/);
 });
+
+
+test("accepts safe URL and SYN navigation actions", () => {
+  const valid = structuredClone(demo);
+  valid.scenes[0].interactions[0].actions = [{ type: "link.openUrl", url: "https://example.com" }];
+  assert.doesNotThrow(() => validateRuntimeDocument(valid));
+  valid.scenes[0].interactions[0].actions = [{ type: "link.openUrl", url: "javascript:alert(1)" }];
+  assert.throws(() => validateRuntimeDocument(valid), /http or https/);
+  valid.scenes[0].interactions[0].actions = [{ type: "link.openSyn", target: "./other.syn" }];
+  assert.doesNotThrow(() => validateRuntimeDocument(valid));
+});
