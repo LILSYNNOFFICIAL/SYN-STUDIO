@@ -82,7 +82,24 @@ function buildApplicationMenus(){
   const nav=document.createElement("nav");nav.className="menu-bar";
   nav.innerHTML=Object.entries(MENU_DATA).map(([name,items])=>'<div class="menu"><button class="menu-trigger">'+escMenu(name)+'</button><div class="menu-panel">'+items.map(item=>'<button class="menu-item" data-command="'+escMenu(item)+'">'+escMenu(item)+'</button>').join("")+'</div></div>').join("");
   const actions=document.querySelector(".top-actions");actions.parentElement.insertBefore(nav,actions);
-  nav.querySelectorAll(".menu-trigger").forEach(b=>b.addEventListener("click",e=>{const m=e.currentTarget.parentElement;nav.querySelectorAll(".menu.open").forEach(x=>{if(x!==m)x.classList.remove("open")});m.classList.toggle("open")}));
+  nav.querySelectorAll(".menu-trigger").forEach(b=>b.addEventListener("click",e=>{
+    const m=e.currentTarget.parentElement;
+    nav.querySelectorAll(".menu.open").forEach(x=>{if(x!==m)x.classList.remove("open")});
+    m.classList.toggle("open");
+    const panel=m.querySelector(".menu-panel");
+    if(m.classList.contains("open")){
+      const r=b.getBoundingClientRect();
+      const width=Math.min(360,Math.max(250,window.innerWidth-20));
+      const left=Math.min(Math.max(10,r.left),Math.max(10,window.innerWidth-width-10));
+      panel.style.width=width+"px"; panel.style.left=left+"px"; panel.style.top=Math.min(window.innerHeight-20,r.bottom+4)+"px";
+    } else { panel.style.left=""; panel.style.top=""; }
+  }));
+  window.addEventListener("resize",()=>nav.querySelectorAll(".menu.open").forEach(m=>{
+    const b=m.querySelector(".menu-trigger"),panel=m.querySelector(".menu-panel"); if(!b||!panel)return;
+    const r=b.getBoundingClientRect(),width=panel.offsetWidth||280;
+    panel.style.left=Math.min(Math.max(10,r.left),Math.max(10,window.innerWidth-width-10))+"px";
+    panel.style.top=Math.min(window.innerHeight-20,r.bottom+4)+"px";
+  }));
   nav.querySelectorAll(".menu-item").forEach(b=>b.addEventListener("click",()=>runMenuCommand(b.dataset.command)));
 }
 function runMenuCommand(c){
