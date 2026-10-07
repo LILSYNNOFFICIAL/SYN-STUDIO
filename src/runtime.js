@@ -17,8 +17,8 @@ export function validateRuntimeDocument(document) {
       if (!Number.isFinite(object.x) || !Number.isFinite(object.y) || !Number.isFinite(object.width) || !Number.isFinite(object.height)) {
         throw new Error("Invalid SYN object geometry");
       }
-      if (object.props?.src && !String(object.props.src).startsWith("data:image/")) {
-        throw new Error("SYN media must use embedded image data");
+      if (object.props?.src && !/^data:(image|audio|video)\//i.test(String(object.props.src))) {
+        throw new Error("SYN media must use embedded image, audio, or video data");
       }
       if (object.links && !Array.isArray(object.links)) throw new Error("Invalid SYN object links");
     }
@@ -127,13 +127,24 @@ export function renderScene(container, state, { onEvent } = {}) {
   const logical = state.document.viewport || { width: 1120, height: 640 };
   const scale = Math.min(1, responsiveScale(logical.width, logical.height, Math.max(1, container.clientWidth - 2), Math.max(1, container.clientHeight - 2)));
   for (const object of scene.objects) {
-    const element = doc.createElement(object.kind === "button" ? "button" : "div");
+    const tag = object.kind === "button" ? "button" : object.kind === "audio" ? "audio" : object.kind === "video" ? "video" : "div";
+    const element = doc.createElement(tag);
     element.className = "syn-runtime-object";
     element.dataset.id = object.id;
     element.dataset.kind = object.kind;
     element.setAttribute("aria-label", object.label || object.kind);
     element.setAttribute("aria-hidden", state.visible.get(object.id) === false ? "true" : "false");
     element.textContent = state.text.get(object.id) ?? object.props?.text ?? object.label ?? object.kind;
+    if (object.kind === "audio" || object.kind === "video") {
+      if (!object.props?.src) throw new Error("SYN media object is missing its source");
+      element.src = object.props.src;
+      element.controls = object.props.controls !== false;
+      element.autoplay = Boolean(object.props.autoplay);
+      element.loop = Boolean(object.props.loop);
+      element.muted = Boolean(object.props.muted);
+      element.preload = "metadata";
+      element.textContent = "";
+    }
     element.style.left = Math.round((object.x ?? 80) * scale) + "px";
     element.style.top = Math.round((object.y ?? 80) * scale) + "px";
     element.style.width = Math.max(20, Math.round((object.width ?? 180) * scale)) + "px";
