@@ -78,3 +78,14 @@ test("creates a stable responsive viewport and asset registry", () => {
   assert.deepEqual(document.viewport, { width: 1120, height: 640 });
   assert.deepEqual(document.assets, []);
 });
+
+test("supports bounded document history with undo and redo", async () => {
+  const { createHistory } = await import("../src/history.js");
+  const history = createHistory({ value: { version: 1 }, limit: 3 });
+  history.push({ value: { version: 2 } });
+  history.push({ value: { version: 3 } });
+  assert.deepEqual(history.undo(), { value: { version: 2 } });
+  assert.deepEqual(history.redo(), { value: { version: 3 } });
+  assert.equal(history.undo(), null);
+  assert.equal(history.canUndo(), false);
+});
