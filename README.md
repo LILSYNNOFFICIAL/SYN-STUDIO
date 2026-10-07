@@ -27,6 +27,6 @@ The runtime should sandbox documents, use explicit capabilities, avoid unrestric
 
 ## Status
 
-Experimental 0.2 development. The format is intentionally not frozen.
+Experimental 0.3 development. The format is intentionally not frozen.\n\nTry the included [hello.syn](./examples/hello.syn) in the [SYN Runtime](./runtime/) to see a real exported document transition between scenes.
 
 See [spec/FORMAT.md](./spec/FORMAT.md) for the format principles.
