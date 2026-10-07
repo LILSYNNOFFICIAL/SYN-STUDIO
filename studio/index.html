@@ -71,15 +71,22 @@
           <button id="inspectorToggle" class="mobile-inspector-toggle" aria-label="Toggle inspector" aria-expanded="false">Inspector</button>
         </div>
       </div>
-      <div id="stage" class="stage">
+      <div id="stage" class="stage" tabindex="0" aria-label="SYN canvas">
         <div class="canvas-hud canvas-hud-top">
           <span class="hud-pill" id="canvasModeLabel">DESIGN</span>
           <span class="hud-copy" id="canvasHint">Select an object to edit it</span>
         </div>
         <div id="emptyState" class="empty-state">
           <div class="empty-icon">S</div>
-          <h1>Build something.</h1>
-          <p>Choose a tool, then place an object on the canvas.</p>
+          <div class="empty-eyebrow">NEW CANVAS</div>
+          <h1>Start with an idea.</h1>
+          <p>Place an object, import media, or open the command palette. Your canvas is the workspace.</p>
+          <div class="empty-actions">
+            <button id="emptyText" class="empty-action primary">+ Add text <kbd>T</kbd></button>
+            <button id="emptyShape" class="empty-action">+ Add shape <kbd>R</kbd></button>
+            <button id="emptyMedia" class="empty-action">Import media</button>
+            <button id="emptyCommands" class="empty-action">Commands <kbd>⌘K</kbd></button>
+          </div>
         </div>
         <div class="canvas-hud canvas-hud-bottom">
           <span id="canvasStatus">Ready</span>
