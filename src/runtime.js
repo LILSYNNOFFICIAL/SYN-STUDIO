@@ -18,7 +18,7 @@ export function validateRuntimeDocument(document) {
         throw new Error("Invalid SYN object geometry");
       }
       if (object.props?.src && !/^data:(image|audio|video)\//i.test(String(object.props.src))) {
-        throw new Error("SYN media must use embedded image, audio, or video data");
+        throw new Error("SYN media must use embedded image data, audio, or video data");
       }
       if (object.links && !Array.isArray(object.links)) throw new Error("Invalid SYN object links");
     }
