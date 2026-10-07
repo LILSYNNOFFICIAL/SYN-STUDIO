@@ -101,10 +101,11 @@ export function renderScene(container, state, { onEvent } = {}) {
   }
 
   container.replaceChildren();
-  const fragment = document.createDocumentFragment();
+  const doc = container.ownerDocument || document;
+  const fragment = doc.createDocumentFragment();
 
   for (const object of scene.objects) {
-    const element = document.createElement(object.kind === "button" ? "button" : "div");
+    const element = doc.createElement(object.kind === "button" ? "button" : "div");
     element.className = "syn-runtime-object";
     element.dataset.id = object.id;
     element.dataset.kind = object.kind;
