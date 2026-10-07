@@ -30,7 +30,7 @@ test("builds scenes, objects, and declarative interactions", () => {
   const interaction = addInteraction(scene, {
     id: "interaction-1",
     event: { type: "click", target: button.id },
-    actions: [{ type: "animate", target: image.id, effect: "fade-in" }]
+    actions: [{ type: "object.show", target: image.id }]
   });
   assert.equal(scene, document.scenes[0]);
   assert.equal(button.kind, "button");
