@@ -103,7 +103,7 @@ function render() {
 }
 
 function exportSyn() {
-  const document = {
+  const synDocument = {
     syn: "0.1",
     type: "document",
     meta: { id: crypto.randomUUID(), title: state.title },
@@ -115,11 +115,11 @@ function exportSyn() {
     }]
   };
 
-  const blob = new Blob([JSON.stringify(document, null, 2) + "\n"], {
+  const blob = new Blob([JSON.stringify(synDocument, null, 2) + "\n"], {
     type: "application/vnd.syn+json"
   });
   const url = URL.createObjectURL(blob);
-  const anchor = Object.assign(document.createElement("a"), {
+  const anchor = Object.assign(window.document.createElement("a"), {
     href: url,
     download: "untitled.syn"
   });
