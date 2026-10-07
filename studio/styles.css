@@ -1445,3 +1445,7 @@ body{
   .canvas-hud-bottom{padding:5px 7px;border:1px solid #26364b;border-radius:7px;background:rgba(8,13,20,.82);backdrop-filter:blur(8px)}
   .hud-separator{height:9px}
 }
+
+.interaction-action-wrap{flex-wrap:wrap}
+.interaction-action-wrap .interaction-action,.interaction-action-wrap .interaction-target,.interaction-action-wrap .interaction-value,.interaction-action-wrap .interaction-link{min-width:130px}
+.interaction-link{flex:1 1 220px}
