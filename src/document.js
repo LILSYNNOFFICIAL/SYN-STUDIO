@@ -32,7 +32,7 @@ export function addObject(scene, {
   styles = {}
 } = {}) {
   if (!kind) throw new TypeError("Object kind is required");
-  const object = { id, kind, label, x, y, width, height, props, styles };
+  const object = { id, kind, label, x, y, width, height, rotation: 0, locked: false, hidden: false, props, styles };
   scene.objects.push(object);
   return object;
 }
@@ -65,7 +65,9 @@ export function parseSynDocument(source) {
 function validateSynDocument(document) {
   if (!document || document.syn !== "0.1" || document.type !== "document" || !document.meta ||
       typeof document.meta.id !== "string" || typeof document.meta.title !== "string" ||
-      !Array.isArray(document.scenes)) {
+      !document.viewport || !Number.isFinite(document.viewport.width) || !Number.isFinite(document.viewport.height) ||
+      document.viewport.width <= 0 || document.viewport.height <= 0 ||
+      !Array.isArray(document.assets) || !Array.isArray(document.scenes)) {
     throw new Error("Invalid SYN document");
   }
   for (const scene of document.scenes) {
@@ -74,9 +76,15 @@ function validateSynDocument(document) {
       throw new Error("Invalid SYN document");
     }
     for (const object of scene.objects) {
-      if (!object || typeof object.id !== "string" || typeof object.kind !== "string") {
+      if (!object || typeof object.id !== "string" || typeof object.kind !== "string" ||
+          !Number.isFinite(object.x) || !Number.isFinite(object.y) ||
+          !Number.isFinite(object.width) || !Number.isFinite(object.height) ||
+          object.width < 0 || object.height < 0) {
         throw new Error("Invalid SYN object");
       }
+      if (object.rotation != null && !Number.isFinite(object.rotation)) throw new Error("Invalid SYN object rotation");
+      if (object.locked != null && typeof object.locked !== "boolean") throw new Error("Invalid SYN object lock state");
+      if (object.hidden != null && typeof object.hidden !== "boolean") throw new Error("Invalid SYN object visibility state");
     }
   }
 }
