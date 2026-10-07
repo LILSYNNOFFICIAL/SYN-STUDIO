@@ -117,6 +117,8 @@ function applyStyles(element, object) {
   if (s.letterSpacing != null) element.style.letterSpacing = s.letterSpacing + "px";
   if (s.lineHeight != null) element.style.lineHeight = s.lineHeight;
   if (s.textAlign) element.style.textAlign = s.textAlign;
+  if (s.padding != null) element.style.padding = typeof s.padding === "number" ? s.padding + "px" : s.padding;
+  if (s.textTransform) element.style.textTransform = s.textTransform;
   if (s.boxShadow) element.style.boxShadow = s.boxShadow;
 }
 
@@ -153,6 +155,7 @@ export function renderScene(container, state, { onEvent } = {}) {
     element.style.top = Math.round((object.y ?? 80) * scale) + "px";
     element.style.width = Math.max(20, Math.round((object.width ?? 180) * scale)) + "px";
     element.style.height = Math.max(20, Math.round((object.height ?? 60) * scale)) + "px";
+    element.style.transform = "rotate(" + Number(object.rotation || 0) + "deg)";
     applyStyles(element, object);
     if (object.styles?.fontSize) element.style.fontSize = Math.max(8, object.styles.fontSize * scale) + "px";
     if (object.props?.src?.startsWith("data:image/")) {
