@@ -14,7 +14,8 @@ export function createHistory(initial, { limit = 100 } = {}) {
     undo(currentValue) {
       if (entries.length <= 1) return null;
       if (currentValue !== undefined) future.unshift(structuredClone(currentValue));
-      return structuredClone(entries.pop());
+      entries.pop();
+      return structuredClone(entries[entries.length - 1]);
     },
     redo() {
       if (!future.length) return null;
