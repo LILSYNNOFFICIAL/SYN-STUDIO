@@ -1468,3 +1468,50 @@ body{
 .interaction-list{padding:4px 10px 10px}
 .interaction{border-color:#27384e!important;background:#0c131d!important}
 @media (max-width:560px){.empty-state{padding:20px 16px;border-radius:13px}.empty-actions{grid-template-columns:1fr}.empty-state h1{font-size:19px}}
+
+/* Mobile product layout: prioritize hierarchy over squeezing the desktop shell into a phone. */
+@media (max-width:900px){
+  .topbar{height:78px!important;min-height:78px;display:grid!important;grid-template-columns:auto 1fr;grid-template-rows:42px 36px;align-items:center;padding:4px 8px 0!important;gap:0 8px!important;}
+  .brand{grid-column:1;grid-row:1;height:42px!important;min-width:0;}
+  .brand strong{font-size:13px!important;white-space:nowrap;}
+  .menu-bar{grid-column:2;grid-row:1;display:flex!important;width:auto!important;height:42px!important;border:0!important;overflow:visible!important;justify-content:flex-end;}
+  .menu-bar>.menu:not(.mobile-more-menu){display:none!important;}
+  .mobile-more-menu{display:block!important;flex:0 0 auto!important;}
+  .mobile-more-trigger{height:34px!important;padding:0 13px!important;border:1px solid #34445b!important;border-radius:9px!important;background:#121925!important;color:#eef4ff!important;font-size:11px!important;font-weight:750!important;}
+  .mobile-more-trigger::before{content:"☰ ";color:#8faeff;}
+  .mobile-more-trigger span{display:none;}
+  .mobile-more-panel{width:min(390px,calc(100vw - 16px))!important;max-width:calc(100vw - 16px)!important;max-height:72vh!important;padding:10px!important;}
+  .mobile-more-panel .menu-section{background:#101722;border:1px solid #273447;border-radius:10px;padding:7px;margin-bottom:7px;}
+  .mobile-more-panel .menu-section-title{padding:4px 6px 6px;font-size:9px;letter-spacing:.12em;color:#8faeff;}
+  .mobile-more-panel .menu-item{min-height:34px;padding:7px 8px;font-size:11px;}
+  .stage-toolbar{height:auto!important;min-height:104px!important;display:grid!important;grid-template-columns:1fr;grid-template-rows:34px 35px 35px;padding:4px 8px!important;gap:0!important;background:#0b1017;}
+  .scene-switcher{justify-self:stretch;display:flex;justify-content:center;min-width:0;}
+  .scene-switcher #sceneLabel{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .editor-tools,.workspace-controls{width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;white-space:nowrap;display:flex!important;justify-content:flex-start!important;}
+  .editor-tools::-webkit-scrollbar,.workspace-controls::-webkit-scrollbar{display:none;}
+  .editor-tool{flex:0 0 58px!important;height:31px!important;min-height:31px!important;padding:3px 6px!important;}
+  .editor-tool span{font-size:9px!important;}
+  .workspace-control,.zoom-control,.zoom-value{flex:0 0 auto!important;height:30px!important;min-height:30px!important;padding:4px 9px!important;font-size:10px!important;}
+  .toolbar-divider,.control-divider{display:none!important;}
+  .stage-area{min-height:calc(100vh - 78px)!important;}
+  .stage{margin:7px!important;min-height:calc(100vh - 78px - 120px)!important;overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;position:relative;}
+  .stage.mobile-canvas{background-color:#080b10;overscroll-behavior:contain;}
+  .canvas-hud-top{position:sticky!important;top:8px;left:8px;z-index:70;width:max-content;max-width:calc(100% - 16px);}
+  .canvas-hud-bottom{position:sticky!important;bottom:8px;left:8px;z-index:70;width:max-content;max-width:calc(100% - 16px);}
+  .canvas-hud .hud-copy{display:none;}
+  .studio-statusbar{min-height:28px!important;padding:0 9px!important;font-size:9px!important;}
+}
+@media (max-width:560px){
+  .topbar{height:76px!important;min-height:76px;}
+  .stage-area{min-height:calc(100vh - 76px)!important;}
+  .stage-toolbar{min-height:106px!important;grid-template-rows:34px 36px 36px;}
+  .stage{min-height:calc(100vh - 76px - 120px)!important;}
+  .editor-tool{flex-basis:54px!important;}
+  .workspace-control,.zoom-control,.zoom-value{font-size:9px!important;padding-left:8px!important;padding-right:8px!important;}
+  .mobile-more-panel .menu-section{margin-bottom:6px;}
+}
+/* Make the showcase itself read like a product specimen on phones rather than a shrunken desktop. */
+@media (max-width:560px){
+  .syn-object{font-size:max(11px, var(--syn-mobile-font, 14px));}
+  .syn-text{line-height:1.35!important;}
+}
