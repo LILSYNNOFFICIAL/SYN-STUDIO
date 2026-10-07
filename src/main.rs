@@ -147,7 +147,7 @@ fn demo() -> Document {
         json!({"fontSize":9,"fontWeight":800,"color":"#6e829c","letterSpacing":2})));
     home.objects.push(object("text", "18", 830., 99., 120., 62.,
         json!({"fontSize":58,"fontWeight":950,"color":"#ffffff"})));
-    home.objects.push(object("text", "OBJECTS", 830., 161., 100., 18,
+    home.objects.push(object("text", "OBJECTS", 830., 161., 100., 18.
         json!({"fontSize":9,"fontWeight":800,"color":"#6e829c","letterSpacing":2})));
     home.objects.push(object("text", "SOURCE  •  MEDIA  •  MOTION  •  EVENTS", 694., 204., 300., 20.
         json!({"fontSize":10,"fontWeight":750,"color":"#c4d0df","letterSpacing":1})));
@@ -555,7 +555,7 @@ fn duplicate_scene(doc:&mut Signal<Document>,history:&mut Signal<History>,scene:
 
 fn delete_scene(doc:&mut Signal<Document>,history:&mut Signal<History>,scene:&mut Signal<usize>,selected:&mut Signal<Option<String>>,status:&mut Signal<String>) {
     let cur=doc.read().clone();if cur.scenes.len()<=1{status.set("A document needs at least one scene".into());return}
-    history.write().push(&cur);let mut n=cur;let current_scene=*scene;n.scenes.remove(current_scene);if current_scene>=n.scenes.len(){scene.set(n.scenes.len()-1)}selected.set(None);doc.set(n);status.set("Scene deleted".into());
+    history.write().push(&cur);let mut n=cur;let current_scene=*scene.read();n.scenes.remove(current_scene);if current_scene>=n.scenes.len(){scene.set(n.scenes.len()-1)}selected.set(None);doc.set(n);status.set("Scene deleted".into());
 }
 
 #[component]
