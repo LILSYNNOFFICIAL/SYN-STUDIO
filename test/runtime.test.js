@@ -16,7 +16,7 @@ const demo = {
     {
       id: "scene-a",
       name: "A",
-      objects: [{ id: "button-1", kind: "button", label: "Next" }],
+      objects: [{ id: "button-1", kind: "button", label: "Next", x: 0, y: 0, width: 120, height: 50, props: {} }],
       interactions: [{
         id: "interaction-1",
         event: { type: "click", target: "button-1" },
@@ -53,4 +53,16 @@ test("rejects unknown executable actions", () => {
   const invalid = structuredClone(demo);
   invalid.scenes[0].interactions[0].actions = [{ type: "run.js" }];
   assert.throws(() => validateRuntimeDocument(invalid), /Unsupported SYN action/);
+});
+
+test("rejects remote media URLs", () => {
+  const invalid = structuredClone(demo);
+  invalid.scenes[0].objects[0].props = { src: "https://example.com/image.png" };
+  assert.throws(() => validateRuntimeDocument(invalid), /embedded image data/);
+});
+
+test("rejects broken interaction targets", () => {
+  const invalid = structuredClone(demo);
+  invalid.scenes[0].interactions[0].event.target = "missing";
+  assert.throws(() => validateRuntimeDocument(invalid), /target not found/);
 });
