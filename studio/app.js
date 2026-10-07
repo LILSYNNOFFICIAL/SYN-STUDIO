@@ -14,7 +14,11 @@ const state = {
   toolMode: "select",
   workspaceMode: "design",
   pan: { x: 0, y: 0 },
-  commandSettings: {}
+  commandSettings: {},
+  clipboard: null,
+  snap: true,
+  guides: false,
+  rulers: false
 };
 const home = addScene(state.document, { id: "scene-1", name: "SYN / Showcase", background: "#080b10" });
 const architecture = addScene(state.document, { id: "scene-2", name: "SYN / Architecture", background: "#0a0e14" });
@@ -328,7 +332,23 @@ function runMenuCommand(command,sourceMenu=""){
     "Show Timeline":()=>openCapabilityPanel("Timeline"),
     "Timeline":()=>openCapabilityPanel("Timeline"),
     "Show Interactions":()=>openCapabilityPanel("Interactions"),
-    "Interactions":()=>openCapabilityPanel("Interactions")
+    "Interactions":()=>openCapabilityPanel("Interactions"),
+    "Select All":()=>{state.selectedObjectIds=scene().objects.filter(o=>!o.hidden).map(o=>o.id);state.selectedObjectId=state.selectedObjectIds.at(-1)||null;render();},
+    "Select None":()=>{state.selectedObjectIds=[];state.selectedObjectId=null;render();},
+    "Select Similar":()=>{const object=selected();if(!object)return;state.selectedObjectIds=scene().objects.filter(o=>o.kind===object.kind).map(o=>o.id);state.selectedObjectId=state.selectedObjectIds.at(-1)||null;render();},
+    "Copy":()=>{const object=selected();if(object)state.clipboard=structuredClone(object);showToast(object?"Copied selected object.":"Select an object first.");},
+    "Cut":()=>{const object=selected();if(!object){showToast("Select an object first.");return;}state.clipboard=structuredClone(object);deleteSelectedObject();},
+    "Paste":()=>pasteClipboard(false),
+    "Paste in Place":()=>pasteClipboard(true),
+    "Rulers":()=>{state.rulers=!state.rulers;stage.classList.toggle("show-rulers",state.rulers);showToast("Rulers "+(state.rulers?"on":"off"));},
+    "Guides":()=>{state.guides=!state.guides;stage.classList.toggle("show-guides",state.guides);showToast("Guides "+(state.guides?"on":"off"));},
+    "Snap":()=>{state.snap=!state.snap;showToast("Snap "+(state.snap?"on":"off"));},
+    "Reset Workspace":()=>{closeCodeWorkspace();state.toolMode="select";state.pan={x:0,y:0};state.selectedObjectIds=[];state.selectedObjectId=null;fitCanvas();},
+    "Presentation Mode":()=>preview(),
+    "Open Recent":()=>openCapabilityPanel("Open Recent"),
+    "Save a Copy":()=>exportSyn(),
+    "Auto Save":()=>{state.commandSettings["Auto Save"]=state.commandSettings["Auto Save"]==="on"?"off":"on";showToast("Auto Save "+state.commandSettings["Auto Save"]);},
+    "Fit":()=>fitCanvas()
   };
   if(direct[command]){ direct[command](); return; }
 
@@ -357,7 +377,7 @@ function runMenuCommand(command,sourceMenu=""){
     return;
   }
   if(lower.includes("font") || lower.includes("typography") || lower.includes("color") || lower.includes("gradient") || lower.includes("shadow") || lower.includes("opacity") || lower.includes("alignment") || lower.includes("line height") || lower.includes("letter spacing")){
-    addStyleInspector();
+    if(selected()) addStyleInspector(); else openCapabilityPanel(command,sourceMenu);
     return;
   }
   if(lower.includes("code") || lower.includes("source") || lower.includes("javascript") || lower.includes("formatter") || lower.includes("linter") || lower.includes("type checker")){
@@ -828,6 +848,18 @@ function toggleSelectedVisibility() {
   object.hidden = !object.hidden;
   render();
 }
+function pasteClipboard(inPlace=false){
+  if(!state.clipboard){showToast("Clipboard is empty.");return;}
+  recordHistory();
+  const copy=structuredClone(state.clipboard);
+  copy.id="object-"+Date.now().toString(36);
+  if(!inPlace){copy.x=Math.min(viewport().width-copy.width,copy.x+24);copy.y=Math.min(viewport().height-copy.height,copy.y+24);}
+  scene().objects.push(copy);
+  state.selectedObjectId=copy.id;
+  state.selectedObjectIds=[copy.id];
+  render();
+}
+
 function setZoom(value){ state.zoom=Math.max(0.5,Math.min(2,Number(value)||1)); render(false); }
 function fitSelection(){
   const objects=selectedObjects();
@@ -895,6 +927,7 @@ function render(keepSelection = true) {
   const activeScene = scene();
   const logical = viewport();
   const scale = Math.min(1, responsiveScale(logical.width, logical.height, Math.max(1, stage.clientWidth - 2), Math.max(1, stage.clientHeight - 2)));
+  stage.style.backgroundPosition = state.pan.x+"px "+state.pan.y+"px";
   emptyState.hidden = activeScene.objects.some(object => !object.hidden);
   sceneLabel.textContent = activeScene.name;
   document.querySelector("#prevScene").disabled = state.sceneIndex === 0;
