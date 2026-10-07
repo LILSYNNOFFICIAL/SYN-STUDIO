@@ -58,6 +58,8 @@ export function parseSynDocument(source) {
   } catch {
     throw new Error("Invalid SYN document: malformed JSON");
   }
+  if (!document.viewport) document.viewport = { width: 1120, height: 640 };
+  if (!Array.isArray(document.assets)) document.assets = [];
   validateSynDocument(document);
   return document;
 }
