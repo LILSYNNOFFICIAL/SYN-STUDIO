@@ -1,4 +1,4 @@
-const CACHE = "syn-studio-v1";
+const CACHE = "syn-studio-v2";
 const CORE = [
   "./",
   "./index.html",
