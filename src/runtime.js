@@ -131,6 +131,8 @@ export function renderScene(container, state, { onEvent } = {}) {
     element.className = "syn-runtime-object";
     element.dataset.id = object.id;
     element.dataset.kind = object.kind;
+    element.setAttribute("aria-label", object.label || object.kind);
+    element.setAttribute("aria-hidden", state.visible.get(object.id) === false ? "true" : "false");
     element.textContent = state.text.get(object.id) ?? object.props?.text ?? object.label ?? object.kind;
     element.style.left = Math.round((object.x ?? 80) * scale) + "px";
     element.style.top = Math.round((object.y ?? 80) * scale) + "px";
