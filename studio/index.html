@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0c10">
+  <title>SYN Studio</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <strong>SYN Studio</strong>
+        <span class="status">creative document prototype</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="newScene" class="ghost">New Scene</button>
+      <button id="preview" class="ghost">Preview</button>
+      <button id="export" class="primary">Export .syn</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="toolbox panel">
+      <div class="eyebrow">CREATE</div>
+      <button class="tool active" data-tool="select">↖ <span>Select</span></button>
+      <button class="tool" data-tool="text">T <span>Text</span></button>
+      <button class="tool" data-tool="media">▧ <span>Media</span></button>
+      <button class="tool" data-tool="shape">◇ <span>Shape</span></button>
+      <button class="tool" data-tool="button">▣ <span>Button</span></button>
+      <button class="tool" data-tool="scene">◫ <span>Scene</span></button>
+      <div class="divider"></div>
+      <button class="tool ai" data-tool="ai">✦ <span>AI Assist</span></button>
+    </aside>
+
+    <section class="stage-area">
+      <div class="stage-toolbar">
+        <span id="sceneLabel">Scene 1</span>
+        <span class="zoom">100%</span>
+      </div>
+      <div id="stage" class="stage">
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon">S</div>
+          <h1>Build something.</h1>
+          <p>Choose a tool, then place an object on the canvas.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="inspector panel">
+      <div class="eyebrow">INSPECTOR</div>
+      <div id="inspectorContent" class="inspector-content">
+        <div class="inspector-empty">
+          <span>◇</span>
+          <p>Select an object to edit its properties.</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <section class="timeline panel">
+    <div class="timeline-head">
+      <div>
+        <div class="eyebrow">INTERACTION</div>
+        <strong>Event → Action</strong>
+      </div>
+      <button id="addInteraction" class="ghost">+ Add interaction</button>
+    </div>
+    <div id="interactionList" class="interaction-list">
+      <div class="interaction empty">No interactions yet. Add a button and give it something to do.</div>
+    </div>
+  </section>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
