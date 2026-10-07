@@ -59,20 +59,41 @@
           <button class="editor-tool" data-studio-tool="media" title="Import media">▧<span>Media</span></button>
         </div>
         <div class="workspace-controls">
-          <button class="workspace-control" data-workspace-mode="design">Design</button>
+          <button class="workspace-control active" data-workspace-mode="design">Design</button>
           <button class="workspace-control" data-workspace-mode="code">Code</button>
           <button id="toolbarPreview" class="workspace-control preview-control">Preview</button>
+          <span class="control-divider"></span>
+          <button id="toolbarZoomOut" class="zoom-control" aria-label="Zoom out" title="Zoom out">−</button>
+          <button id="toolbarZoomValue" class="zoom-value" aria-label="Current zoom">100%</button>
+          <button id="toolbarZoomIn" class="zoom-control" aria-label="Zoom in" title="Zoom in">+</button>
           <button id="toolbarFit" class="workspace-control" title="Fit canvas">Fit</button>
-          <span class="zoom">100%</span>
+          <button id="toolbarCommand" class="workspace-control command-control" title="Open command palette">⌘K</button>
           <button id="inspectorToggle" class="mobile-inspector-toggle" aria-label="Toggle inspector" aria-expanded="false">Inspector</button>
         </div>
       </div>
       <div id="stage" class="stage">
+        <div class="canvas-hud canvas-hud-top">
+          <span class="hud-pill" id="canvasModeLabel">DESIGN</span>
+          <span class="hud-copy" id="canvasHint">Select an object to edit it</span>
+        </div>
         <div id="emptyState" class="empty-state">
           <div class="empty-icon">S</div>
           <h1>Build something.</h1>
           <p>Choose a tool, then place an object on the canvas.</p>
         </div>
+        <div class="canvas-hud canvas-hud-bottom">
+          <span id="canvasStatus">Ready</span>
+          <span class="hud-separator"></span>
+          <span id="canvasObjectCount">0 objects</span>
+          <span class="hud-separator"></span>
+          <span id="canvasSceneCount">1 scene</span>
+        </div>
+      </div>
+      <div class="studio-statusbar" aria-live="polite">
+        <span class="status-dot"></span>
+        <span id="studioStatusText">Ready</span>
+        <span class="status-spacer"></span>
+        <span id="studioShortcutHint">V Select · M Move · H Pan · T Text · ⌘K Commands</span>
       </div>
     </section>
 
