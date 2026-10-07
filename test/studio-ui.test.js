@@ -226,3 +226,11 @@ test("SYN runtime carries editor rotation and typography styles into preview", a
   assert.equal(created.style.padding, "8px");
   assert.equal(created.style.textTransform, "uppercase");
 });
+
+
+test("mobile showcase has a deliberate portrait composition instead of a squeezed desktop canvas", () => {
+  const css = read("studio/styles.css");
+  assert.match(css, /home-title[^}]*left:20px!important/);
+  assert.match(css, /home-hero-panel[^}]*top:228px!important/);
+  assert.match(css, /resize-handle\{display:none!important/);
+});
