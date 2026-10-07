@@ -77,3 +77,8 @@ test("accepts safe URL and SYN navigation actions", () => {
   valid.scenes[0].interactions[0].actions = [{ type: "link.openSyn", target: "./other.syn" }];
   assert.doesNotThrow(() => validateRuntimeDocument(valid));
 });
+
+test("computes a bounded responsive scale for narrow viewports", async () => {
+  const { responsiveScale } = await import("../src/runtime.js");
+  assert.equal(responsiveScale(1120, 640, 360, 640), 0.32142857142857145);
+});
