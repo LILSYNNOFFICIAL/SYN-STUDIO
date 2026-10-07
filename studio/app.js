@@ -10,7 +10,11 @@ const state = {
   drag: null,
   history: null,
   zoom: 1,
-  selectedObjectIds: []
+  selectedObjectIds: [],
+  toolMode: "select",
+  workspaceMode: "design",
+  pan: { x: 0, y: 0 },
+  commandSettings: {}
 };
 const home = addScene(state.document, { id: "scene-1", name: "SYN / Showcase", background: "#080b10" });
 const architecture = addScene(state.document, { id: "scene-2", name: "SYN / Architecture", background: "#0a0e14" });
@@ -174,83 +178,339 @@ Window:["Workspace","Inspector","Layers","Scenes","Assets","Interactions","Timel
 Help:["Getting Started","Tutorials","Keyboard Shortcuts","SYN Format Documentation","Runtime Documentation","JavaScript API","Capability API","Examples","Templates","Troubleshooting","Developer Documentation","About SYN","About SYN Studio","Experimental Features"]
 };
 function escMenu(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+const MENU_GROUPS = {
+  File: ["File"],
+  Edit: ["Edit"],
+  View: ["View"],
+  Insert: ["Insert"],
+  Design: ["Format","Typography","Effects","Accessibility","Localization"],
+  Arrange: ["Arrange","Object","Layout","Responsive"],
+  Scene: ["Project","Scene","Timeline","Animation"],
+  Media: ["Media","Audio","Video","Assets"],
+  Interact: ["Interaction","Navigation","Logic","State","Signals"],
+  Data: ["Variables","Data","Database","API","Forms"],
+  Code: ["Web","Code","Debug"],
+  AI: ["AI"],
+  Publish: ["Version","Collaboration","Build","Package","Publish"],
+  Tools: ["Components","Symbols","Performance","Security","Tools","Window"],
+  Help: ["Help"]
+};
+
+function flattenMenuItems(){
+  return Object.entries(MENU_DATA).flatMap(([menu,items]) => items.map(name => ({ menu, name })));
+}
+
 function buildApplicationMenus(){
-  const nav=document.createElement("nav");nav.className="menu-bar";
-  nav.innerHTML=Object.entries(MENU_DATA).map(([name,items])=>'<div class="menu"><button class="menu-trigger">'+escMenu(name)+'</button><div class="menu-panel">'+items.map(item=>'<button class="menu-item" data-command="'+escMenu(item)+'">'+escMenu(item)+'</button>').join("")+'</div></div>').join("");
-  const actions=document.querySelector(".top-actions");actions.parentElement.insertBefore(nav,actions);
-  nav.querySelectorAll(".menu-trigger").forEach(b=>b.addEventListener("click",e=>{
-    const m=e.currentTarget.parentElement;
-    nav.querySelectorAll(".menu.open").forEach(x=>{if(x!==m)x.classList.remove("open")});
-    m.classList.toggle("open");
-    const panel=m.querySelector(".menu-panel");
-    if(m.classList.contains("open")){
-      const r=b.getBoundingClientRect();
-      const width=Math.min(360,Math.max(250,window.innerWidth-20));
-      const left=Math.min(Math.max(10,r.left),Math.max(10,window.innerWidth-width-10));
-      panel.style.width=width+"px"; panel.style.left=left+"px"; panel.style.top=Math.min(window.innerHeight-20,r.bottom+4)+"px";
-    } else { panel.style.left=""; panel.style.top=""; }
+  const nav=document.createElement("nav");
+  nav.className="menu-bar";
+  nav.setAttribute("aria-label","SYN Studio application menu");
+  nav.innerHTML=Object.entries(MENU_GROUPS).map(([name,menus])=>{
+    const sections=menus.map(section=>{
+      const items=MENU_DATA[section]||[];
+      return '<section class="menu-section"><div class="menu-section-title">'+escMenu(section)+'</div>'+
+        items.map(item=>'<button class="menu-item" data-command="'+escMenu(item)+'" data-menu="'+escMenu(section)+'">'+escMenu(item)+'</button>').join("")+
+      '</section>';
+    }).join("");
+    return '<div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false">'+escMenu(name)+'</button><div class="menu-panel">'+sections+'</div></div>';
+  }).join("");
+  document.querySelector(".brand").after(nav);
+
+  const closeMenus=except=>{
+    nav.querySelectorAll(".menu.open").forEach(m=>{
+      if(m!==except){
+        m.classList.remove("open");
+        m.querySelector(".menu-trigger")?.setAttribute("aria-expanded","false");
+      }
+    });
+  };
+
+  const positionPanel=(menu,button)=>{
+    const panel=menu.querySelector(".menu-panel");
+    if(!panel)return;
+    const r=button.getBoundingClientRect();
+    const width=Math.min(520,Math.max(300,window.innerWidth-24));
+    const left=Math.min(Math.max(12,r.left),Math.max(12,window.innerWidth-width-12));
+    const top=Math.min(window.innerHeight-24,r.bottom+5);
+    panel.style.width=width+"px";
+    panel.style.left=left+"px";
+    panel.style.top=top+"px";
+  };
+
+  nav.querySelectorAll(".menu-trigger").forEach(button=>button.addEventListener("click",event=>{
+    event.stopPropagation();
+    const menu=button.parentElement;
+    const opening=!menu.classList.contains("open");
+    closeMenus(menu);
+    menu.classList.toggle("open",opening);
+    button.setAttribute("aria-expanded",String(opening));
+    if(opening)positionPanel(menu,button);
   }));
-  window.addEventListener("resize",()=>nav.querySelectorAll(".menu.open").forEach(m=>{
-    const b=m.querySelector(".menu-trigger"),panel=m.querySelector(".menu-panel"); if(!b||!panel)return;
-    const r=b.getBoundingClientRect(),width=panel.offsetWidth||280;
-    panel.style.left=Math.min(Math.max(10,r.left),Math.max(10,window.innerWidth-width-10))+"px";
-    panel.style.top=Math.min(window.innerHeight-20,r.bottom+4)+"px";
+
+  nav.querySelectorAll(".menu-item").forEach(button=>button.addEventListener("click",()=>{
+    runMenuCommand(button.dataset.command,button.dataset.menu);
   }));
-  nav.querySelectorAll(".menu-item").forEach(b=>b.addEventListener("click",()=>runMenuCommand(b.dataset.command)));
+
+  window.addEventListener("resize",()=>{
+    nav.querySelectorAll(".menu.open").forEach(menu=>positionPanel(menu,menu.querySelector(".menu-trigger")));
+  });
+  document.addEventListener("click",event=>{
+    if(!event.target.closest(".menu"))closeMenus(null);
+  });
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape")closeMenus(null);
+  });
 }
-function runMenuCommand(c){
-  document.querySelectorAll(".menu.open").forEach(x=>x.classList.remove("open"));
-  const handlers={"New SYN":()=>document.querySelector("#newDocument").click(),"Open":()=>document.querySelector("#openSyn").click(),"Save":()=>document.querySelector("#export").click(),"Export":()=>document.querySelector("#export").click(),"Delete":()=>document.querySelector("#deleteObject").click(),"New Scene":()=>document.querySelector("#newScene").click(),"Text":()=>addCanvasObject("text"),"Image":()=>document.querySelector("#mediaInput").click(),"Button":()=>addCanvasObject("button"),"Shape":()=>addCanvasObject("shape"),"Preview":()=>document.querySelector("#preview").click(),"Code Editor":openCodeWorkspace,"Assets":openAssetBrowser,"Asset Browser":openAssetBrowser,"Command Palette":openCodePalette,"Fullscreen":()=>document.documentElement.requestFullscreen?.(),"Grid":()=>stage.classList.toggle("no-grid"),"Fit Canvas":fitCanvas,"Layers":openLayersPanel,"Align Left":()=>alignSelected("left"),"Align Center":()=>alignSelected("centerX"),"Align Right":()=>alignSelected("right"),"Align Top":()=>alignSelected("top"),"Align Middle":()=>alignSelected("centerY"),"Align Bottom":()=>alignSelected("bottom"),"Distribute Horizontally":()=>distributeSelected("x"),"Distribute Vertically":()=>distributeSelected("y"),"Duplicate":duplicateSelected,"Bring to Front":()=>moveSelectedLayer("front"),"Send to Back":()=>moveSelectedLayer("back"),"Lock":toggleSelectedLock,"Hide":toggleSelectedVisibility,"Show":toggleSelectedVisibility};
-  if(handlers[c])handlers[c]();else showToast(c+" is part of the SYN capability surface and is not enabled in this prototype yet.");
+
+function runMenuCommand(command,sourceMenu=""){
+  document.querySelectorAll(".menu.open").forEach(x=>{
+    x.classList.remove("open");
+    x.querySelector(".menu-trigger")?.setAttribute("aria-expanded","false");
+  });
+
+  const direct={
+    "New SYN":()=>document.querySelector("#newDocument")?.click(),
+    "Open":()=>document.querySelector("#openSyn")?.click(),
+    "Save":()=>exportSyn(),
+    "Save As":()=>exportSyn(),
+    "Export":()=>exportSyn(),
+    "Export SYN":()=>exportSyn(),
+    "Publish SYN":()=>exportSyn(),
+    "Delete":()=>deleteSelectedObject(),
+    "Undo":()=>undo(),
+    "Redo":()=>redo(),
+    "Duplicate":()=>duplicateSelected(),
+    "Grid":()=>stage.classList.toggle("no-grid"),
+    "Fit Canvas":()=>fitCanvas(),
+    "Fullscreen":()=>document.documentElement.requestFullscreen?.(),
+    "Layers":()=>openLayersPanel(),
+    "Show Layers":()=>openLayersPanel(),
+    "Show Assets":()=>openAssetBrowser(),
+    "Assets":()=>openAssetBrowser(),
+    "Asset Library":()=>openAssetBrowser(),
+    "Media Library":()=>openAssetBrowser(),
+    "Image":()=>document.querySelector("#mediaInput")?.click(),
+    "Import":()=>document.querySelector("#mediaInput")?.click(),
+    "Import Media":()=>document.querySelector("#mediaInput")?.click(),
+    "Preview":()=>preview(),
+    "Code Editor":()=>openCodeWorkspace(),
+    "Show Code":()=>openCodeWorkspace(),
+    "Source Viewer":()=>openCodeWorkspace(),
+    "JavaScript":()=>openCodeWorkspace(),
+    "Command Palette":()=>openCodePalette(),
+    "Align Left":()=>alignSelected("left"),
+    "Align Center":()=>alignSelected("centerX"),
+    "Align Right":()=>alignSelected("right"),
+    "Align Top":()=>alignSelected("top"),
+    "Align Middle":()=>alignSelected("centerY"),
+    "Align Bottom":()=>alignSelected("bottom"),
+    "Distribute Horizontally":()=>distributeSelected("x"),
+    "Distribute Vertically":()=>distributeSelected("y"),
+    "Bring to Front":()=>moveSelectedLayer("front"),
+    "Send to Back":()=>moveSelectedLayer("back"),
+    "Lock":()=>toggleSelectedLock(),
+    "Unlock":()=>toggleSelectedLock(),
+    "Hide":()=>toggleSelectedVisibility(),
+    "Show":()=>toggleSelectedVisibility(),
+    "New Scene":()=>addNewScene(),
+    "New from Template":()=>addNewScene("Template Scene"),
+    "Duplicate Scene":()=>duplicateCurrentScene(),
+    "Delete Scene":()=>deleteCurrentScene(),
+    "Rename Scene":()=>renameCurrentScene(),
+    "Rename":()=>renameSelectedObject(),
+    "Object Properties":()=>selectObject(state.selectedObjectId),
+    "Inspector":()=>selectObject(state.selectedObjectId),
+    "Object Inspector":()=>selectObject(state.selectedObjectId),
+    "Document Inspector":()=>renderDocumentInspector(),
+    "Fit Selection":()=>fitSelection(),
+    "Zoom In":()=>setZoom(state.zoom+0.1),
+    "Zoom Out":()=>setZoom(state.zoom-0.1),
+    "Actual Size":()=>setZoom(1),
+    "Show Timeline":()=>openCapabilityPanel("Timeline"),
+    "Timeline":()=>openCapabilityPanel("Timeline"),
+    "Show Interactions":()=>openCapabilityPanel("Interactions"),
+    "Interactions":()=>openCapabilityPanel("Interactions")
+  };
+  if(direct[command]){ direct[command](); return; }
+
+  const lower=command.toLowerCase();
+  if(/^(text|rich text|heading|paragraph|markdown|dynamic text|code block)$/.test(lower)){
+    addCanvasObject("text",command);
+    return;
+  }
+  if(/^(button)$/.test(lower)){
+    addCanvasObject("button");
+    return;
+  }
+  if(/^(shape|line|arrow|rectangle|circle|path)$/.test(lower)){
+    addCanvasObject("shape",command);
+    return;
+  }
+  if(/^(component|symbol|create component|create symbol|graphic symbol|movie symbol|interactive symbol|button symbol)$/.test(lower)){
+    addCanvasObject("shape",command);
+    const object=selected();
+    if(object)object.props={...object.props,componentType:command};
+    render();
+    return;
+  }
+  if(/^(audio|video|gif|svg|gallery|slideshow|embed|web content|external assets|documents)$/.test(lower) || lower.includes("import audio") || lower.includes("import video")){
+    document.querySelector("#mediaInput")?.click();
+    return;
+  }
+  if(lower.includes("font") || lower.includes("typography") || lower.includes("color") || lower.includes("gradient") || lower.includes("shadow") || lower.includes("opacity") || lower.includes("alignment") || lower.includes("line height") || lower.includes("letter spacing")){
+    addStyleInspector();
+    return;
+  }
+  if(lower.includes("code") || lower.includes("source") || lower.includes("javascript") || lower.includes("formatter") || lower.includes("linter") || lower.includes("type checker")){
+    openCodeWorkspace();
+    return;
+  }
+  if(lower.includes("debug") || lower.includes("console") || lower.includes("runtime") || lower.includes("error") || lower.includes("watch")){
+    openCapabilityPanel(command);
+    return;
+  }
+  if(lower.includes("api") || lower.includes("database") || lower.includes("data") || lower.includes("form") || lower.includes("variable") || lower.includes("state") || lower.includes("signal")){
+    openCapabilityPanel(command);
+    return;
+  }
+  if(lower.includes("preview") || lower.includes("presentation")){
+    preview();
+    return;
+  }
+  if(lower.includes("delete") || lower.includes("remove")){
+    deleteSelectedObject();
+    return;
+  }
+  if(lower.includes("new ") || lower.startsWith("create ") || lower.startsWith("add ")){
+    addCanvasObject("shape",command);
+    return;
+  }
+  openCapabilityPanel(command,sourceMenu);
 }
+
+function openCapabilityPanel(command,sourceMenu=""){
+  let panel=document.querySelector("#syn-capability-panel");
+  if(!panel){
+    panel=document.createElement("section");
+    panel.id="syn-capability-panel";
+    panel.className="modal";
+    panel.innerHTML='<div class="capability-card"><div class="capability-head"><div><div class="eyebrow">SYN TOOL</div><h2 id="capability-title"></h2><p id="capability-description"></p></div><button id="close-capability">Close</button></div><div class="capability-body"><label class="field">Configuration<textarea id="capability-value" rows="7" placeholder="Configure this command for the current authoring session..."></textarea></label><div class="capability-actions"><button id="capability-reset">Reset</button><button id="capability-apply" class="primary">Apply</button></div><div id="capability-status" class="capability-status"></div></div></div>';
+    document.body.appendChild(panel);
+    panel.querySelector("#close-capability").addEventListener("click",()=>panel.hidden=true);
+    panel.addEventListener("click",event=>{if(event.target===panel)panel.hidden=true});
+    panel.querySelector("#capability-reset").addEventListener("click",()=>{panel.querySelector("#capability-value").value=""});
+    panel.querySelector("#capability-apply").addEventListener("click",()=>{
+      const key=panel.dataset.command||"tool";
+      state.commandSettings[key]=panel.querySelector("#capability-value").value;
+      const object=selected();
+      if(object){
+        object.props={...object.props,toolSettings:{...(object.props?.toolSettings||{}),[key]:panel.querySelector("#capability-value").value}};
+        recordHistory();
+        render();
+      }
+      panel.querySelector("#capability-status").textContent="Configuration applied to this authoring session"+(object?" and selected object.":".");
+    });
+  }
+  panel.dataset.command=command;
+  panel.querySelector("#capability-title").textContent=command;
+  panel.querySelector("#capability-description").textContent=(sourceMenu?sourceMenu+" • ":"")+"This command is connected to the SYN authoring surface. Configure it here without leaving the document.";
+  panel.querySelector("#capability-value").value=state.commandSettings[command]||"";
+  panel.querySelector("#capability-status").textContent="";
+  panel.hidden=false;
+}
+
 function showToast(message){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";document.body.appendChild(t)}t.textContent=message;t.classList.add("show");clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove("show"),2200)}
 function openCodePalette(){let p=document.querySelector("#syn-command-palette");if(!p){p=document.createElement("div");p.id="syn-command-palette";p.className="modal";p.innerHTML='<div class="palette"><input id="command-search" placeholder="Search commands, tools, scenes..."><div id="command-results"></div></div>';document.body.appendChild(p);p.onclick=e=>{if(e.target===p)p.hidden=true};p.querySelector("input").addEventListener("input",renderCommandResults)}p.hidden=false;p.querySelector("input").focus();renderCommandResults()}
-function renderCommandResults(){const p=document.querySelector("#syn-command-palette"),q=p.querySelector("input").value.toLowerCase(),rows=Object.entries(MENU_DATA).flatMap(([menu,items])=>items.map(name=>({menu,name}))).filter(x=>!q||(x.name+" "+x.menu).toLowerCase().includes(q)).slice(0,50);p.querySelector("#command-results").innerHTML=rows.map(x=>'<button class="command-row" data-command="'+escMenu(x.name)+'"><span>'+escMenu(x.name)+'</span><small>'+escMenu(x.menu)+'</small></button>').join("");p.querySelectorAll(".command-row").forEach(b=>b.addEventListener("click",()=>{p.hidden=true;runMenuCommand(b.dataset.command)}))}
+function renderCommandResults(){
+  const p=document.querySelector("#syn-command-palette");
+  const q=p.querySelector("input").value.toLowerCase();
+  const rows=flattenMenuItems().filter(x=>!q||(x.name+" "+x.menu).toLowerCase().includes(q)).slice(0,80);
+  p.querySelector("#command-results").innerHTML=rows.map(x=>'<button class="command-row" data-command="'+escMenu(x.name)+'"><span>'+escMenu(x.name)+'</span><small>'+escMenu(x.menu)+'</small></button>').join("");
+  p.querySelectorAll(".command-row").forEach(b=>b.addEventListener("click",()=>{p.hidden=true;runMenuCommand(b.dataset.command)}));
+}
+function setWorkspaceMode(mode){
+  state.workspaceMode=mode;
+  document.body.classList.toggle("code-mode",mode==="code");
+  document.querySelectorAll("[data-workspace-mode]").forEach(button=>button.classList.toggle("active",button.dataset.workspaceMode===mode));
+  if(mode!=="code"){
+    const panel=document.querySelector("#syn-code-workspace");
+    if(panel)panel.hidden=true;
+  }
+  if(mode==="code")openCodeWorkspace();
+}
+
+function closeCodeWorkspace(){
+  const panel=document.querySelector("#syn-code-workspace");
+  if(panel)panel.hidden=true;
+  document.body.classList.remove("code-mode");
+  state.workspaceMode="design";
+  document.querySelectorAll("[data-workspace-mode]").forEach(button=>button.classList.toggle("active",button.dataset.workspaceMode==="design"));
+}
+
 function openCodeWorkspace(){
   let panel=document.querySelector("#syn-code-workspace");
   if(!panel){
     panel=document.createElement("section");
     panel.id="syn-code-workspace";
     panel.className="code-workspace";
-    panel.innerHTML='<div class="code-head"><strong>SYN SOURCE</strong><span>Live document model</span><div class="code-actions"><input id="syn-source-search" placeholder="Find"><button id="format-syn-source">Format</button><button id="apply-syn-source" class="primary">Apply</button></div></div><div class="code-editor-shell"><pre id="syn-source-lines" aria-hidden="true">1</pre><textarea id="syn-source" spellcheck="false" aria-label="SYN source editor"></textarea></div><div class="code-foot"><span id="syn-source-status">Visual and source views target the same SYN document.</span></div>';
-    document.querySelector(".timeline").parentElement.appendChild(panel);
+    panel.innerHTML='<div class="code-head"><div><div class="eyebrow">SOURCE</div><strong>SYN document code</strong><span class="code-subtitle">Structured source for the current project</span></div><div class="code-actions"><input id="syn-source-search" placeholder="Find in source"><button id="validate-syn-source">Validate</button><button id="format-syn-source">Format</button><button id="close-syn-source">Design</button><button id="apply-syn-source" class="primary">Apply</button></div></div><div class="code-editor-shell"><pre id="syn-source-lines" aria-hidden="true">1</pre><textarea id="syn-source" spellcheck="false" aria-label="SYN source editor"></textarea></div><div class="code-foot"><span id="syn-source-status">Editing the SYN source directly. Canvas manipulation is disabled in Code mode.</span><span>Ctrl/Cmd+K opens commands</span></div>';
+    document.querySelector(".stage-area").appendChild(panel);
     panel.querySelector("#format-syn-source").addEventListener("click",()=>{
-      try { panel.querySelector("#syn-source").value=JSON.stringify(JSON.parse(panel.querySelector("#syn-source").value),null,2)+"\n"; panel.querySelector("#syn-source-status").textContent="Formatted."; }
-      catch(error) { panel.querySelector("#syn-source-status").textContent=error.message; }
+      try {
+        panel.querySelector("#syn-source").value=JSON.stringify(JSON.parse(panel.querySelector("#syn-source").value),null,2)+"\n";
+        panel.querySelector("#syn-source-status").textContent="Formatted.";
+        syncCodeLines(panel);
+      } catch(error) {
+        panel.querySelector("#syn-source-status").textContent=error.message;
+      }
     });
+    panel.querySelector("#validate-syn-source").addEventListener("click",()=>{
+      try {
+        createRuntimeState(JSON.parse(panel.querySelector("#syn-source").value));
+        panel.querySelector("#syn-source-status").textContent="Valid SYN document.";
+      } catch(error) {
+        panel.querySelector("#syn-source-status").textContent="Validation error: "+error.message;
+      }
+    });
+    panel.querySelector("#close-syn-source").addEventListener("click",closeCodeWorkspace);
     const source=panel.querySelector("#syn-source");
-    const lines=panel.querySelector("#syn-source-lines");
-    const syncLines=()=>{ lines.textContent=Array.from({length:Math.max(1,source.value.split("\n").length)},(_,i)=>i+1).join("\n"); lines.scrollTop=source.scrollTop; };
-    source.addEventListener("input",syncLines);
-    source.addEventListener("scroll",()=>{ lines.scrollTop=source.scrollTop; });
+    source.addEventListener("input",()=>syncCodeLines(panel));
+    source.addEventListener("scroll",()=>{panel.querySelector("#syn-source-lines").scrollTop=source.scrollTop;});
     panel.querySelector("#syn-source-search").addEventListener("input",event=>{
-      const source=panel.querySelector("#syn-source");
       const q=event.target.value;
-      if(!q) { source.focus(); return; }
+      if(!q){source.focus();return;}
       const index=source.value.toLowerCase().indexOf(q.toLowerCase());
-      if(index>=0) { source.focus(); source.setSelectionRange(index,index+q.length); }
+      if(index>=0){source.focus();source.setSelectionRange(index,index+q.length);}
     });
     panel.querySelector("#apply-syn-source").addEventListener("click",()=>{
       try {
-        const parsed=JSON.parse(panel.querySelector("#syn-source").value);
+        const parsed=JSON.parse(source.value);
         createRuntimeState(parsed);
         recordHistory();
         state.document=parsed;
         state.sceneIndex=0;
         state.selectedObjectId=null;
         state.selectedObjectIds=[];
+        state.pan={x:0,y:0};
         state.history=createHistory(state.document,{limit:100});
         render();
         panel.querySelector("#syn-source-status").textContent="Applied and validated.";
       } catch(error) {
-        panel.querySelector("#syn-source-status").textContent=error.message;
+        panel.querySelector("#syn-source-status").textContent="Cannot apply: "+error.message;
       }
     });
   }
   panel.hidden=false;
+  document.body.classList.add("code-mode");
+  state.workspaceMode="code";
+  document.querySelectorAll("[data-workspace-mode]").forEach(button=>button.classList.toggle("active",button.dataset.workspaceMode==="code"));
   panel.querySelector("#syn-source").value=serializeSynDocument(state.document);
-  const source=panel.querySelector("#syn-source"); const lines=panel.querySelector("#syn-source-lines"); lines.textContent=Array.from({length:Math.max(1,source.value.split("\n").length)},(_,i)=>i+1).join("\n"); lines.scrollTop=source.scrollTop;
-  panel.scrollIntoView({behavior:"smooth"});
+  syncCodeLines(panel);
+  panel.querySelector("#syn-source").focus();
+}
+
+function syncCodeLines(panel){
+  const source=panel.querySelector("#syn-source");
+  panel.querySelector("#syn-source-lines").textContent=Array.from({length:Math.max(1,source.value.split("\n").length)},(_,i)=>i+1).join("\n");
 }
 
 function addStyleInspector(){
@@ -517,7 +777,17 @@ function toggleSelectedVisibility() {
   object.hidden = !object.hidden;
   render();
 }
-function fitCanvas() { state.zoom = 1; render(false); }
+function setZoom(value){ state.zoom=Math.max(0.5,Math.min(2,Number(value)||1)); render(false); }
+function fitSelection(){
+  const objects=selectedObjects();
+  if(!objects.length){fitCanvas();return;}
+  const minX=Math.min(...objects.map(o=>o.x)), minY=Math.min(...objects.map(o=>o.y));
+  const maxX=Math.max(...objects.map(o=>o.x+o.width)), maxY=Math.max(...objects.map(o=>o.y+o.height));
+  const vp=viewport();
+  state.pan={x:Math.max(-200,Math.min(200,(vp.width/2-(minX+maxX)/2))),y:Math.max(-160,Math.min(160,(vp.height/2-(minY+maxY)/2)))};
+  render(false);
+}
+function fitCanvas() { state.zoom = 1; state.pan={x:0,y:0}; render(false); }
 function selectedObjects() { return state.selectedObjectIds.map(id => scene().objects.find(object => object.id === id)).filter(Boolean); }
 function alignSelected(mode) {
   const objects = selectedObjects();
@@ -588,8 +858,8 @@ function render(keepSelection = true) {
     el.hidden = Boolean(object.hidden);
     el.setAttribute("aria-label", object.label || object.kind);
     el.setAttribute("aria-selected", state.selectedObjectIds.includes(object.id) ? "true" : "false");
-    el.style.left = Math.round(object.x * scale) + "px";
-    el.style.top = Math.round(object.y * scale) + "px";
+    el.style.left = Math.round(object.x * scale + state.pan.x) + "px";
+    el.style.top = Math.round(object.y * scale + state.pan.y) + "px";
     el.style.width = Math.max(20, Math.round(object.width * scale)) + "px";
     el.style.height = Math.max(20, Math.round(object.height * scale)) + "px";
     el.style.transform = "rotate(" + Number(object.rotation || 0) + "deg)";
@@ -619,7 +889,7 @@ function render(keepSelection = true) {
       event.stopPropagation();
       beginInlineEdit(object, scale);
     });
-    if (!object.locked && !object.hidden) el.addEventListener("pointerdown", event => beginDrag(event, object, scale));
+    if (!object.locked && !object.hidden && state.toolMode==="move") el.addEventListener("pointerdown", event => beginDrag(event, object, scale));
     stage.appendChild(el);
     if (state.selectedObjectIds.includes(object.id) && !object.locked && !object.hidden) {
       for (const direction of ["nw","ne","sw","se"]) {
@@ -627,8 +897,8 @@ function render(keepSelection = true) {
         handle.className = "resize-handle resize-" + direction;
         const hx = direction.includes("e") ? (object.x + object.width) : object.x;
         const hy = direction.includes("s") ? (object.y + object.height) : object.y;
-        handle.style.left = Math.round(hx * scale) + "px";
-        handle.style.top = Math.round(hy * scale) + "px";
+        handle.style.left = Math.round(hx * scale + state.pan.x) + "px";
+        handle.style.top = Math.round(hy * scale + state.pan.y) + "px";
         handle.dataset.id = object.id;
         handle.dataset.direction = direction;
         handle.setAttribute("aria-label", "Resize " + object.label);
@@ -669,7 +939,7 @@ function beginInlineEdit(object, scale) {
   });
 }
 function beginDrag(event, object, scale) {
-  if (event.button !== 0 || object.locked) return;
+  if (event.button !== 0 || object.locked || state.toolMode!=="move") return;
   event.preventDefault();
   const startX = event.clientX, startY = event.clientY;
   const originX = object.x, originY = object.y;
@@ -729,6 +999,7 @@ function beginResize(event, object, direction, scale) {
 }
 
 function preview() {
+  setWorkspaceMode("design");
   const runtime = createRuntimeState(structuredClone(state.document));
   const win = window.open("", "_blank");
   if (!win) return alert("Allow pop-ups to preview SYN.");
@@ -824,7 +1095,7 @@ document.querySelectorAll(".tool").forEach(button => {
     if (tool === "ai") alert("SYN AI will edit this document model directly. Runtime and authoring foundations come first.");
   });
 });
-stage.addEventListener("click", () => selectObject(null));
+stage.addEventListener("click", () => { if(state.toolMode!=="pan") selectObject(null); });
 deleteButton.addEventListener("click", deleteSelectedObject);
 document.querySelector("#addInteraction").addEventListener("click", addNewInteraction);
 document.querySelector("#export").addEventListener("click", exportSyn);
@@ -858,6 +1129,31 @@ document.querySelector("#openSyn").addEventListener("change", async event => {
 });
 
 document.querySelector("#preview").addEventListener("click", preview);
+document.querySelector("#toolbarPreview")?.addEventListener("click",preview);
+document.querySelector("#toolbarFit")?.addEventListener("click",fitCanvas);
+document.querySelectorAll("[data-workspace-mode]").forEach(button=>button.addEventListener("click",()=>setWorkspaceMode(button.dataset.workspaceMode)));
+document.querySelectorAll("[data-studio-tool]").forEach(button=>button.addEventListener("click",()=>{
+  const tool=button.dataset.studioTool;
+  state.toolMode=tool;
+  document.querySelectorAll("[data-studio-tool]").forEach(item=>item.classList.toggle("active",item.dataset.studioTool===tool));
+  if(["text","shape","button","media"].includes(tool)) addCanvasObject(tool);
+  stage.classList.toggle("pan-mode",tool==="pan");
+}));
+stage.addEventListener("pointerdown",event=>{
+  if(state.toolMode!=="pan" || event.target.closest(".syn-object,.resize-handle"))return;
+  event.preventDefault();
+  const startX=event.clientX,startY=event.clientY,origin={...state.pan};
+  const move=next=>{
+    state.pan={x:origin.x+(next.clientX-startX),y:origin.y+(next.clientY-startY)};
+    render(false);
+  };
+  const end=()=>{
+    window.removeEventListener("pointermove",move);
+    window.removeEventListener("pointerup",end);
+  };
+  window.addEventListener("pointermove",move);
+  window.addEventListener("pointerup",end,{once:true});
+});
 window.addEventListener("resize", () => render(false));
 document.addEventListener("keydown", event => {
   const mod = event.metaKey || event.ctrlKey;
