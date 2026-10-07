@@ -139,18 +139,63 @@ function renderInteractions() {
     interactionList.innerHTML = '<div class="interaction empty">No interactions yet. Add a Button and give it something to do.</div>';
     return;
   }
+  const objectOptions = scene().objects.map(object => `<option value="${escapeHtml(object.id)}">${escapeHtml(object.label)}</option>`).join("");
+  const sceneOptions = state.document.scenes.map(target => `<option value="${escapeHtml(target.id)}">${escapeHtml(target.name)}</option>`).join("");
   interactionList.innerHTML = scene().interactions.map(item => {
+    const action = item.actions[0] ?? { type: "scene.next" };
     const source = scene().objects.find(object => object.id === item.event.target);
-    const action = item.actions[0];
-    const targetScene = state.document.scenes.find(s => s.id === action?.target);
-    const actionLabel = action?.type === "scene.goto" ? `Go to ${targetScene?.name ?? "scene"}` : action?.type ?? "none";
+    const targetOptions = action.type === "scene.goto" ? sceneOptions : objectOptions;
     return `<div class="interaction">
-      <div><strong>WHEN</strong> <code>click</code> <span class="target-chip">${escapeHtml(source?.label ?? item.event.target)}</span></div>
-      <div class="flow">→</div>
-      <div><strong>THEN</strong> <code>${escapeHtml(actionLabel)}</code></div>
+      <div class="interaction-rule"><strong>WHEN</strong> <span class="target-chip">${escapeHtml(source?.label ?? item.event.target)}</span> <code>clicked</code></div>
+      <span class="flow">→</span>
+      <div class="interaction-rule">
+        <strong>THEN</strong>
+        <select class="interaction-action" data-id="${item.id}">
+          <option value="scene.next" ${action.type === "scene.next" ? "selected" : ""}>Next scene</option>
+          <option value="scene.goto" ${action.type === "scene.goto" ? "selected" : ""}>Go to scene</option>
+          <option value="object.show" ${action.type === "object.show" ? "selected" : ""}>Show object</option>
+          <option value="object.hide" ${action.type === "object.hide" ? "selected" : ""}>Hide object</option>
+          <option value="object.setText" ${action.type === "object.setText" ? "selected" : ""}>Set object text</option>
+        </select>
+        ${action.type !== "scene.next" ? `<select class="interaction-target" data-id="${item.id}">${targetOptions}</select>` : ""}
+        ${action.type === "object.setText" ? `<input class="interaction-value" data-id="${item.id}" value="${escapeHtml(action.value ?? "")}" placeholder="Text">` : ""}
+      </div>
       <button class="remove-interaction" data-id="${item.id}" aria-label="Remove interaction">×</button>
     </div>`;
   }).join("");
+
+  scene().interactions.forEach(item => {
+    const actionSelect = interactionList.querySelector(`.interaction-action[data-id="${item.id}"]`);
+    if (!actionSelect) return;
+    actionSelect.addEventListener("change", () => {
+      const action = item.actions[0] ?? { type: "scene.next" };
+      action.type = actionSelect.value;
+      delete action.target;
+      delete action.value;
+      if (action.type === "scene.goto") action.target = state.document.scenes[state.sceneIndex + 1]?.id ?? state.document.scenes[0]?.id;
+      if (["object.show","object.hide","object.setText"].includes(action.type)) action.target = scene().objects[0]?.id;
+      if (action.type === "object.setText") action.value = "";
+      item.actions = [action];
+      renderInteractions();
+    });
+  });
+
+  interactionList.querySelectorAll(".interaction-target").forEach(select => {
+    select.addEventListener("change", () => {
+      const item = scene().interactions.find(value => value.id === select.dataset.id);
+      if (item) item.actions[0].target = select.value;
+    });
+    const action = scene().interactions.find(value => value.id === select.dataset.id)?.actions[0];
+    if (action?.target) select.value = action.target;
+  });
+
+  interactionList.querySelectorAll(".interaction-value").forEach(input => {
+    input.addEventListener("input", () => {
+      const item = scene().interactions.find(value => value.id === input.dataset.id);
+      if (item) item.actions[0].value = input.value;
+    });
+  });
+
   interactionList.querySelectorAll(".remove-interaction").forEach(button => {
     button.addEventListener("click", () => removeInteraction(button.dataset.id));
   });
