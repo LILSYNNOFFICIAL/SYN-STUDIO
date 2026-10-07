@@ -52,7 +52,7 @@ button { font: inherit; }
 .brand strong { display: block; font-size: 14px; }
 .status { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
 
-.top-actions { gap: 8px; }\nbutton:disabled { opacity: .35; cursor: not-allowed; }\nbutton.danger { color: #ff9dbf; }\n.icon-button { width: 28px; height: 26px; padding: 0; display: grid; place-items: center; }\n.scene-switcher { display: flex; align-items: center; gap: 8px; }
+.top-actions { gap: 8px; }\n.file-button { display: inline-flex; align-items: center; position: relative; }\n.file-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }\nbutton:disabled { opacity: .35; cursor: not-allowed; }\nbutton.danger { color: #ff9dbf; }\n.icon-button { width: 28px; height: 26px; padding: 0; display: grid; place-items: center; }\n.scene-switcher { display: flex; align-items: center; gap: 8px; }
 button {
   border: 1px solid var(--line);
   border-radius: 7px;
