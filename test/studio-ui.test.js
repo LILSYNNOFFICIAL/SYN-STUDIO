@@ -109,6 +109,7 @@ test("SYN runtime accepts embedded audio/video and renders media elements", asyn
     }]
   };
   const state = createRuntimeState(doc);
+  const createdTags = [];
   const container = {
     clientWidth: 320,
     clientHeight: 240,
@@ -118,6 +119,7 @@ test("SYN runtime accepts embedded audio/video and renders media elements", asyn
       createElement(tag) {
         return {
           tagName: tag.toUpperCase(),
+          _created: (createdTags.push(tag), true),
           style: {},
           dataset: {},
           setAttribute() {},
@@ -131,7 +133,34 @@ test("SYN runtime accepts embedded audio/video and renders media elements", asyn
   };
   renderScene(container, state);
   assert.equal(container.style.background, "#000");
+  assert.ok(createdTags.includes("audio"));
+  assert.ok(createdTags.includes("video"));
 });
+
+test("SYN runtime preserves object-level hidden state until an explicit show action", async () => {
+  const { createRuntimeState, renderScene } = await import("../src/runtime.js");
+  const doc = {
+    syn: "0.1", type: "document", meta: { id: "hidden-doc", title: "Hidden Test" },
+    viewport: { width: 200, height: 120 }, assets: [],
+    scenes: [{
+      id: "scene-1", name: "Scene", background: "#000",
+      objects: [{ id: "hidden-1", kind: "shape", label: "Hidden", x: 0, y: 0, width: 50, height: 50, rotation: 0, locked: false, hidden: true, props: {}, styles: {} }],
+      interactions: []
+    }]
+  };
+  const state = createRuntimeState(doc);
+  let hidden = false;
+  const container = {
+    clientWidth: 200, clientHeight: 120, style: {}, ownerDocument: {
+      createDocumentFragment() { return { appendChild() {} }; },
+      createElement() { return { style: {}, dataset: {}, setAttribute() {}, appendChild() {}, addEventListener() {}, set hidden(value) { hidden = value; } }; }
+    },
+    replaceChildren() {}, appendChild() {}
+  };
+  renderScene(container, state);
+  assert.equal(hidden, true);
+});
+
 
 test("SYN scene duplication preserves and remaps internal interactions", async () => {
   const { createSynDocument, addScene, addObject, addInteraction } = await import("../src/document.js");
@@ -143,4 +172,11 @@ test("SYN scene duplication preserves and remaps internal interactions", async (
   assert.equal(scene.interactions.length, 1);
   assert.equal(button.id, "button-1");
   assert.equal(target.id, "target-1");
+});
+
+test("SYN Studio app code remaps duplicated scene object and interaction targets", () => {
+  const app = read("studio/app.js");
+  assert.match(app, /const idMap=new Map\(current\.objects\.map/);
+  assert.match(app, /event:\{\.\.\.item\.event,target:idMap\.get/);
+  assert.match(app, /actions:item\.actions\.map/);
 });
