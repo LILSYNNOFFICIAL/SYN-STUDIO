@@ -208,7 +208,7 @@ function openCodePalette(){let p=document.querySelector("#syn-command-palette");
 function renderCommandResults(){const p=document.querySelector("#syn-command-palette"),q=p.querySelector("input").value.toLowerCase(),rows=Object.entries(MENU_DATA).flatMap(([menu,items])=>items.map(name=>({menu,name}))).filter(x=>!q||(x.name+" "+x.menu).toLowerCase().includes(q)).slice(0,50);p.querySelector("#command-results").innerHTML=rows.map(x=>'<button class="command-row" data-command="'+escMenu(x.name)+'"><span>'+escMenu(x.name)+'</span><small>'+escMenu(x.menu)+'</small></button>').join("");p.querySelectorAll(".command-row").forEach(b=>b.addEventListener("click",()=>{p.hidden=true;runMenuCommand(b.dataset.command)}))}
 function openCodeWorkspace(){
   let panel=document.querySelector("#syn-code-workspace");
-  if(!panel){panel=document.createElement("section");panel.id="syn-code-workspace";panel.className="code-workspace";panel.innerHTML='<div class="code-head"><strong>SYN SOURCE</strong><span>Live document model</span></div><textarea id="syn-source" spellcheck="false"></textarea><div class="code-foot"><button id="apply-syn-source" class="primary">Apply Source</button><span>Visual editing and source editing target the same SYN document. JavaScript remains sandboxed and capability-gated.</span></div>';document.querySelector(".timeline").parentElement.appendChild(panel);panel.querySelector("#apply-syn-source").addEventListener("click",()=>{try{const parsed=JSON.parse(panel.querySelector("#syn-source").value);createRuntimeState(parsed);state.document=parsed;state.sceneIndex=0;state.selectedObjectId=null;render();showToast("Source applied to the live document.")}catch(e){showToast(e.message)}})}
+  if(!panel){panel=document.createElement("section");panel.id="syn-code-workspace";panel.className="code-workspace";panel.innerHTML='<div class="code-head"><strong>SYN SOURCE</strong><span>Live document model</span></div><textarea id="syn-source" spellcheck="false"></textarea><div class="code-foot"><button id="apply-syn-source" class="primary">Apply Source</button><span>Visual editing and source editing target the same SYN document. JavaScript remains sandboxed and capability-gated.</span></div>';document.querySelector(".timeline").parentElement.appendChild(panel);panel.querySelector("#apply-syn-source").addEventListener("click",()=>{try{const parsed=JSON.parse(panel.querySelector("#syn-source").value);createRuntimeState(parsed);recordHistory();state.document=parsed;state.sceneIndex=0;state.selectedObjectId=null;render();showToast("Source applied to the live document.")}catch(e){showToast(e.message)}})}
   panel.hidden=false;panel.querySelector("#syn-source").value=serializeSynDocument(state.document);panel.scrollIntoView({behavior:"smooth"});
 }
 function addStyleInspector(){
@@ -295,10 +295,19 @@ function selectObject(id, additive = false) {
     <div class="field-row"><label class="field">Font<select id="objectFont"><option>Inter</option><option>Georgia</option><option>Arial</option><option>Courier New</option><option>Trebuchet MS</option><option>Times New Roman</option><option>system-ui</option></select></label><label class="field">Size<input id="objectFontSize" type="number" min="8" value="${object.styles?.fontSize ?? 16}"></label></div>
     <div class="field-row"><label class="field">Color<input id="objectColor" type="color" value="${/^#[0-9a-f]{6}$/i.test(object.styles?.color ?? "") ? object.styles.color : "#eef1f6"}"></label><label class="field">Radius<input id="objectRadius" type="number" min="0" value="${object.styles?.borderRadius ?? 0}"></label></div>
     <label class="field">Background<input id="objectBackground" value="${escapeHtml(object.styles?.background ?? "")}"></label>
-    <div class="interaction"><div>Kind</div><code>${escapeHtml(object.kind)}</code></div>
+    <div class="interaction"><div>Kind</div><code>${escapeHtml(object.kind)}</code></div>\n    <div class="inspector-actions">\n      <button type="button" id="duplicateSelected">Duplicate</button>\n      <button type="button" id="frontSelected">Bring front</button>\n      <button type="button" id="backSelected">Send back</button>\n      <button type="button" id="lockSelected">${object.locked ? "Unlock" : "Lock"}</button>\n      <button type="button" id="hideSelected">${object.hidden ? "Show" : "Hide"}</button>\n    </div>
   `;
   const font=inspector.querySelector("#objectFont"); font.value=object.styles?.fontFamily || "Inter";
-  for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectText","objectFont","objectFontSize","objectColor","objectRadius","objectBackground"]) inspector.querySelector("#"+id).addEventListener("input", updateSelectedObject);
+  inspector.querySelector("#duplicateSelected").addEventListener("click", duplicateSelected);
+  inspector.querySelector("#frontSelected").addEventListener("click", () => moveSelectedLayer("front"));
+  inspector.querySelector("#backSelected").addEventListener("click", () => moveSelectedLayer("back"));
+  inspector.querySelector("#lockSelected").addEventListener("click", toggleSelectedLock);
+  inspector.querySelector("#hideSelected").addEventListener("click", toggleSelectedVisibility);
+  for (const id of ["objectLabel","objectX","objectY","objectW","objectH","objectText","objectFont","objectFontSize","objectColor","objectRadius","objectBackground"]) {
+    inspector.querySelector("#"+id).addEventListener("focus", () => { state._editingInspector = false; });
+    inspector.querySelector("#"+id).addEventListener("input", updateSelectedObject);
+  }
+  inspector.addEventListener("focusout", () => { state._editingInspector = false; }, { once: true });
 }
 function updateSelectedObject() {
   const object = selected(); if (!object) return;
@@ -310,8 +319,7 @@ function updateSelectedObject() {
   object.height = Math.max(20, Number(inspector.querySelector("#objectH").value) || 20);
   object.props = { ...object.props, text: inspector.querySelector("#objectText").value };
   object.styles = { ...object.styles, fontFamily: inspector.querySelector("#objectFont").value, fontSize: Number(inspector.querySelector("#objectFontSize").value) || 16, color: inspector.querySelector("#objectColor").value, borderRadius: Number(inspector.querySelector("#objectRadius").value) || 0, background: inspector.querySelector("#objectBackground").value };
-  render(false); selectObject(object.id);
-  state._editingInspector = false;
+  render(false);
 }
 function deleteSelectedObject() {
   if (!state.selectedObjectId) return;
@@ -390,6 +398,7 @@ function renderInteractions() {
     const actionSelect = interactionList.querySelector(`.interaction-action[data-id="${item.id}"]`);
     if (!actionSelect) return;
     actionSelect.addEventListener("change", () => {
+      recordHistory();
       const action = item.actions[0] ?? { type: "scene.next" };
       action.type = actionSelect.value;
       delete action.target;
@@ -404,6 +413,7 @@ function renderInteractions() {
 
   interactionList.querySelectorAll(".interaction-target").forEach(select => {
     select.addEventListener("change", () => {
+      recordHistory();
       const item = scene().interactions.find(value => value.id === select.dataset.id);
       if (item) item.actions[0].target = select.value;
     });
@@ -413,6 +423,7 @@ function renderInteractions() {
 
   interactionList.querySelectorAll(".interaction-value").forEach(input => {
     input.addEventListener("input", () => {
+      recordHistory();
       const item = scene().interactions.find(value => value.id === input.dataset.id);
       if (item) item.actions[0].value = input.value;
     });
