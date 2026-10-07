@@ -170,7 +170,7 @@ button.ghost { background: transparent; }
   font-size: 11px;
 }
 .interaction.empty { color: var(--muted); }
-.interaction code { color: #ff9ee9; }\n.interaction { position: relative; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }\n.interaction .flow { color: #545b6b; }\n.target-chip { color: #c9c2ff; }\n.remove-interaction { margin-left: auto; padding: 2px 7px; border: 0; background: transparent; color: #747b89; }\n.remove-interaction:hover { color: #ff9dbf; }
+.interaction code { color: #ff9ee9; }\n.interaction select, .interaction input { padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; background: #0b0d12; color: #f4f4f5; font-size: 10px; }\n.interaction input { width: 150px; }\n.interaction { position: relative; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }\n.interaction .flow { color: #545b6b; }\n.target-chip { color: #c9c2ff; }\n.remove-interaction { margin-left: auto; padding: 2px 7px; border: 0; background: transparent; color: #747b89; }\n.remove-interaction:hover { color: #ff9dbf; }
 
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 150px 1fr; }
