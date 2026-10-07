@@ -8,22 +8,30 @@ export function createSynDocument({ title = "Untitled SYN", id = makeId() } = {}
     syn: "0.1",
     type: "document",
     meta: { id, title },
+    project: { version: "0.4.0", authoring: "SYN Studio" },
     scenes: []
   };
 }
 
-export function addScene(document, { name = "Scene", id = makeId() } = {}) {
-  const scene = { id, name, objects: [], interactions: [] };
+export function addScene(document, { name = "Scene", id = makeId(), background = "#0b0d12" } = {}) {
+  const scene = { id, name, background, objects: [], interactions: [] };
   document.scenes.push(scene);
   return scene;
 }
 
-export function addObject(
-  scene,
-  { kind, label = "Object", id = makeId(), x = 80, y = 80, width = 180, height = 60, props = {} } = {}
-) {
+export function addObject(scene, {
+  kind,
+  label = "Object",
+  id = makeId(),
+  x = 80,
+  y = 80,
+  width = 180,
+  height = 60,
+  props = {},
+  styles = {}
+} = {}) {
   if (!kind) throw new TypeError("Object kind is required");
-  const object = { id, kind, label, x, y, width, height, props };
+  const object = { id, kind, label, x, y, width, height, props, styles };
   scene.objects.push(object);
   return object;
 }
@@ -54,26 +62,20 @@ export function parseSynDocument(source) {
 }
 
 function validateSynDocument(document) {
-  if (
-    !document ||
-    document.syn !== "0.1" ||
-    document.type !== "document" ||
-    !document.meta ||
-    typeof document.meta.id !== "string" ||
-    typeof document.meta.title !== "string" ||
-    !Array.isArray(document.scenes)
-  ) {
+  if (!document || document.syn !== "0.1" || document.type !== "document" || !document.meta ||
+      typeof document.meta.id !== "string" || typeof document.meta.title !== "string" ||
+      !Array.isArray(document.scenes)) {
     throw new Error("Invalid SYN document");
   }
   for (const scene of document.scenes) {
-    if (
-      !scene ||
-      typeof scene.id !== "string" ||
-      typeof scene.name !== "string" ||
-      !Array.isArray(scene.objects) ||
-      !Array.isArray(scene.interactions)
-    ) {
+    if (!scene || typeof scene.id !== "string" || typeof scene.name !== "string" ||
+        !Array.isArray(scene.objects) || !Array.isArray(scene.interactions)) {
       throw new Error("Invalid SYN document");
+    }
+    for (const object of scene.objects) {
+      if (!object || typeof object.id !== "string" || typeof object.kind !== "string") {
+        throw new Error("Invalid SYN object");
+      }
     }
   }
 }
