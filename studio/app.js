@@ -9,6 +9,87 @@ const state = {
 };
 addScene(state.document, { id: "scene-1", name: "Scene 1" });
 
+const MENU_DATA = {
+File:["New SYN","New from Template","Open","Open Recent","Save","Save As","Save a Copy","Save as Template","Auto Save","Version History","Restore Version","Duplicate Project","Rename Project","Project Information","Import","Export","Share","Publish","Project Settings","Document Settings","Permissions","Close"],
+Edit:["Undo","Redo","History","Cut","Copy","Paste","Paste in Place","Duplicate","Delete","Select All","Select None","Select Similar","Find","Find & Replace","Rename","Lock","Unlock","Group","Ungroup","Preferences"],
+View:["Zoom In","Zoom Out","Actual Size","Fit Canvas","Fit Selection","Fullscreen","Presentation Mode","Grid","Guides","Snap","Rulers","Safe Areas","Show Layers","Show Assets","Show Timeline","Show Interactions","Show Code","Show Console","Reset Workspace"],
+Insert:["Text","Rich Text","Heading","Paragraph","Link","Button","Shape","Line","Arrow","Group","Component","Image","SVG","GIF","Audio","Video","Gallery","Slideshow","Embed","Web Content","Form","Input","Checkbox","Toggle","Dropdown","Menu","Icon","QR Code","Map","Chart","Table","Timer","Scene","Hotspot","Popup","Modal","Tooltip","Animation","Code Block"],
+Format:["Font","Font Size","Weight","Style","Text Color","Gradient","Highlight","Alignment","Justification","Letter Spacing","Line Height","Text Case","Decoration","Outline","Shadow","Glow","Fill","Stroke","Stroke Width","Corners","Opacity","Blend Mode","Transform","Position","Dimensions"],
+Arrange:["Align Left","Align Center","Align Right","Align Top","Align Middle","Align Bottom","Distribute Horizontally","Distribute Vertically","Match Width","Match Height","Match Size","Equal Spacing","Center on Canvas","Group","Ungroup","Lock","Hide","Duplicate","Flip","Rotate","Reset Transform","Smart Guides","Snap"],
+Object:["New Object","Duplicate","Clone","Instance","Convert to Group","Convert to Component","Convert to Path","Convert to Shape","Convert to Text","Object Properties","Object Metadata","Object ID","Parent","Children","Dependencies","References","Bindings","States","Variables","Events","Constraints","Visibility","Delete"],
+Project:["Dashboard","Structure","Files","Scenes","Assets","Components","Templates","Libraries","Dependencies","Packages","Development","Testing","Production","Variables","Secrets","Runtime Configuration","Build Configuration","Publishing Configuration","Metadata","Authors","Contributors","License","Diagnostics"],
+Scene:["New Scene","Duplicate Scene","Delete Scene","Rename Scene","Scene Properties","Background","Dimensions","Aspect Ratio","Transition","Entry Animation","Exit Animation","Scene Link","Navigation","Scene Order","Thumbnail","Master Objects","Scene Variables","Scene Graph","Layers","Camera"],
+Timeline:["New Timeline","Layers","Tracks","Keyframes","Blank Keyframe","Frame","Insert Frame","Delete Frame","Copy Frame","Paste Frame","Tween","Motion Tween","Shape Tween","Morph","Markers","Timecode","Playback","Loop","In Point","Out Point","Time Stretch","Speed","Onion Skin","Curve Editor","Dope Sheet"],
+Animation:["New Animation","Keyframes","Position","Scale","Rotation","Opacity","Color","Size","Blur","Shadow","Transform","Easing","Linear","Ease In","Ease Out","Ease In Out","Spring","Bounce","Motion Path","Loop","Ping Pong","Delay","Duration","Preview"],
+Media:["Import Media","Media Library","Asset Manager","Replace Asset","Relink Asset","Embed Asset","Extract Asset","Compress","Optimize","Crop","Mask","Fit","Playback","Volume","Loop","Autoplay","Captions","Poster Frame","Metadata","Dependencies"],
+Audio:["Import Audio","Record Audio","Waveform","Trim","Split","Fade In","Fade Out","Volume","Pan","Speed","Pitch","Loop","Autoplay","Play","Pause","Stop","Seek","Synchronize","Audio Timeline","Sound Effects","Voiceover","Audio Ducking","Visualization"],
+Video:["Import Video","Camera","Video Library","Trim","Split","Crop","Resize","Playback","Loop","Autoplay","Controls","Volume","Speed","Poster Frame","Captions","Subtitles","Timeline","Transitions","Masks","Filters","Color Adjustment","Chroma Key"],
+Typography:["Font Family","Font Size","Weight","Style","Color","Gradient","Alignment","Justification","Line Height","Letter Spacing","Word Spacing","Text Case","Decoration","Outline","Shadow","Columns","Wrapping","Vertical Alignment","Language","Spell Check","Text on Path","Rich Text","Markdown","Dynamic Text"],
+Components:["Create Component","Edit Component","Component Library","Local Components","Shared Components","Variants","States","Properties","Inputs","Outputs","Events","Slots","Overrides","Instances","Detach Instance","Swap Instance","Nested Components","Dependencies","Documentation","Publish Component"],
+Symbols:["Create Symbol","Graphic Symbol","Movie Symbol","Interactive Symbol","Button Symbol","Edit Symbol","Symbol Library","Instance","Properties","Timeline","States","Convert to Component"],
+Layout:["Freeform","Absolute","Relative","Flex","Grid","Stack","Flow","Auto Layout","Constraints","Anchoring","Alignment","Distribution","Padding","Margin","Gap","Min Width","Max Width","Min Height","Max Height","Overflow","Scroll","Z Index","Layout Inspector"],
+Responsive:["Desktop","Tablet","Mobile","Landscape","Portrait","Custom Breakpoint","Responsive Layout","Fluid Width","Fixed Width","Constraints","Auto Layout","Hide on Mobile","Hide on Desktop","Reposition","Resize","Responsive Typography"],
+Interaction:["Events","Click","Double Click","Hover","Pointer Down","Pointer Up","Drag","Drop","Touch","Swipe","Scroll","Key Down","Key Up","Focus","Blur","Load","Scene Enter","Scene Exit","Timer","Variable Changed","Data Loaded","Conditions","If","Else","And","Or","Not","Actions","Navigate","Animate","Set Property","Set Variable","Show","Hide","Toggle","Create","Destroy","Play Media","Pause Media","Call Function","Call API","Dispatch Event"],
+Navigation:["Link to Scene","Link to Object","Link to SYN","Link to URL","Open New Window","Open Same Window","Back","Forward","Home","Scene Menu","Breadcrumbs","Tabs","Previous Scene","Next Scene","Jump to Scene","Deep Link","Generate Share Link","Generate QR Code","Navigation History"],
+Logic:["Event","Condition","Action","Sequence","Branch","Loop","Repeat","Wait","Parallel","Variable","Function","State","Trigger","Signal","Broadcast","Listen","Logic Graph"],
+State:["Object State","Scene State","Global State","Create State","Duplicate State","State Variables","Transitions","Conditions","Events","Initial State","Persistent State","Reset State"],
+Signals:["Create Signal","Dispatch Signal","Listen","Global Signals","Scene Signals","Component Signals","Event Bus","Signal Inspector","Signal History"],
+Variables:["Create Variable","Global Variables","Scene Variables","Object Variables","Component Variables","Constants","Boolean","Number","String","Array","Object","Date","Color","Vector","Reference","Environment Variable","Watch","Bind","Inspector"],
+Data:["Variables","Collections","Data Sources","Data Binding","Data Mapping","Transform","Filter","Sort","Search","Validation","JSON","CSV","XML","Local Storage","Session Storage","Cache","State Inspector"],
+Database:["Connections","Add Connection","REST Database","SQL Database","Query","Insert","Update","Delete","Transactions","Schemas","Tables","Views","Authentication","Permissions","Secrets","Data Models","Migrations","Logs","Connection Test"],
+API:["REST","GraphQL","WebSocket","HTTP Request","GET","POST","PUT","PATCH","DELETE","Headers","Parameters","Body","Authentication","OAuth","API Keys","Responses","Error Handling","Mock Response","API Explorer","Request Inspector"],
+Forms:["Text Input","Password","Email","Number","Date","Time","Checkbox","Radio","Toggle","Slider","Dropdown","Multi Select","File Upload","Search","Submit","Reset","Validation","Required Fields","Error Messages","Success Messages","Form Actions","Data Binding"],
+Web:["Hyperlink","URL","Embed","IFrame","Web Component","HTML","CSS","Metadata","SEO","Open Graph","Favicon","Custom Headers","External Resources","Web Fonts","Web APIs","Responsive Preview","Mobile Preview","Desktop Preview"],
+Code:["Code Editor","JavaScript","Modules","Functions","Classes","Variables","Events","Imports","Exports","Libraries","Packages","Snippets","Type Definitions","Runtime API","Scene API","Data API","Media API","Animation API","Network API","Storage API","Capability API","Console","Formatter","Linter","Type Checker","Documentation"],
+Debug:["Start Debugging","Run","Pause","Stop","Restart","Step Over","Step Into","Step Out","Breakpoints","Conditional Breakpoints","Watch","Variables","Call Stack","Events","Network","Console","Errors","Warnings","Runtime State","Scene State","Object State","Performance","Memory","Rendering","Debug Overlay"],
+AI:["AI Assistant","Ask About Project","Generate Text","Rewrite Text","Summarize","Translate","Generate Image","Edit Image","Remove Background","Generate Video","Generate Audio","Generate Music","Generate Layout","Generate Scene","Generate Animation","Generate Component","Generate Code","Explain Code","Fix Code","Analyze Document","Organize Document","Generate Accessibility","Generate Metadata","Optimize Media","Create From Prompt","AI History","AI Permissions"],
+Assets:["Asset Library","Import","Export","Images","Audio","Video","Fonts","SVG","Icons","3D","Documents","External Assets","Embedded Assets","Metadata","Dependencies","Replace","Relink","Optimize","Compress","Convert","Find Unused"],
+Effects:["Shadow","Inner Shadow","Glow","Outer Glow","Blur","Motion Blur","Gaussian Blur","Color Adjust","Brightness","Contrast","Saturation","Hue","Grayscale","Sepia","Invert","Opacity","Blend Modes","Distortion","Noise","Pixelate","Mask","Clipping","Gradient","Pattern","Reflection"],
+Accessibility:["Inspector","Alt Text","Semantic Roles","Keyboard Navigation","Focus Order","Screen Reader Labels","Captions","Transcripts","Color Contrast","Reduced Motion","Text Scaling","Accessible Links","Accessible Forms"],
+Localization:["Languages","Add Language","Translation Strings","String Tables","Text Variants","Locale","Number Formatting","Date Formatting","Currency","Right to Left","Import","Export","Missing Translation Report"],
+Security:["Permissions","Capabilities","Network Access","Storage Access","Camera","Microphone","Location","External Resources","Embedded Content","Script Permissions","API Permissions","Database Permissions","Secrets","Sandbox","Trust","Signature","Verify Signature","Security Audit","Security Report"],
+Performance:["Monitor","FPS","CPU","Memory","GPU","Rendering","Network","Asset Size","Scene Complexity","Animation Cost","Media Cost","Load Time","Runtime Profiling","Bottlenecks","Optimization Suggestions","Performance Report"],
+Version:["Save Version","History","Compare","Restore","Branch","Merge","Snapshot","Release","Release Notes","Changelog","Tags","Draft","Stable","Experimental"],
+Collaboration:["Share","Invite","Comments","Mentions","Suggestions","Review Mode","Presentation Mode","Live Editing","Cursor Presence","Change History","Approvals","Resolve Comments","Permissions"],
+Build:["Build Project","Build SYN","Validate","Optimize","Minify","Compress","Bundle Assets","Embed Assets","Externalize Assets","Manifest","Metadata","Dependencies","Production","Development","Debug","Test","Browser","Desktop","Mobile","Embedded Runtime","Output"],
+Package:["Package SYN","Embedded Assets","External Assets","Dependencies","Fonts","Components","Libraries","Metadata","Manifest","Integrity","Signature","Compression","Optimization","Inspect","Validate","Report"],
+Publish:["Export SYN","Publish SYN","Publish Web","Static HTML","PDF","PNG","JPEG","SVG","GIF","Video","Presentation","Share Link","QR Code","Embed Code","Version","Release","Draft","Preview"],
+Tools:["Command Palette","Asset Inspector","Document Inspector","Object Inspector","Scene Inspector","Runtime Inspector","Event Inspector","Data Inspector","API Inspector","Network Inspector","Storage Inspector","Dependency Graph","Object Graph","Scene Graph","Render Tree","Accessibility Tree","Source Viewer","Manifest Viewer","SYN Schema Viewer","Diff","Screenshot","Screen Recording","Import Wizard","Export Wizard","Migration Tools"],
+Window:["Workspace","Inspector","Layers","Scenes","Assets","Interactions","Timeline","Animation","Audio","Video","Code","Console","Output","History","Versions","Templates","Components","Project","Data","Network","Accessibility","Security","Performance","AI"],
+Help:["Getting Started","Tutorials","Keyboard Shortcuts","SYN Format Documentation","Runtime Documentation","JavaScript API","Capability API","Examples","Templates","Troubleshooting","Developer Documentation","About SYN","About SYN Studio","Experimental Features"]
+};
+function escMenu(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function buildApplicationMenus(){
+  const nav=document.createElement("nav");nav.className="menu-bar";
+  nav.innerHTML=Object.entries(MENU_DATA).map(([name,items])=>'<div class="menu"><button class="menu-trigger">'+escMenu(name)+'</button><div class="menu-panel">'+items.map(item=>'<button class="menu-item" data-command="'+escMenu(item)+'">'+escMenu(item)+'</button>').join("")+'</div></div>').join("");
+  const actions=document.querySelector(".top-actions");actions.parentElement.insertBefore(nav,actions);
+  nav.querySelectorAll(".menu-trigger").forEach(b=>b.addEventListener("click",e=>{const m=e.currentTarget.parentElement;nav.querySelectorAll(".menu.open").forEach(x=>{if(x!==m)x.classList.remove("open")});m.classList.toggle("open")}));
+  nav.querySelectorAll(".menu-item").forEach(b=>b.addEventListener("click",()=>runMenuCommand(b.dataset.command)));
+}
+function runMenuCommand(c){
+  document.querySelectorAll(".menu.open").forEach(x=>x.classList.remove("open"));
+  const handlers={"New SYN":()=>document.querySelector("#newDocument").click(),"Open":()=>document.querySelector("#openSyn").click(),"Save":()=>document.querySelector("#export").click(),"Export":()=>document.querySelector("#export").click(),"Delete":()=>document.querySelector("#deleteObject").click(),"New Scene":()=>document.querySelector("#newScene").click(),"Text":()=>addCanvasObject("text"),"Image":()=>document.querySelector("#mediaInput").click(),"Button":()=>addCanvasObject("button"),"Shape":()=>addCanvasObject("shape"),"Preview":()=>document.querySelector("#preview").click(),"Code Editor":openCodeWorkspace,"Command Palette":openCodePalette,"Fullscreen":()=>document.documentElement.requestFullscreen?.(),"Grid":()=>stage.classList.toggle("no-grid"),"Fit Canvas":()=>showToast("Canvas fit command ready.")};
+  if(handlers[c])handlers[c]();else showToast(c+" is part of the SYN capability surface and is not enabled in this prototype yet.");
+}
+function showToast(message){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";document.body.appendChild(t)}t.textContent=message;t.classList.add("show");clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove("show"),2200)}
+function openCodePalette(){let p=document.querySelector("#syn-command-palette");if(!p){p=document.createElement("div");p.id="syn-command-palette";p.className="modal";p.innerHTML='<div class="palette"><input id="command-search" placeholder="Search commands, tools, scenes..."><div id="command-results"></div></div>';document.body.appendChild(p);p.onclick=e=>{if(e.target===p)p.hidden=true};p.querySelector("input").addEventListener("input",renderCommandResults)}p.hidden=false;p.querySelector("input").focus();renderCommandResults()}
+function renderCommandResults(){const p=document.querySelector("#syn-command-palette"),q=p.querySelector("input").value.toLowerCase(),rows=Object.entries(MENU_DATA).flatMap(([menu,items])=>items.map(name=>({menu,name}))).filter(x=>!q||(x.name+" "+x.menu).toLowerCase().includes(q)).slice(0,50);p.querySelector("#command-results").innerHTML=rows.map(x=>'<button class="command-row" data-command="'+escMenu(x.name)+'"><span>'+escMenu(x.name)+'</span><small>'+escMenu(x.menu)+'</small></button>').join("");p.querySelectorAll(".command-row").forEach(b=>b.addEventListener("click",()=>{p.hidden=true;runMenuCommand(b.dataset.command)}))}
+function openCodeWorkspace(){
+  let panel=document.querySelector("#syn-code-workspace");
+  if(!panel){panel=document.createElement("section");panel.id="syn-code-workspace";panel.className="code-workspace";panel.innerHTML='<div class="code-head"><strong>SYN SOURCE</strong><span>Live document model</span></div><textarea id="syn-source" spellcheck="false"></textarea><div class="code-foot"><button id="apply-syn-source" class="primary">Apply Source</button><span>Visual editing and source editing target the same SYN document. JavaScript remains sandboxed and capability-gated.</span></div>';document.querySelector(".timeline").parentElement.appendChild(panel);panel.querySelector("#apply-syn-source").addEventListener("click",()=>{try{const parsed=JSON.parse(panel.querySelector("#syn-source").value);createRuntimeState(parsed);state.document=parsed;state.sceneIndex=0;state.selectedObjectId=null;render();showToast("Source applied to the live document.")}catch(e){showToast(e.message)}})}
+  panel.hidden=false;panel.querySelector("#syn-source").value=serializeSynDocument(state.document);panel.scrollIntoView({behavior:"smooth"});
+}
+function addStyleInspector(){
+  const object=selected();if(!object)return;
+  let section=inspector.querySelector(".style-section");
+  if(section)section.remove();
+  section=document.createElement("div");section.className="style-section interaction";
+  section.innerHTML='<div class="eyebrow">APPEARANCE</div><div class="field-row"><label class="field">Font<select id="synFont"><option>Inter</option><option>Georgia</option><option>Arial</option><option>Courier New</option><option>Trebuchet MS</option><option>Times New Roman</option><option>system-ui</option></select></label><label class="field">Size<input id="synSize" type="number" min="8" value="'+(object.styles?.fontSize||16)+'"></label></div><div class="field-row"><label class="field">Text color<input id="synColor" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(object.styles?.color||"")?object.styles.color:"#eef1f6")+'"></label><label class="field">Radius<input id="synRadius" type="number" min="0" value="'+(object.styles?.borderRadius||0)+'"></label></div><div class="field-row"><label class="field">Background<input id="synBackground" value="'+escMenu(object.styles?.background||"")+'"></label><label class="field">Weight<select id="synWeight"><option value="400">400</option><option value="600">600</option><option value="700">700</option><option value="800">800</option><option value="900">900</option></select></label></div>';
+  inspector.appendChild(section);section.querySelector("#synFont").value=object.styles?.fontFamily||"Inter";section.querySelector("#synWeight").value=object.styles?.fontWeight||400;
+  ["synFont","synSize","synColor","synRadius","synBackground","synWeight"].forEach(id=>section.querySelector("#"+id).addEventListener("input",()=>{object.styles={...object.styles,fontFamily:section.querySelector("#synFont").value,fontSize:Number(section.querySelector("#synSize").value)||16,color:section.querySelector("#synColor").value,borderRadius:Number(section.querySelector("#synRadius").value)||0,background:section.querySelector("#synBackground").value,fontWeight:Number(section.querySelector("#synWeight").value)||400};render(false)}));
+}
+
+
 const stage = document.querySelector("#stage");
 const emptyState = document.querySelector("#emptyState");
 const inspector = document.querySelector("#inspectorContent");
@@ -213,7 +294,7 @@ function render(keepSelection = true) {
     el.className = "syn-object";
     el.dataset.id = object.id;
     el.dataset.kind = object.kind;
-    el.textContent = object.props?.text || object.label;
+    el.textContent = object.props?.text || object.label;\n    if (object.styles) { for (const [key,value] of Object.entries(object.styles)) { const prop = {fontFamily:"fontFamily",fontSize:"fontSize",fontWeight:"fontWeight",color:"color",background:"background",borderRadius:"borderRadius"}[key]; if (prop) el.style[prop] = typeof value === "number" && ["fontSize","borderRadius"].includes(key) ? value + "px" : value; } }
     el.style.left = object.x + "px";
     el.style.top = object.y + "px";
     el.style.width = object.width + "px";
@@ -359,7 +440,7 @@ document.querySelector("#openSyn").addEventListener("change", async event => {
   event.target.value = "";
 });
 
-document.querySelector("#preview").addEventListener("click", preview);
+document.querySelector("#preview").addEventListener("click", preview);\nbuildApplicationMenus();\ndocument.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openCodePalette()}});
 document.querySelector("#prevScene").addEventListener("click", () => changeScene(-1));
 document.querySelector("#nextScene").addEventListener("click", () => changeScene(1));
 render();
