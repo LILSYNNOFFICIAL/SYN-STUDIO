@@ -179,4 +179,18 @@ test("SYN Studio app code remaps duplicated scene object and interaction targets
   assert.match(app, /const idMap=new Map\(current\.objects\.map/);
   assert.match(app, /event:\{\.\.\.item\.event,target:idMap\.get/);
   assert.match(app, /actions:item\.actions\.map/);
+  assert.match(app, /action\.type === "scene\.goto" && action\.target === current\.id/);
+});
+
+test("SYN runtime rejects executable link schemes", async () => {
+  const { createRuntimeState } = await import("../src/runtime.js");
+  const doc = {
+    syn: "0.1", type: "document", meta: { id: "security-doc", title: "Security Test" },
+    viewport: { width: 100, height: 100 }, assets: [],
+    scenes: [{
+      id: "scene-1", name: "Scene", objects: [{ id: "button", kind: "button", label: "Button", x: 0, y: 0, width: 50, height: 30, rotation: 0, locked: false, hidden: false, props: {}, styles: {} }],
+      interactions: [{ id: "i", event: { type: "click", target: "button" }, actions: [{ type: "link.openSyn", target: "javascript:alert(1)" }] }]
+    }]
+  };
+  assert.throws(() => createRuntimeState(doc), /relative target/);
 });
