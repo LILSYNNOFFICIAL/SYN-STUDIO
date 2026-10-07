@@ -30,12 +30,24 @@ The current 0.3 prototype demonstrates:
 - Runtime validation of interactions and targets
 - Sandboxed, declarative behavior with no arbitrary JavaScript execution from a SYN file
 - PWA/offline shell support
+- Professional desktop-style menu system with a large developer-oriented capability surface
+- Contextual typography and appearance controls
+- Double-click text editing on the canvas
+- Command palette for discoverability
+- Visual, source, and preview workflows
+- Multi-scene editable first-run showcase
 
 ### Example
 
 The repository includes a working document at [examples/hello.syn](./examples/hello.syn).
 
 It demonstrates a button-driven transition between two scenes and can be opened in the [SYN Runtime](./runtime/).
+
+## Studio authoring model
+
+SYN Studio is intentionally being built as a hybrid creative tool and developer environment. Visual authoring and source inspection operate on the same document model. The current source workspace uses the inspectable SYN JSON representation rather than inventing a replacement programming language. JavaScript is reserved for future sandboxed scripting capabilities.
+
+The top menu exposes a deliberately broad capability architecture covering creative authoring, animation, media, typography, layout, interaction, data, APIs, debugging, AI, security, performance, build, packaging, publishing, and developer tooling. Items that are not implemented yet are clearly treated as extension points rather than simulated features.
 
 ## What SYN is trying to become
 
