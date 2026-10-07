@@ -1,40 +1,26 @@
+import { parseSynDocument } from "./document.js";
+
 const ACTIONS = new Set([
   "scene.next",
   "scene.goto",
   "object.show",
   "object.hide",
-  "object.setText"
+  "object.setText",
+  "link.openUrl",
+  "link.openSyn"
 ]);
 
 export function validateRuntimeDocument(document) {
-  if (
-    !document ||
-    document.syn !== "0.1" ||
-    document.type !== "document" ||
-    !document.meta ||
-    typeof document.meta.id !== "string" ||
-    typeof document.meta.title !== "string" ||
-    !Array.isArray(document.scenes)
-  ) {
-    throw new Error("Invalid SYN document");
-  }
+  parseSynDocument(JSON.stringify(document));
   for (const scene of document.scenes) {
-    if (!scene || typeof scene.id !== "string" || typeof scene.name !== "string") {
-      throw new Error("Invalid SYN scene");
-    }
-    if (!Array.isArray(scene.objects) || !Array.isArray(scene.interactions)) {
-      throw new Error("Invalid SYN scene graph");
-    }
     for (const object of scene.objects) {
-      if (!object || typeof object.id !== "string" || typeof object.kind !== "string") {
-        throw new Error("Invalid SYN object");
-      }
       if (!Number.isFinite(object.x) || !Number.isFinite(object.y) || !Number.isFinite(object.width) || !Number.isFinite(object.height)) {
         throw new Error("Invalid SYN object geometry");
       }
       if (object.props?.src && !String(object.props.src).startsWith("data:image/")) {
         throw new Error("SYN media must use embedded image data");
       }
+      if (object.links && !Array.isArray(object.links)) throw new Error("Invalid SYN object links");
     }
     for (const interaction of scene.interactions) {
       if (!interaction?.event?.type || !interaction?.event?.target || !Array.isArray(interaction.actions)) {
@@ -44,14 +30,19 @@ export function validateRuntimeDocument(document) {
         throw new Error("SYN interaction target not found");
       }
       for (const action of interaction.actions) {
-        if (!action?.type || !ACTIONS.has(action.type)) {
-          throw new Error("Unsupported SYN action");
-        }
+        if (!action?.type || !ACTIONS.has(action.type)) throw new Error("Unsupported SYN action");
         if (action.type === "scene.goto" && !document.scenes.some(target => target.id === action.target)) {
           throw new Error("SYN action target not found");
         }
-        if (["object.show", "object.hide", "object.setText"].includes(action.type) && !scene.objects.some(object => object.id === action.target)) {
+        if (["object.show","object.hide","object.setText"].includes(action.type) &&
+            !scene.objects.some(object => object.id === action.target)) {
           throw new Error("SYN action target not found");
+        }
+        if (action.type === "link.openUrl" && (!/^https?:\/\//i.test(String(action.url || "")))) {
+          throw new Error("SYN URL links must use http or https");
+        }
+        if (action.type === "link.openSyn" && typeof action.target !== "string") {
+          throw new Error("SYN document link target is required");
         }
       }
     }
@@ -61,12 +52,7 @@ export function validateRuntimeDocument(document) {
 
 export function createRuntimeState(document) {
   validateRuntimeDocument(document);
-  return {
-    document,
-    sceneIndex: 0,
-    visible: new Map(),
-    text: new Map()
-  };
+  return { document, sceneIndex: 0, visible: new Map(), text: new Map() };
 }
 
 export function currentScene(state) {
@@ -80,7 +66,7 @@ export function findObject(state, id) {
 export function applyAction(state, action) {
   switch (action.type) {
     case "scene.next":
-      state.sceneIndex = Math.min(state.sceneIndex + 1, state.document.scenes.length - 1);
+      state.sceneIndex = Math.min(state.sceneIndex + 1, Math.max(0, state.document.scenes.length - 1));
       return true;
     case "scene.goto": {
       const index = state.document.scenes.findIndex(scene => scene.id === action.target);
@@ -88,17 +74,12 @@ export function applyAction(state, action) {
       state.sceneIndex = index;
       return true;
     }
-    case "object.show":
-      state.visible.set(action.target, true);
-      return true;
-    case "object.hide":
-      state.visible.set(action.target, false);
-      return true;
-    case "object.setText":
-      state.text.set(action.target, String(action.value ?? ""));
-      return true;
-    default:
-      return false;
+    case "object.show": state.visible.set(action.target, true); return true;
+    case "object.hide": state.visible.set(action.target, false); return true;
+    case "object.setText": state.text.set(action.target, String(action.value ?? "")); return true;
+    case "link.openUrl": window.open(action.url, "_blank", "noopener,noreferrer"); return true;
+    case "link.openSyn": window.location.href = action.target; return true;
+    default: return false;
   }
 }
 
@@ -113,17 +94,30 @@ export function dispatchEvent(state, event) {
   return handled;
 }
 
+function applyStyles(element, object) {
+  const s = object.styles || {};
+  if (s.fontFamily) element.style.fontFamily = s.fontFamily;
+  if (s.fontSize) element.style.fontSize = s.fontSize + "px";
+  if (s.fontWeight) element.style.fontWeight = s.fontWeight;
+  if (s.fontStyle) element.style.fontStyle = s.fontStyle;
+  if (s.color) element.style.color = s.color;
+  if (s.background) element.style.background = s.background;
+  if (s.borderColor) element.style.borderColor = s.borderColor;
+  if (s.borderWidth != null) element.style.borderWidth = s.borderWidth + "px";
+  if (s.borderRadius != null) element.style.borderRadius = s.borderRadius + "px";
+  if (s.opacity != null) element.style.opacity = s.opacity;
+  if (s.letterSpacing != null) element.style.letterSpacing = s.letterSpacing + "px";
+  if (s.lineHeight != null) element.style.lineHeight = s.lineHeight;
+  if (s.textAlign) element.style.textAlign = s.textAlign;
+  if (s.boxShadow) element.style.boxShadow = s.boxShadow;
+}
+
 export function renderScene(container, state, { onEvent } = {}) {
   const scene = currentScene(state);
-  if (!scene) {
-    container.replaceChildren();
-    return;
-  }
-
+  if (!scene) { container.replaceChildren(); return; }
   container.replaceChildren();
   const doc = container.ownerDocument || document;
   const fragment = doc.createDocumentFragment();
-
   for (const object of scene.objects) {
     const element = doc.createElement(object.kind === "button" ? "button" : "div");
     element.className = "syn-runtime-object";
@@ -133,16 +127,19 @@ export function renderScene(container, state, { onEvent } = {}) {
     element.style.left = (object.x ?? 80) + "px";
     element.style.top = (object.y ?? 80) + "px";
     element.style.width = (object.width ?? 180) + "px";
-    element.style.minHeight = (object.height ?? 60) + "px";
-    if (object.props?.src?.startsWith("data:image/")) element.style.backgroundImage = `url("${object.props.src}")`;
+    element.style.height = (object.height ?? 60) + "px";
+    applyStyles(element, object);
+    if (object.props?.src?.startsWith("data:image/")) {
+      element.style.backgroundImage = `url("${object.props.src}")`;
+      element.style.backgroundSize = "cover";
+      element.style.backgroundPosition = "center";
+    }
     if (state.visible.get(object.id) === false) element.hidden = true;
-
     if (object.kind === "button") {
       element.type = "button";
       element.addEventListener("click", () => onEvent?.({ type: "click", target: object.id }));
     }
     fragment.appendChild(element);
   }
-
   container.appendChild(fragment);
 }
