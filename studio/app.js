@@ -1,6 +1,7 @@
 import { createSynDocument, addScene, addObject, addInteraction, serializeSynDocument } from "../src/document.js";
 import { createRuntimeState, currentScene, dispatchEvent, renderScene, responsiveScale } from "../src/runtime.js";
 import { createHistory } from "../src/history.js";
+import { moveObject, resizeObject, duplicateObject, reorderObject } from "../src/editor.js";
 
 const state = {
   document: createSynDocument({ title: "SYN Studio Showcase" }),
@@ -8,11 +9,9 @@ const state = {
   selectedObjectId: null,
   drag: null,
   history: null,
-  future: null,
-  zoom: 1
+  zoom: 1,
+  selectedObjectIds: []
 };
-state.history = createHistory(state.document, { limit: 100 });
-
 const home = addScene(state.document, { id: "scene-1", name: "SYN / Showcase", background: "#080b10" });
 const architecture = addScene(state.document, { id: "scene-2", name: "SYN / Architecture", background: "#0a0e14" });
 const interactive = addScene(state.document, { id: "scene-3", name: "SYN / Interactive", background: "#090c12" });
@@ -201,7 +200,7 @@ function buildApplicationMenus(){
 }
 function runMenuCommand(c){
   document.querySelectorAll(".menu.open").forEach(x=>x.classList.remove("open"));
-  const handlers={"New SYN":()=>document.querySelector("#newDocument").click(),"Open":()=>document.querySelector("#openSyn").click(),"Save":()=>document.querySelector("#export").click(),"Export":()=>document.querySelector("#export").click(),"Delete":()=>document.querySelector("#deleteObject").click(),"New Scene":()=>document.querySelector("#newScene").click(),"Text":()=>addCanvasObject("text"),"Image":()=>document.querySelector("#mediaInput").click(),"Button":()=>addCanvasObject("button"),"Shape":()=>addCanvasObject("shape"),"Preview":()=>document.querySelector("#preview").click(),"Code Editor":openCodeWorkspace,"Command Palette":openCodePalette,"Fullscreen":()=>document.documentElement.requestFullscreen?.(),"Grid":()=>stage.classList.toggle("no-grid"),"Fit Canvas":()=>showToast("Canvas fit command ready.")};
+  const handlers={"New SYN":()=>document.querySelector("#newDocument").click(),"Open":()=>document.querySelector("#openSyn").click(),"Save":()=>document.querySelector("#export").click(),"Export":()=>document.querySelector("#export").click(),"Delete":()=>document.querySelector("#deleteObject").click(),"New Scene":()=>document.querySelector("#newScene").click(),"Text":()=>addCanvasObject("text"),"Image":()=>document.querySelector("#mediaInput").click(),"Button":()=>addCanvasObject("button"),"Shape":()=>addCanvasObject("shape"),"Preview":()=>document.querySelector("#preview").click(),"Code Editor":openCodeWorkspace,"Command Palette":openCodePalette,"Fullscreen":()=>document.documentElement.requestFullscreen?.(),"Grid":()=>stage.classList.toggle("no-grid"),"Fit Canvas":fitCanvas,"Duplicate":duplicateSelected,"Bring to Front":()=>moveSelectedLayer("front"),"Send to Back":()=>moveSelectedLayer("back"),"Lock":toggleSelectedLock,"Hide":toggleSelectedVisibility,"Show":toggleSelectedVisibility};
   if(handlers[c])handlers[c]();else showToast(c+" is part of the SYN capability surface and is not enabled in this prototype yet.");
 }
 function showToast(message){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";document.body.appendChild(t)}t.textContent=message;t.classList.add("show");clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove("show"),2200)}
@@ -251,12 +250,8 @@ function addCanvasObject(kind) {
     props: kind === "text" ? { text: "Double-click to edit" } : {}
   });
   state.selectedObjectId = object.id;
+  state.selectedObjectIds = [object.id];
   render();
-window.addEventListener("resize", () => render(false));
-document.addEventListener("keydown", event => {
-  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z") { event.preventDefault(); undo(); }
-  else if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "z") { event.preventDefault(); redo(); }
-});
 }
 
 function renderDocumentInspector() {
@@ -276,10 +271,18 @@ function renderDocumentInspector() {
   });
 }
 
-function selectObject(id) {
-  state.selectedObjectId = id;
+function selectObject(id, additive = false) {
+  if (additive && id) {
+    const set = new Set(state.selectedObjectIds);
+    set.has(id) ? set.delete(id) : set.add(id);
+    state.selectedObjectIds = [...set];
+    state.selectedObjectId = state.selectedObjectIds.at(-1) || null;
+  } else {
+    state.selectedObjectId = id;
+    state.selectedObjectIds = id ? [id] : [];
+  }
   if (id) document.body.classList.add("show-inspector");
-  document.querySelectorAll(".syn-object").forEach(el => el.classList.toggle("selected", el.dataset.id === id));
+  document.querySelectorAll(".syn-object").forEach(el => el.classList.toggle("selected", state.selectedObjectIds.includes(el.dataset.id)));
   deleteButton.disabled = !id;
   const object = selected();
   if (!object) { renderDocumentInspector(); return; }
@@ -422,81 +425,199 @@ function renderInteractions() {
 
 function snapshotDocument() { return structuredClone(state.document); }
 function recordHistory() { if (state.history) state.history.push(snapshotDocument()); }
-function restoreDocument(document) { state.document = structuredClone(document); state.sceneIndex = Math.min(state.sceneIndex, Math.max(0, state.document.scenes.length - 1)); state.selectedObjectId = null; render(false); }
+function restoreDocument(document) {
+  state.document = structuredClone(document);
+  state.sceneIndex = Math.min(state.sceneIndex, Math.max(0, state.document.scenes.length - 1));
+  state.selectedObjectId = null;
+  state.selectedObjectIds = [];
+  render(false);
+}
 function undo() { const previous = state.history?.undo(); if (previous) restoreDocument(previous); }
 function redo() { const next = state.history?.redo(); if (next) restoreDocument(next); }
+function viewport() { return state.document.viewport || { width: 1120, height: 640 }; }
+function duplicateSelected() {
+  const object = selected();
+  if (!object) return;
+  recordHistory();
+  const copy = duplicateObject(scene(), object.id);
+  if (copy) { state.selectedObjectId = copy.id; state.selectedObjectIds = [copy.id]; render(); }
+}
+function moveSelectedLayer(direction) {
+  const object = selected();
+  if (!object) return;
+  recordHistory();
+  if (reorderObject(scene(), object.id, direction)) render();
+}
+function toggleSelectedLock() {
+  const object = selected();
+  if (!object) return;
+  recordHistory();
+  object.locked = !object.locked;
+  render();
+}
+function toggleSelectedVisibility() {
+  const object = selected();
+  if (!object) return;
+  recordHistory();
+  object.hidden = !object.hidden;
+  render();
+}
+function fitCanvas() { state.zoom = 1; render(false); }
 
 function render(keepSelection = true) {
-  stage.querySelectorAll(".syn-object").forEach(el => el.remove());
+  stage.querySelectorAll(".syn-object,.resize-handle").forEach(el => el.remove());
   const activeScene = scene();
-  const logical = state.document.viewport || { width: 1120, height: 640 };
+  const logical = viewport();
   const scale = Math.min(1, responsiveScale(logical.width, logical.height, Math.max(1, stage.clientWidth - 2), Math.max(1, stage.clientHeight - 2)));
-  emptyState.hidden = activeScene.objects.length > 0;
+  emptyState.hidden = activeScene.objects.some(object => !object.hidden);
   sceneLabel.textContent = activeScene.name;
   document.querySelector("#prevScene").disabled = state.sceneIndex === 0;
   document.querySelector("#nextScene").disabled = state.sceneIndex === state.document.scenes.length - 1;
   for (const object of activeScene.objects) {
     const el = document.createElement("button");
-    el.className = "syn-object syn-" + object.kind;
+    el.className = "syn-object syn-" + object.kind + (state.selectedObjectIds.includes(object.id) ? " selected" : "");
     el.dataset.id = object.id;
     el.dataset.kind = object.kind;
-    el.textContent = object.props?.text || object.label;
-    if (object.styles) {
-      const supported = {
-        fontFamily:"fontFamily",fontSize:"fontSize",fontWeight:"fontWeight",color:"color",
-        background:"background",borderRadius:"borderRadius",borderColor:"borderColor",
-        borderWidth:"borderWidth",boxShadow:"boxShadow",letterSpacing:"letterSpacing",
-        lineHeight:"lineHeight",opacity:"opacity",textAlign:"textAlign",padding:"padding",
-        textTransform:"textTransform"
-      };
-      for (const [key,value] of Object.entries(object.styles)) {
-        const prop = supported[key];
-        if (!prop || value == null) continue;
-        el.style[prop] = typeof value === "number" && ["fontSize","borderRadius","borderWidth"].includes(key) ? value + "px" : value;
-      }
-    }
+    el.type = "button";
+    el.disabled = Boolean(object.locked);
+    el.hidden = Boolean(object.hidden);
+    el.setAttribute("aria-label", object.label || object.kind);
+    el.setAttribute("aria-selected", state.selectedObjectIds.includes(object.id) ? "true" : "false");
     el.style.left = Math.round(object.x * scale) + "px";
     el.style.top = Math.round(object.y * scale) + "px";
     el.style.width = Math.max(20, Math.round(object.width * scale)) + "px";
     el.style.height = Math.max(20, Math.round(object.height * scale)) + "px";
-    if (object.styles?.fontSize) el.style.fontSize = Math.max(8, object.styles.fontSize * scale) + "px";
-    el.addEventListener("click", event => { event.stopPropagation(); selectObject(object.id); });
-    el.addEventListener("dblclick", event => {
-      if (object.kind !== "text") return;
+    el.style.transform = "rotate(" + Number(object.rotation || 0) + "deg)";
+    el.textContent = object.props?.text || object.label;
+    const supported = {
+      fontFamily:"fontFamily",fontSize:"fontSize",fontWeight:"fontWeight",fontStyle:"fontStyle",color:"color",
+      background:"background",borderRadius:"borderRadius",borderColor:"borderColor",borderWidth:"borderWidth",
+      boxShadow:"boxShadow",letterSpacing:"letterSpacing",lineHeight:"lineHeight",opacity:"opacity",
+      textAlign:"textAlign",padding:"padding",textTransform:"textTransform"
+    };
+    for (const [key,value] of Object.entries(object.styles || {})) {
+      const prop = supported[key];
+      if (!prop || value == null) continue;
+      el.style[prop] = typeof value === "number" && ["fontSize","borderRadius","borderWidth"].includes(key) ? value * (key === "fontSize" ? scale : 1) + "px" : value;
+    }
+    if (object.props?.src?.startsWith("data:image/")) {
+      el.style.backgroundImage = 'url("' + object.props.src + '")';
+      el.style.backgroundSize = "cover";
+      el.style.backgroundPosition = "center";
+    }
+    el.addEventListener("click", event => {
       event.stopPropagation();
-      const input = document.createElement("textarea");
-      input.className = "inline-edit"; input.value = object.props?.text ?? object.label;
-      input.style.left = object.x + "px"; input.style.top = object.y + "px"; input.style.width = object.width + "px"; input.style.height = object.height + "px";
-      input.style.fontFamily = object.styles?.fontFamily || "Inter"; input.style.fontSize = (object.styles?.fontSize || 24) + "px";
-      stage.appendChild(input); input.focus(); input.select();
-      const commit = () => { object.props = { ...object.props, text: input.value }; input.remove(); render(); };
-      input.addEventListener("blur", commit, { once: true });
-      input.addEventListener("keydown", event => { if (event.key === "Escape") { input.remove(); render(); } if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); commit(); } });
+      selectObject(object.id, event.shiftKey);
     });
-    el.addEventListener("pointerdown", event => beginDrag(event, object));
+    el.addEventListener("dblclick", event => {
+      if (object.kind !== "text" || object.locked) return;
+      event.stopPropagation();
+      beginInlineEdit(object, scale);
+    });
+    if (!object.locked && !object.hidden) el.addEventListener("pointerdown", event => beginDrag(event, object, scale));
     stage.appendChild(el);
+    if (state.selectedObjectIds.includes(object.id) && !object.locked && !object.hidden) {
+      for (const direction of ["nw","ne","sw","se"]) {
+        const handle = document.createElement("div");
+        handle.className = "resize-handle resize-" + direction;
+        const hx = direction.includes("e") ? (object.x + object.width) : object.x;
+        const hy = direction.includes("s") ? (object.y + object.height) : object.y;
+        handle.style.left = Math.round(hx * scale) + "px";
+        handle.style.top = Math.round(hy * scale) + "px";
+        handle.dataset.id = object.id;
+        handle.dataset.direction = direction;
+        handle.setAttribute("aria-label", "Resize " + object.label);
+        handle.addEventListener("pointerdown", event => beginResize(event, object, direction, scale));
+        stage.appendChild(handle);
+      }
+    }
   }
   renderInteractions();
-  if (keepSelection && state.selectedObjectId && selectObject) selectObject(state.selectedObjectId);
+  if (keepSelection && state.selectedObjectId && selected()) selectObject(state.selectedObjectId);
 }
-function beginDrag(event, object) {
-  if (event.button !== 0) return;
+function beginInlineEdit(object, scale) {
+  const input = document.createElement("textarea");
+  input.className = "inline-edit";
+  input.value = object.props?.text ?? object.label;
+  input.style.left = Math.round(object.x * scale) + "px";
+  input.style.top = Math.round(object.y * scale) + "px";
+  input.style.width = Math.round(object.width * scale) + "px";
+  input.style.height = Math.round(object.height * scale) + "px";
+  input.style.fontFamily = object.styles?.fontFamily || "Inter";
+  input.style.fontSize = Math.max(8, (object.styles?.fontSize || 24) * scale) + "px";
+  stage.appendChild(input);
+  input.focus();
+  input.select();
+  let committed = false;
+  const commit = () => {
+    if (committed) return;
+    committed = true;
+    recordHistory();
+    object.props = { ...object.props, text: input.value };
+    input.remove();
+    render();
+  };
+  input.addEventListener("blur", commit, { once: true });
+  input.addEventListener("keydown", event => {
+    if (event.key === "Escape") { committed = true; input.remove(); render(); }
+    if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); commit(); }
+  });
+}
+function beginDrag(event, object, scale) {
+  if (event.button !== 0 || object.locked) return;
   event.preventDefault();
-  const rect = stage.getBoundingClientRect();
-  state.drag = { object, startX: event.clientX, startY: event.clientY, originX: object.x, originY: object.y, rect };
-  selectObject(object.id);
+  const startX = event.clientX, startY = event.clientY;
+  const originX = object.x, originY = object.y;
+  let changed = false;
+  selectObject(object.id, event.shiftKey);
   const move = e => {
-    if (!state.drag) return;
-    const d = state.drag;
-    d.object.x = Math.max(0, Math.round(d.originX + e.clientX - d.startX));
-    d.object.y = Math.max(0, Math.round(d.originY + e.clientY - d.startY));
+    const dx = (e.clientX - startX) / Math.max(scale, 0.01);
+    const dy = (e.clientY - startY) / Math.max(scale, 0.01);
+    if (Math.abs(dx) + Math.abs(dy) > 1 && !changed) { recordHistory(); changed = true; }
+    if (!changed) return;
+    moveObject(object, originX + dx, originY + dy, viewport());
     render(false);
   };
   const end = () => {
-    state.drag = null;
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", end);
-    selectObject(object.id);
+    if (changed) render();
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", end, { once: true });
+}
+function beginResize(event, object, direction, scale) {
+  if (event.button !== 0 || object.locked) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const startX = event.clientX, startY = event.clientY;
+  const origin = { x: object.x, y: object.y, width: object.width, height: object.height };
+  let changed = false;
+  const move = e => {
+    const dx = (e.clientX - startX) / Math.max(scale, 0.01);
+    const dy = (e.clientY - startY) / Math.max(scale, 0.01);
+    let x = origin.x, y = origin.y, width = origin.width, height = origin.height;
+    if (direction.includes("e")) width = origin.width + dx;
+    if (direction.includes("s")) height = origin.height + dy;
+    if (direction.includes("w")) { width = origin.width - dx; x = origin.x + dx; }
+    if (direction.includes("n")) { height = origin.height - dy; y = origin.y + dy; }
+    const min = 20;
+    if (width < min) { if (direction.includes("w")) x = origin.x + origin.width - min; width = min; }
+    if (height < min) { if (direction.includes("n")) y = origin.y + origin.height - min; height = min; }
+    const vp = viewport();
+    if (x < 0) { width += x; x = 0; }
+    if (y < 0) { height += y; y = 0; }
+    if (x + width > vp.width) width = vp.width - x;
+    if (y + height > vp.height) height = vp.height - y;
+    if (!changed) { recordHistory(); changed = true; }
+    object.x = Math.round(x); object.y = Math.round(y);
+    resizeObject(object, width, height, vp, min);
+    render(false);
+  };
+  const end = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", end);
+    if (changed) render();
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", end, { once: true });
@@ -553,6 +674,9 @@ document.querySelector("#mediaInput").addEventListener("change", async event => 
   const reader = new FileReader();
   reader.onload = () => {
     const count = scene().objects.length;
+    recordHistory();
+    const asset = { id: "asset-" + Date.now().toString(36), name: file.name, type: file.type, size: file.size, embedded: true };
+    state.document.assets.push(asset);
     const object = addObject(scene(), {
       kind: "media",
       label: file.name.replace(/\.[^.]+$/, "") || "Image",
@@ -560,7 +684,7 @@ document.querySelector("#mediaInput").addEventListener("change", async event => 
       y: 60 + (count % 4) * 40,
       width: 220,
       height: 160,
-      props: { src: String(reader.result) }
+      props: { src: String(reader.result), assetId: asset.id }
     });
     state.selectedObjectId = object.id;
     render();
@@ -590,6 +714,8 @@ document.querySelector("#newDocument").addEventListener("click", () => {
   addScene(state.document, { name: "Scene 1" });
   state.sceneIndex = 0;
   state.selectedObjectId = null;
+  state.selectedObjectIds = [];
+  state.history = createHistory(state.document, { limit: 100 });
   render();
 });
 document.querySelector("#openSyn").addEventListener("change", async event => {
@@ -601,6 +727,8 @@ document.querySelector("#openSyn").addEventListener("change", async event => {
     state.document = runtime.document;
     state.sceneIndex = 0;
     state.selectedObjectId = null;
+    state.selectedObjectIds = [];
+    state.history = createHistory(state.document, { limit: 100 });
     render();
   } catch (error) {
     alert(error instanceof Error ? error.message : "Unable to open SYN document.");
@@ -609,6 +737,23 @@ document.querySelector("#openSyn").addEventListener("change", async event => {
 });
 
 document.querySelector("#preview").addEventListener("click", preview);
+window.addEventListener("resize", () => render(false));
+document.addEventListener("keydown", event => {
+  const mod = event.metaKey || event.ctrlKey;
+  const target = event.target;
+  if (mod && !event.shiftKey && event.key.toLowerCase() === "z") { event.preventDefault(); undo(); return; }
+  if (mod && event.shiftKey && event.key.toLowerCase() === "z") { event.preventDefault(); redo(); return; }
+  if (mod && event.key.toLowerCase() === "d" && !target.matches("input,textarea,select")) { event.preventDefault(); duplicateSelected(); return; }
+  if (mod && event.key === "Enter" && !target.matches("input,textarea,select")) { event.preventDefault(); fitCanvas(); return; }
+  if (!target.matches("input,textarea,select") && ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(event.key) && selected()) {
+    event.preventDefault();
+    recordHistory();
+    const step = event.shiftKey ? 10 : 1;
+    const object = selected();
+    moveObject(object, object.x + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0), object.y + (event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0), viewport());
+    render();
+  }
+});
 buildApplicationMenus();
 document.querySelector("#inspectorToggle")?.addEventListener("click", () => document.body.classList.toggle("show-inspector"));
 document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openCodePalette()}});
