@@ -8,6 +8,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const files = [
   "src/document.js",
   "src/runtime.js",
+  "src/history.js",
+  "src/editor.js",
   "studio/app.js",
   "runtime/runtime.js"
 ];
