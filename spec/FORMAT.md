@@ -14,6 +14,8 @@ The first prototype uses a declarative JSON representation so the format can be 
     "id": "uuid",
     "title": "Untitled SYN"
   },
+  "viewport": { "width": 1120, "height": 640 },
+  "assets": [],
   "scenes": [
     {
       "id": "scene-1",
@@ -58,3 +60,18 @@ The prototype runtime uses a deliberately constrained declarative action vocabul
 A document cannot execute arbitrary JavaScript through this model. Runtime validation rejects unknown actions and broken targets. Media is currently intended to be embedded as image data rather than fetched from arbitrary network URLs.
 
 This vocabulary is experimental and will evolve with the format.
+
+
+## Responsive viewport and assets
+
+Every newly authored document declares a canonical logical viewport. Studio and Runtime scale that viewport into the available display surface rather than changing the document's coordinate system per device.
+
+The assets field is the document-level registry for embedded media. Image objects may reference an asset with props.assetId while retaining embedded image data for the current prototype. The registry is intentionally inspectable and can evolve toward richer audio/video/font resources.
+
+## Editor state
+
+Objects may carry rotation, locked, and hidden state. These are authoring/runtime presentation properties, not executable permissions. The Studio editor supports selection, direct manipulation, resizing, duplication, layer ordering, locking, hiding, and keyboard movement.
+
+## Compatibility
+
+Parsers may normalize legacy 0.1 documents that omit viewport or assets by applying the default 1120×640 viewport and an empty asset registry. The normalized document is then validated against the current 0.1 shape.
