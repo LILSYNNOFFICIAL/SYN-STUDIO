@@ -89,3 +89,17 @@ test("supports bounded document history with undo and redo", async () => {
   assert.deepEqual(history.undo(), { value: { version: 2 } });
   assert.equal(history.canUndo(), true);
 });
+
+
+test("accepts older 0.1 documents by applying current defaults", () => {
+  const legacy = { syn: "0.1", type: "document", meta: { id: "legacy", title: "Legacy" }, scenes: [{ id: "scene", name: "Scene", objects: [], interactions: [] }] };
+  const parsed = parseSynDocument(JSON.stringify(legacy));
+  assert.deepEqual(parsed.viewport, { width: 1120, height: 640 });
+  assert.deepEqual(parsed.assets, []);
+});
+
+test("rejects a zero-size viewport", () => {
+  const value = createSynDocument({ id: "bad-viewport" });
+  value.viewport.width = 0;
+  assert.throws(() => serializeSynDocument(value), /Invalid SYN document/);
+});
