@@ -1,21 +1,16 @@
 # SYN Studio
 
-**SYN** is an experimental creative document format and authoring environment.
+**SYN** is an experimental creative document format and visual authoring environment.
 
 The goal is bigger than a file container: one shareable SYN document should be able to describe an interactive experience such as a birthday card, story, music experience, presentation, portfolio, website, or eventually a game.
 
-## Prototype
+## Current prototype
 
-The first Studio prototype lives in [studio/index.html](./studio/index.html).
+Open [SYN Studio](./studio/) to use the visual prototype.
 
-It currently demonstrates:
+It currently demonstrates a visual canvas, text/media/shape/button tools, object selection, direct `.syn` export, and declarative event → action interactions.
 
-- a visual canvas
-- text, media, shape, and button tools
-- object selection and inspection
-- event → action interactions
-- direct `.syn` export
-- a deliberately inspectable JSON-based 0.1 document model
+The core document model in `src/document.js` now supports documents, scenes, objects, interactions, serialization, parsing, and structural validation.
 
 ## Architecture
 
@@ -26,14 +21,12 @@ It currently demonstrates:
 
 ## Security direction
 
-The core rule is simple:
-
 > **A SYN file is data, not authority.**
 
 The runtime should sandbox documents, use explicit capabilities, avoid unrestricted filesystem/shell access, and keep network access opt-in. General-purpose executable code is not part of the 0.1 core model.
 
 ## Status
 
-This is an experimental project. The 0.1 format is intentionally not frozen yet.
+Experimental 0.2 development. The format is intentionally not frozen.
 
-See [spec/FORMAT.md](./spec/FORMAT.md) for the current format principles.
+See [spec/FORMAT.md](./spec/FORMAT.md) for the format principles.
