@@ -66,12 +66,23 @@ jobs:
           test -f studio/404.html
           test -d studio/assets
           test -s studio/index.html
-          ! grep -q 'url=/SYN-STUDIO/studio/' studio/index.html
-          ! grep -q '<meta http-equiv="refresh"' studio/index.html
-          ! grep -q 'url=./studio/' studio/index.html
-          grep -q 'id="main"' studio/index.html
-          grep -q '/SYN-STUDIO/studio/assets/' studio/index.html
-          grep -q 'navigator.serviceWorker.register("../sw.js"' studio/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path("studio/index.html").read_text()
+          checks = {
+              "non-empty studio index": bool(s.strip()),
+              "no root redirect": 'url=/SYN-STUDIO/studio/' not in s,
+              "no meta refresh": '<meta http-equiv="refresh"' not in s,
+              "no relative studio redirect": 'url=./studio/' not in s,
+              "Dioxus main mount": 'id="main"' in s,
+              "absolute studio assets": '/SYN-STUDIO/studio/assets/' in s,
+              "service worker path": 'navigator.serviceWorker.register("../sw.js"' in s,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit("Verification failed: " + ", ".join(failed))
+          print("All assembled Pages checks passed.")
+          PY
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static site
