@@ -566,13 +566,14 @@ function openCodeWorkspace(){
       try {
         const parsed=JSON.parse(source.value);
         createRuntimeState(parsed);
-        recordHistory();
+        const previousDocument=snapshotDocument();
         state.document=parsed;
         state.sceneIndex=0;
         state.selectedObjectId=null;
         state.selectedObjectIds=[];
         state.pan={x:0,y:0};
-        state.history=createHistory(state.document,{limit:100});
+        state.history=createHistory(previousDocument,{limit:100});
+        state.history.push(previousDocument);
         render();
         panel.querySelector("#syn-source-status").textContent="Applied and validated.";
       } catch(error) {
@@ -819,6 +820,8 @@ function renameSelectedObject(){
 function changeScene(delta) {
   state.sceneIndex = Math.max(0, Math.min(state.document.scenes.length - 1, state.sceneIndex + delta));
   state.selectedObjectId = null;
+  state.selectedObjectIds = [];
+  document.body.classList.remove("has-selection");
   render();
 }
 
