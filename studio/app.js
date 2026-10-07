@@ -7,7 +7,26 @@ const state = {
   selectedObjectId: null,
   drag: null
 };
-addScene(state.document, { id: "scene-1", name: "Scene 1" });
+addScene(state.document, { id: "scene-1", name: "Home", background: "#0d1017" });
+const home = state.document.scenes[0];
+const story = addScene(state.document, { id: "scene-2", name: "Interactive Story", background: "#111827" });
+const mediaScene = addScene(state.document, { id: "scene-3", name: "Media Room", background: "#120f18" });
+addObject(home,{id:"demo-kicker",kind:"text",label:"THE CREATIVE MEDIUM",x:70,y:55,width:430,height:28,props:{text:"THE CREATIVE MEDIUM"},styles:{fontSize:12,fontWeight:800,color:"#9caee9",letterSpacing:4}});
+addObject(home,{id:"demo-title",kind:"text",label:"SYN",x:65,y:88,width:600,height:120,props:{text:"SYN"},styles:{fontSize:92,fontWeight:900,color:"#f4f6fb"}});
+addObject(home,{id:"demo-copy",kind:"text",label:"One document. Infinite experiences.",x:74,y:218,width:560,height:55,props:{text:"One document. Infinite experiences."},styles:{fontSize:24,fontWeight:500,color:"#b9c1d1"}});
+addObject(home,{id:"demo-card",kind:"shape",label:"Capability Card",x:710,y:72,width:300,height:255,props:{text:"DESIGN  •  CODE  •  MEDIA"},styles:{background:"linear-gradient(145deg,#26324b,#121721)",borderColor:"#4c5d7f",borderWidth:1,borderRadius:18,boxShadow:"0 22px 60px #0008",color:"#dce5ff",fontSize:15,fontWeight:800}});
+addObject(home,{id:"demo-enter",kind:"button",label:"Explore SYN",x:74,y:320,width:185,height:52,props:{text:"Explore SYN"},styles:{background:"linear-gradient(180deg,#f2f5ff,#b9c8ff)",color:"#0b1020",fontSize:14,fontWeight:800,borderRadius:10}});
+addObject(home,{id:"demo-code",kind:"button",label:"Open Code",x:272,y:320,width:145,height:52,props:{text:"Open Code"},styles:{background:"#161c27",color:"#dce4f8",fontSize:13,fontWeight:700,borderRadius:10,borderColor:"#3c4961",borderWidth:1}});
+addInteraction(home,{event:{type:"click",target:"demo-enter"},actions:[{type:"scene.goto",target:"scene-2"}]});
+addInteraction(home,{event:{type:"click",target:"demo-code"},actions:[{type:"scene.goto",target:"scene-3"}]});
+addObject(story,{id:"story-title",kind:"text",label:"Interactive Story",x:75,y:70,width:650,height:70,props:{text:"Interactive Story"},styles:{fontSize:52,fontWeight:850,color:"#f4f6fb"}});
+addObject(story,{id:"story-body",kind:"text",label:"Every object can become part of the story.",x:80,y:155,width:550,height:80,props:{text:"Every object can become part of the story. Scenes, media, typography and behavior live together."},styles:{fontSize:18,lineHeight:1.5,color:"#b9c1d1"}});
+addObject(story,{id:"story-card",kind:"shape",label:"Story Card",x:80,y:265,width:600,height:130,props:{text:"CLICK THE BUTTON TO CHANGE THE STORY"},styles:{background:"#171d28",borderColor:"#3d4b63",borderWidth:1,borderRadius:14,color:"#9fb0d7",fontSize:13,fontWeight:800}});
+addObject(story,{id:"story-button",kind:"button",label:"Continue",x:80,y:425,width:160,height:50,props:{text:"Continue"},styles:{background:"#dce5ff",color:"#0b1020",fontWeight:800,borderRadius:9}});
+addInteraction(story,{event:{type:"click",target:"story-button"},actions:[{type:"object.setText",target:"story-card",value:"You just changed the document at runtime."}]});
+addObject(mediaScene,{id:"media-title",kind:"text",label:"Media Room",x:70,y:65,width:620,height:70,props:{text:"Media Room"},styles:{fontSize:54,fontWeight:850,color:"#f7f1ff"}});
+addObject(mediaScene,{id:"media-placeholder",kind:"shape",label:"Media Placeholder",x:72,y:160,width:620,height:240,props:{text:"IMPORT AN IMAGE TO REPLACE THIS"},styles:{background:"linear-gradient(135deg,#2a1f3b,#14111d)",borderColor:"#594b78",borderWidth:1,borderRadius:18,color:"#c7bce3",fontSize:16,fontWeight:800}});
+state.selectedObjectId = null;
 
 const MENU_DATA = {
 File:["New SYN","New from Template","Open","Open Recent","Save","Save As","Save a Copy","Save as Template","Auto Save","Version History","Restore Version","Duplicate Project","Rename Project","Project Information","Import","Export","Share","Publish","Project Settings","Document Settings","Permissions","Close"],
