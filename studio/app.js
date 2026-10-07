@@ -649,19 +649,19 @@ function addCanvasObject(kind, variant="") {
 
 function renderDocumentInspector() {
   inspector.innerHTML = `
-    <div class="eyebrow">DOCUMENT</div>
-    <label class="field">Title<input id="documentTitle" value="${escapeHtml(state.document.meta.title)}"></label>
-    <label class="field">Scene name<input id="sceneNameInput" value="${escapeHtml(scene().name)}"></label>
-    <div class="interaction"><div>Scenes</div><code>${state.document.scenes.length}</code></div>
-    <div class="interaction"><div>Objects</div><code>${scene().objects.length}</code></div>
+    <div class="inspector-heading"><div><div class="eyebrow">DOCUMENT</div><strong>${escapeHtml(state.document.meta.title || "Untitled SYN")}</strong></div><span class="inspector-badge">SYN</span></div>
+    <details class="inspector-section" open><summary>Project</summary><div class="inspector-section-body">
+      <label class="field">Title<input id="documentTitle" value="${escapeHtml(state.document.meta.title)}"></label>
+      <label class="field">Scene name<input id="sceneNameInput" value="${escapeHtml(scene().name)}"></label>
+    </div></details>
+    <details class="inspector-section" open><summary>Scene</summary><div class="inspector-section-body">
+      <div class="stat-grid"><div><span>Scenes</span><strong>${state.document.scenes.length}</strong></div><div><span>Objects</span><strong>${scene().objects.length}</strong></div></div>
+    </div></details>
+    <div class="inspector-tip">Tip: <kbd>V</kbd> select · <kbd>M</kbd> move · <kbd>H</kbd> pan · <kbd>Enter</kbd> edit text</div>
   `;
-  inspector.querySelector("#documentTitle").addEventListener("input", event => {
-    state.document.meta.title = event.target.value || "Untitled SYN";
-  });
-  inspector.querySelector("#sceneNameInput").addEventListener("input", event => {
-    scene().name = event.target.value || "Scene";
-    sceneLabel.textContent = scene().name;
-  });
+  inspector.querySelector("#documentTitle").addEventListener("input", event => { state.document.meta.title = event.target.value || "Untitled SYN"; });
+  inspector.querySelector("#sceneNameInput").addEventListener("input", event => { scene().name = event.target.value || "Scene"; sceneLabel.textContent = scene().name; });
+}
 }
 
 function selectObject(id, additive = false) {
@@ -675,12 +675,34 @@ function selectObject(id, additive = false) {
     state.selectedObjectIds = id ? [id] : [];
   }
   if (id) document.body.classList.add("show-inspector");
+  document.body.classList.toggle("has-selection", Boolean(id));
   document.querySelectorAll(".syn-object").forEach(el => el.classList.toggle("selected", state.selectedObjectIds.includes(el.dataset.id)));
   deleteButton.disabled = !id;
   const object = selected();
   if (!object) { renderDocumentInspector(); return; }
   inspector.innerHTML = `
-    <div class="eyebrow">OBJECT</div>
+    <div class="inspector-heading"><div><div class="eyebrow">OBJECT</div><strong>${escapeHtml(object.label || object.kind)}</strong></div><span class="inspector-badge">${escapeHtml(object.kind.toUpperCase())}</span></div>
+    <details class="inspector-section" open><summary>Transform</summary><div class="inspector-section-body">
+      <label class="field">Label<input id="objectLabel" value="${escapeHtml(object.label)}"></label>
+      <div class="field-row"><label class="field">X<input id="objectX" type="number" value="${object.x}"></label><label class="field">Y<input id="objectY" type="number" value="${object.y}"></label></div>
+      <div class="field-row"><label class="field">Width<input id="objectW" type="number" min="20" value="${object.width}"></label><label class="field">Height<input id="objectH" type="number" min="20" value="${object.height}"></label></div>
+      <label class="field">Rotation<input id="objectRotation" type="number" min="-360" max="360" value="${object.rotation || 0}"></label>
+    </div></details>
+    <details class="inspector-section" open><summary>Content</summary><div class="inspector-section-body">
+      <label class="field">Text<textarea id="objectText" rows="4">${escapeHtml(object.props?.text ?? "")}</textarea></label>
+    </div></details>
+    <details class="inspector-section" open><summary>Appearance</summary><div class="inspector-section-body">
+      <div class="field-row"><label class="field">Font<select id="objectFont"><option>Inter</option><option>Georgia</option><option>Arial</option><option>Courier New</option><option>Trebuchet MS</option><option>Times New Roman</option><option>system-ui</option></select></label><label class="field">Size<input id="objectFontSize" type="number" min="8" value="${object.styles?.fontSize ?? 16}"></label></div>
+      <div class="field-row"><label class="field">Color<input id="objectColor" type="color" value="${/^#[0-9a-f]{6}$/i.test(object.styles?.color ?? "") ? object.styles.color : "#eef1f6"}"></label><label class="field">Radius<input id="objectRadius" type="number" min="0" value="${object.styles?.borderRadius ?? 0}"></label></div>
+      <label class="field">Background<input id="objectBackground" value="${escapeHtml(object.styles?.background ?? "")}"></label>
+    </div></details>
+    <details class="inspector-section"><summary>Actions</summary><div class="inspector-section-body inspector-actions">
+      <button type="button" id="duplicateSelected">Duplicate</button><button type="button" id="frontSelected">Bring front</button>
+      <button type="button" id="backSelected">Send back</button><button type="button" id="lockSelected">${object.locked ? "Unlock" : "Lock"}</button>
+      <button type="button" id="hideSelected">${object.hidden ? "Show" : "Hide"}</button>
+    </div></details>
+  `;
+
     <label class="field">Label<input id="objectLabel" value="${escapeHtml(object.label)}"></label>
     <div class="field-row"><label class="field">X<input id="objectX" type="number" value="${object.x}"></label><label class="field">Y<input id="objectY" type="number" value="${object.y}"></label></div>
     <div class="field-row"><label class="field">Width<input id="objectW" type="number" min="20" value="${object.width}"></label><label class="field">Height<input id="objectH" type="number" min="20" value="${object.height}"></label></div>
@@ -921,7 +943,7 @@ function pasteClipboard(inPlace=false){
   render();
 }
 
-function setZoom(value){ state.zoom=Math.max(0.5,Math.min(2,Number(value)||1)); render(false); }
+function setZoom(value){ state.zoom=Math.max(0.5,Math.min(2,Number(value)||1)); const pct=Math.round(state.zoom*100)+"%"; document.querySelectorAll(".zoom,.zoom-value").forEach(el=>el.textContent=pct); render(false); }
 function fitSelection(){
   const objects=selectedObjects();
   if(!objects.length){fitCanvas();return;}
@@ -993,6 +1015,20 @@ function render(keepSelection = true) {
   sceneLabel.textContent = activeScene.name;
   document.querySelector("#prevScene").disabled = state.sceneIndex === 0;
   document.querySelector("#nextScene").disabled = state.sceneIndex === state.document.scenes.length - 1;
+  document.querySelectorAll(".zoom,.zoom-value").forEach(el => el.textContent = Math.round(state.zoom * 100) + "%");
+  const objectCount = activeScene.objects.filter(object => !object.hidden).length;
+  const canvasObjectCount = document.querySelector("#canvasObjectCount");
+  const canvasSceneCount = document.querySelector("#canvasSceneCount");
+  const canvasStatus = document.querySelector("#canvasStatus");
+  const studioStatusText = document.querySelector("#studioStatusText");
+  const canvasModeLabel = document.querySelector("#canvasModeLabel");
+  const canvasHint = document.querySelector("#canvasHint");
+  if (canvasObjectCount) canvasObjectCount.textContent = objectCount + (objectCount === 1 ? " object" : " objects");
+  if (canvasSceneCount) canvasSceneCount.textContent = state.document.scenes.length + (state.document.scenes.length === 1 ? " scene" : " scenes");
+  if (canvasStatus) canvasStatus.textContent = state.selectedObjectIds.length ? state.selectedObjectIds.length + " selected" : "Ready";
+  if (studioStatusText) studioStatusText.textContent = state.selectedObjectIds.length ? "Editing " + (selected()?.label || "object") : "Ready";
+  if (canvasModeLabel) canvasModeLabel.textContent = state.workspaceMode.toUpperCase();
+  if (canvasHint) canvasHint.textContent = state.selectedObjectIds.length ? "Inspector is open" : "Select an object to edit it";
   for (const object of activeScene.objects) {
     const el = document.createElement("button");
     el.className = "syn-object syn-" + object.kind + (state.selectedObjectIds.includes(object.id) ? " selected" : "");
@@ -1287,6 +1323,10 @@ document.querySelector("#openSyn").addEventListener("change", async event => {
 document.querySelector("#preview").addEventListener("click", preview);
 document.querySelector("#toolbarPreview")?.addEventListener("click",preview);
 document.querySelector("#toolbarFit")?.addEventListener("click",fitCanvas);
+document.querySelector("#toolbarZoomOut")?.addEventListener("click",()=>setZoom(state.zoom-0.1));
+document.querySelector("#toolbarZoomIn")?.addEventListener("click",()=>setZoom(state.zoom+0.1));
+document.querySelector("#toolbarZoomValue")?.addEventListener("click",()=>setZoom(1));
+document.querySelector("#toolbarCommand")?.addEventListener("click",openCodePalette);
 document.querySelectorAll("[data-workspace-mode]").forEach(button=>button.addEventListener("click",()=>setWorkspaceMode(button.dataset.workspaceMode)));
 document.querySelectorAll("[data-studio-tool]").forEach(button=>button.addEventListener("click",()=>{
   const tool=button.dataset.studioTool;
@@ -1318,6 +1358,27 @@ document.addEventListener("keydown", event => {
   if (mod && event.shiftKey && event.key.toLowerCase() === "z") { event.preventDefault(); redo(); return; }
   if (mod && event.key.toLowerCase() === "d" && !target.matches("input,textarea,select")) { event.preventDefault(); duplicateSelected(); return; }
   if (mod && event.key === "Enter" && !target.matches("input,textarea,select")) { event.preventDefault(); fitCanvas(); return; }
+  if (!target.matches("input,textarea,select")) {
+    const key=event.key.toLowerCase();
+    const shortcuts={v:"select",m:"move",h:"pan",t:"text",r:"shape"};
+    if(shortcuts[key] && !mod){
+      event.preventDefault();
+      state.toolMode=shortcuts[key];
+      document.querySelectorAll("[data-studio-tool]").forEach(item=>item.classList.toggle("active",item.dataset.studioTool===state.toolMode));
+      stage.classList.toggle("pan-mode",state.toolMode==="pan");
+      if(["text","shape"].includes(state.toolMode)) addCanvasObject(state.toolMode);
+      return;
+    }
+    if(event.key==="Enter" && selected()?.kind==="text" && !event.shiftKey){
+      event.preventDefault();
+      const logical=viewport();
+      const scale=responsiveScale(logical.width,logical.height,Math.max(1,stage.clientWidth-2),Math.max(1,stage.clientHeight-2))*state.zoom;
+      beginInlineEdit(selected(),scale);
+      return;
+    }
+    if(event.key==="F2" && selected()){ event.preventDefault(); renameSelectedObject(); return; }
+    if(event.key==="Delete" || event.key==="Backspace"){ if(selected()){ event.preventDefault(); deleteSelectedObject(); return; } }
+  }
   if (!target.matches("input,textarea,select") && ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(event.key) && selected()) {
     event.preventDefault();
     recordHistory();
