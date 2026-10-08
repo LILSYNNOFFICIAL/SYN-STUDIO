@@ -81,21 +81,34 @@ jobs:
           <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=/SYN-STUDIO/studio/"><title>SYN Studio</title></head><body><a href="/SYN-STUDIO/studio/">Open SYN Studio</a></body></html>
           EOF
           cp studio/index.html studio/404.html
+      - name: Stage Pages site
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp index.html _site/index.html
+          cp manifest.webmanifest _site/manifest.webmanifest
+          cp sw.js _site/sw.js
+          cp -R studio _site/studio
       - name: Verify Pages artifact
         run: |
-          test -s studio/index.html
-          test -s studio/pkg/syn-studio.js
-          test -s studio/pkg/syn-studio_bg.wasm
-          test -s studio/404.html
-          test -s index.html
-          grep -q 'pkg/syn-studio.js' studio/index.html
-          grep -q 'SYN-STUDIO/studio/' index.html
+          test -s _site/index.html
+          test -s _site/manifest.webmanifest
+          test -s _site/sw.js
+          test -s _site/studio/index.html
+          test -s _site/studio/pkg/syn-studio.js
+          test -s _site/studio/pkg/syn-studio_bg.wasm
+          test -s _site/studio/404.html
+          grep -q 'pkg/syn-studio.js' _site/studio/index.html
+          grep -q 'SYN-STUDIO/studio/' _site/index.html
+          test ! -e _site/src
+          test ! -e _site/target
+          test ! -e _site/.git
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - name: Deploy to Pages
         id: deployment
         uses: actions/deploy-pages@v4
