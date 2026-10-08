@@ -2,7 +2,7 @@ use iced::{
     alignment, border, mouse, time, touch, window,
     widget::{
         button, canvas, column, container, pick_list, progress_bar,
-        row, scrollable, slider, space, text, text_editor, text_input,
+        row, scrollable, slider, space, stack, text, text_editor, text_input,
     },
     Color, Element, Font, Length, Point, Rectangle, Renderer, Size, Subscription, Theme,
 };
@@ -636,95 +636,40 @@ impl App {
 
     fn view(&self)->Element<'_,Message> {
         if let Some(ref overlay)=self.overlay { return self.overlay_view(overlay); }
-        let items=[(Surface::Design,"DESIGN"),(Surface::Motion,"MOTION"),(Surface::Architecture,"SYSTEM"),(Surface::Media,"MEDIA"),(Surface::Code,"CODE"),(Surface::Ai,"AI"),(Surface::Publish,"PUBLISH")];
-        let workspaces=items.into_iter().map(|(s,label)|
-            button(text(label).size(8)).on_press(Message::Surface(s)).padding([7,11]).style(btn_style(self.surface==s))
-        ).map(Into::into).collect::<Vec<Element<'_,Message>>>();
-        let right=if self.inspector && !self.is_phone() {
-            container(self.inspector_view()).width(Length::Fixed(if self.is_compact(){280.0}else{self.inspector_width as f32})).height(Length::Fill)
-        } else { container(space()).width(Length::Fixed(0.0)).height(Length::Fill) };
-        let desktop_body=row![self.rail(),container(self.center()).width(Length::Fill).height(Length::Fill),right].height(Length::Fill);
-        let body:Element<'_,Message>=if self.is_phone() {
-            let mobile_inspector:Element<'_,Message>=if self.inspector {
-                container(self.inspector_view()).width(Length::Fill).height(Length::Fixed(320.0)).into()
-            } else {
-                container(space()).height(0).into()
-            };
-            column![container(self.center()).width(Length::Fill).height(Length::Fill),mobile_inspector]
-                .height(Length::Fill).into()
-        } else { desktop_body.into() };
-        let workspace_bar=container(scrollable(
-            row![
-                iced::widget::Row::with_children(workspaces),
-                space().width(Length::Fill),
-                text(if self.inspector{"INSPECTOR OPEN"}else{"INSPECTOR CLOSED"}).size(7).color(MUTED)
-            ].spacing(3).align_y(alignment::Vertical::Center)
-        ).horizontal().height(36).width(Length::Fill)).height(36).padding([0,12]).style(panel_style(rgb(0x080b10)));
+        let body: Element<'_,Message> = if self.is_phone() { column![self.center()].height(Length::Fill).into() } else { self.center() };
         let status=container(row![
-            row![text("●").size(7).color(GOOD),text("READY").size(8).color(TEXT)].spacing(5),
+            row![text("●").size(7).color(GOOD),text("LIVE").size(8).color(TEXT)].spacing(5),
             text(&self.status).size(8).color(MUTED),space().width(Length::Fill),
+            text(format!("{} scenes",self.doc.scenes.len())).size(8).color(MUTED),
             text(format!("{:.0}%",self.zoom*100.)).size(8).color(MUTED),
             text(format!("{:.2}s",self.playhead)).size(8).color(MUTED),
             text(format!("{} FPS",self.doc.scene().animation.fps)).size(8).color(MUTED)
-        ].spacing(14).padding([0,13]).align_y(alignment::Vertical::Center)).height(30).style(panel_style(rgb(0x06090d)));
-        column![self.titlebar(),self.menu_bar(),workspace_bar,body,status].into()
+        ].spacing(14).padding([0,16]).align_y(alignment::Vertical::Center)).height(27).style(status_bar_style());
+        column![self.titlebar(),self.menu_bar(),body,status].into()
     }
 
     fn titlebar(&self)->Element<'_,Message> {
-        let actions=row![
-            button(text("↶").size(16)).on_press(Message::Undo).style(btn_style(false)).width(34).height(34),
-            button(text("↷").size(16)).on_press(Message::Redo).style(btn_style(false)).width(34).height(34),
-            button(text("Save").size(10)).on_press(Message::Save).style(btn_style(false)).padding([7,14]),
-            button(text("Preview").size(10)).on_press(Message::Preview).style(btn_style(true)).padding([7,15])
-        ].spacing(5);
-
         let brand=row![
-            container(text("S").size(17).font(Font::MONOSPACE).color(BG))
-                .width(36).height(36).center(36).style(accent_box()),
-            column![
-                text("SYN STUDIO").size(15).font(Font::MONOSPACE).color(TEXT),
-                text("CREATIVE SYSTEMS").size(7).color(MUTED)
-            ].spacing(1),
-            container(text("●").size(8).color(GOOD)).padding([0,5]),
-            text(&self.doc.title).size(10).color(MUTED)
+            container(text("S").size(18).font(Font::MONOSPACE).color(BG)).width(34).height(34).center(34).style(accent_box()),
+            column![text("SYN STUDIO").size(14).font(Font::MONOSPACE).color(TEXT),text("CREATIVE SYSTEMS").size(7).color(MUTED)].spacing(1),
+            container(text("●").size(7).color(GOOD)).padding([0,2]),
         ].spacing(8).align_y(alignment::Vertical::Center);
-
-        container(
-            row![
-                brand,
-                space().width(Length::Fill),
-                container(actions).padding([3,4]).style(panel_style(SURFACE)),
-            ]
-            .padding([8,14])
-            .align_y(alignment::Vertical::Center)
-        )
-        .height(58)
-        .width(Length::Fill)
-        .style(panel_style(rgb(0x070a10)))
-        .into()
+        let actions=row![
+            button(text("↶").size(16)).on_press(Message::Undo).style(ghost_btn_style()).width(32).height(32),
+            button(text("↷").size(16)).on_press(Message::Redo).style(ghost_btn_style()).width(32).height(32),
+            container(text(&self.doc.title).size(9).color(MUTED)).padding([0,8]),space().width(Length::Fill),
+            button(text("Save").size(9)).on_press(Message::Save).style(ghost_btn_style()).padding([7,13]),
+            button(text("Preview").size(9)).on_press(Message::Preview).style(accent_btn_style()).padding([7,15]),
+        ].spacing(4).align_y(alignment::Vertical::Center);
+        container(row![brand,actions].padding([7,12]).align_y(alignment::Vertical::Center)).height(50).width(Length::Fill).style(chrome_style()).into()
     }
 
     fn menu_bar(&self)->Element<'_,Message> {
         let names=["File","Edit","View","Insert","Format","Scene","Media","Interaction","Code","Window","Help"];
         let tabs=names.into_iter().map(|name|{
-            button(text(name).size(9).color(if self.menu_open.as_deref()==Some(name){TEXT}else{MUTED}))
-                .on_press(Message::MenuOpen(name.into()))
-                .padding([6,10])
-                .style(btn_style(self.menu_open.as_deref()==Some(name)))
-                .into()
+            button(text(name).size(9).color(if self.menu_open.as_deref()==Some(name){TEXT}else{MUTED})).on_press(Message::MenuOpen(name.into())).padding([5,10]).style(menu_tab_style(self.menu_open.as_deref()==Some(name))).into()
         }).collect::<Vec<Element<'_,Message>>>();
-
-        let mut content=column![
-            container(
-                scrollable(
-                    iced::widget::Row::with_children(tabs)
-                        .spacing(2)
-                        .padding([0,10])
-                        .align_y(alignment::Vertical::Center)
-                ).horizontal().height(34).width(Length::Fill)
-            ).height(34).style(panel_style(rgb(0x0b0f16)))
-        ];
-
+        let mut content=container(scrollable(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center)).horizontal().height(30).width(Length::Fill)).height(30).style(menu_bar_style());
         if let Some(name)=&self.menu_open {
             let entries:Vec<(&str,&str)>=match name.as_str() {
                 "File"=>vec![("New Project","file.new"),("Save Project","file.save"),("Export .syn","file.export")],
@@ -737,126 +682,51 @@ impl App {
                 "Interaction"=>vec![("Create Link","interaction.link"),("Create Trigger","interaction.trigger")],
                 "Code"=>vec![("SYN JSON","code.syn"),("Rust","code.rust"),("Format Source","code.format"),("Validate","code.validate"),("Apply to Design","code.apply"),("Document Symbols","code.symbols")],
                 "Window"=>vec![("Command Center","window.design"),("Motion Lab","window.motion"),("Architecture","window.architecture"),("Media Lab","window.media"),("Code","window.code"),("AI Workbench","window.ai"),("Publish","window.publish"),("Narrow Inspector","window.narrow"),("Widen Inspector","window.wide")],
-                "Help"=>vec![("Shortcuts","help.shortcuts"),("About SYN Studio","help.about"),("Run Validation","help.validate")],
-                _=>vec![]
+                "Help"=>vec![("Shortcuts","help.shortcuts"),("About SYN Studio","help.about"),("Run Validation","help.validate")], _=>vec![]
             };
             let buttons=entries.into_iter().map(|(label,action)|{
-                button(row![
-                    text(label).size(10).color(TEXT),
-                    space().width(Length::Fill),
-                    text("›").size(10).color(MUTED)
-                ])
-                .on_press(Message::MenuAction(action.into()))
-                .width(230).height(32).padding([0,12]).style(menu_item_style())
-                .into()
+                button(row![text(label).size(10).color(TEXT),space().width(Length::Fill),text("›").size(10).color(MUTED)])
+                    .on_press(Message::MenuAction(action.into())).width(236).height(32).padding([0,12]).style(menu_item_style()).into()
             }).collect::<Vec<Element<'_,Message>>>();
-            content=content.push(
-                container(column![iced::widget::Column::with_children(buttons).spacing(2).padding(7)])
-                    .width(250).style(menu_panel_style())
-            );
+            content=stack![content,container(column![text(name.to_uppercase()).size(7).color(ACCENT),iced::widget::Column::with_children(buttons).spacing(2).padding(7)].spacing(4).padding([8,0])).width(252).style(menu_panel_style())].height(Length::Shrink);
         }
-        content.height(Length::Shrink).into()
+        content.into()
     }
 
     fn rail(&self)->Element<'_,Message> {
-        let items=[
-            (Tool::Select,"↖","Select"),
-            (Tool::Draw,"✎","Draw"),
-            (Tool::Text,"T","Text"),
-            (Tool::Shape,"◇","Shape"),
-            (Tool::Camera,"⌗","Camera"),
-            (Tool::Bone,"⌁","Rig")
-        ];
+        let items=[(Tool::Select,"↖","Select"),(Tool::Draw,"✎","Draw"),(Tool::Text,"T","Text"),(Tool::Shape,"◇","Shape"),(Tool::Camera,"⌗","Camera"),(Tool::Bone,"⌁","Rig")];
         let controls=items.into_iter().map(|(t,i,l)|tool_button(t,i,l,self.tool)).collect::<Vec<_>>();
-        container(column![
-            container(text("S").size(13).font(Font::MONOSPACE).color(ACCENT))
-                .width(44).height(44).center(44).style(rail_logo_style()),
-            text("TOOLS").size(7).color(MUTED),
-            iced::widget::Column::with_children(controls).spacing(5),
-            space().height(Length::Fill),
-            button(text("?").size(13)).on_press(Message::OpenWorkspace("Shortcuts".into()))
-                .style(btn_style(false)).width(44).height(38)
-        ].spacing(7).padding([12,8]))
-        .width(72).height(Length::Fill)
-        .style(panel_style(rgb(0x080b11)))
-        .into()
+        container(column![text("TOOLS").size(7).color(MUTED),iced::widget::Column::with_children(controls).spacing(4),space().height(Length::Fill),button(text("⌘").size(12)).on_press(Message::OpenWorkspace("Shortcuts".into())).style(ghost_btn_style()).width(42).height(36)].spacing(7).padding([10,7])).width(60).style(floating_glass_style()).into()
     }
 
     fn center(&self)->Element<'_,Message> {
         let header=container(row![
-            column![
-                text(self.surface_name()).size(17).font(Font::MONOSPACE).color(TEXT),
-                text(self.surface_subtitle()).size(8).color(MUTED)
-            ].spacing(3),
+            column![text(self.surface_name()).size(15).font(Font::MONOSPACE).color(TEXT),text(self.surface_subtitle()).size(7).color(MUTED)].spacing(2),
             space().width(Length::Fill),
             container(row![
-                button(text("−").size(13)).on_press(Message::ZoomOut).style(btn_style(false)).width(30).height(30),
+                button(text("−").size(13)).on_press(Message::ZoomOut).style(ghost_btn_style()).width(28).height(28),
                 text(format!("{:.0}%",self.zoom*100.)).size(9).color(TEXT),
-                button(text("+").size(13)).on_press(Message::ZoomIn).style(btn_style(false)).width(30).height(30),
-                button(text("FIT").size(8)).on_press(Message::ZoomFit).style(btn_style(false)).padding([6,10]),
-                button(text(if self.inspector{"Inspector"}else{"Inspect"}).size(8))
-                    .on_press(Message::ToggleInspector).style(btn_style(self.inspector)).padding([6,11])
-            ].spacing(3).align_y(alignment::Vertical::Center)).padding([3,4]).style(panel_style(SURFACE))
-        ].spacing(12).padding([11,14]).align_y(alignment::Vertical::Center))
-        .height(60).style(panel_style(rgb(0x0a0e15)));
-
+                button(text("+").size(13)).on_press(Message::ZoomIn).style(ghost_btn_style()).width(28).height(28),
+                button(text("FIT").size(8)).on_press(Message::ZoomFit).style(ghost_btn_style()).padding([6,9]),
+                button(text("INSPECT").size(8)).on_press(Message::ToggleInspector).style(menu_tab_style(self.inspector)).padding([6,10])
+            ].spacing(3).align_y(alignment::Vertical::Center))
+        ].spacing(12).padding([9,14]).align_y(alignment::Vertical::Center)).height(52).style(soft_chrome_style());
         match self.surface {
             Surface::Design | Surface::Motion => {
-                let canvas_view=canvas(SceneCanvas{
-                    scene:self.doc.scene().clone(),
-                    selected:self.selected.clone(),
-                    playhead:self.playhead,
-                    zoom:self.zoom
-                }).width(Length::Fill).height(Length::Fill);
-
-                let canvas_shell=container(canvas_view)
-                    .padding(18)
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .style(stage_style());
-
-                let floating=row![
-                    button(text(if self.tool==Tool::Select{"SELECT"}else{"TOOL"}).size(8))
-                        .on_press(Message::Tool(self.tool)).style(btn_style(true)),
-                    button(text("SNAP").size(8)).on_press(Message::Status("Snap ready".into())).style(btn_style(false)),
-                    button(text("GRID").size(8)).on_press(Message::Status("Grid ready".into())).style(btn_style(false))
-                ].spacing(3).padding([4,5]);
-
-                let actions=if self.surface==Surface::Motion {
-                    row![
-                        button(text(if self.playing{"PAUSE"}else{"PLAY"}).size(9))
-                            .on_press(Message::PlayPause).style(btn_style(self.playing)).padding([7,12]),
-                        button(text("STOP").size(9)).on_press(Message::Stop).style(btn_style(false)).padding([7,12]),
-                        button(text("KEYFRAME").size(9)).on_press(Message::AddKeyframe).style(btn_style(false)).padding([7,12]),
-                        space().width(Length::Fill),
-                        button(text("ONION").size(8)).on_press(Message::ToggleOnion(!self.doc.scene().animation.onion_skin)).style(btn_style(self.doc.scene().animation.onion_skin)).padding([7,10]),
-                        button(text("LOOP").size(8)).on_press(Message::ToggleLoop(!self.doc.scene().animation.looped)).style(btn_style(self.doc.scene().animation.looped)).padding([7,10])
-                    ].spacing(5).padding([7,11])
-                } else {
-                    row![
-                        button(text("+ NEW").size(9)).on_press(Message::New).style(btn_style(false)).padding([7,12]),
-                        button(text("DUPLICATE").size(9)).on_press(Message::Duplicate).style(btn_style(false)).padding([7,12]),
-                        button(text("DELETE").size(9)).on_press(Message::Delete).style(btn_style(false)).padding([7,12]),
-                        space().width(Length::Fill),
-                        text("SCENE").size(8).color(MUTED),
-                        text(format!("{:02}",self.doc.active_scene+1)).size(10).color(TEXT)
-                    ].spacing(5).padding([7,11])
-                };
-
-                let bottom=if self.surface==Surface::Motion {
-                    column![actions,self.timeline()]
-                } else {
-                    column![actions,self.scene_tabs()]
-                };
-
-                column![
-                    header,
-                    container(column![
-                        container(canvas_shell).width(Length::Fill).height(Length::Fill),
-                        container(floating).padding([0.0_f32,14.0_f32])
-                    ]).height(Length::Fill),
-                    bottom
-                ].spacing(5).height(Length::Fill).into()
+                let canvas_view=canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:self.selected.clone(),playhead:self.playhead,zoom:self.zoom}).width(Length::Fill).height(Length::Fill);
+                let stage=container(canvas_view).padding(18).width(Length::Fill).height(Length::Fill).style(stage_style());
+                let left_tools=container(self.rail()).padding([18,0,18,14]).width(76).height(Length::Fill);
+                let inspector=if self.inspector && !self.is_phone() {
+                    container(self.inspector_view()).width(Length::Fixed(if self.is_compact(){280.0}else{self.inspector_width as f32})).height(Length::Fill).padding([18,14,18,0])
+                } else { container(space()).width(0).height(Length::Fill) };
+                let scene_or_motion:Element<'_,Message>=if self.surface==Surface::Motion{self.timeline()}else{self.scene_tabs()};
+                let bottom=container(scene_or_motion).padding([0,14,12,14]).width(Length::Fill);
+                let overlays=stack![
+                    stage,
+                    container(row![left_tools,space().width(Length::Fill),inspector]).width(Length::Fill).height(Length::Fill),
+                    container(column![space().height(Length::Fill),bottom]).width(Length::Fill).height(Length::Fill)
+                ];
+                column![header,container(overlays).height(Length::Fill)].spacing(3).height(Length::Fill).into()
             }
             Surface::Architecture=>column![header,self.architecture_surface()].into(),
             Surface::Media=>column![header,self.media_surface()].into(),
@@ -1137,75 +1007,22 @@ fn value_box(label:&str,value:f32)->Element<'_,Message> {
     container(column![text(label).size(7).color(MUTED),text(format!("{:.1}",value)).size(10).color(TEXT)].spacing(2))
         .padding(7).width(Length::Fill).style(panel_style(SURFACE_2)).into()
 }
-fn rail_logo_style()->impl Fn(&Theme)->iced::widget::container::Style {
-    move |_theme| iced::widget::container::Style{
-        text_color:Some(ACCENT),
-        background:Some(rgb(0x17152a).into()),
-        border:border::rounded(11).color(rgb(0x4b4275)).width(1.0),
-        shadow:Default::default(),
-        snap:true
-    }
-}
-fn stage_style()->impl Fn(&Theme)->iced::widget::container::Style {
-    move |_theme| iced::widget::container::Style{
-        text_color:Some(TEXT),
-        background:Some(rgb(0x070a10).into()),
-        border:border::rounded(10).color(rgb(0x151d2b)).width(1.0),
-        shadow:Default::default(),
-        snap:true
-    }
-}
-fn menu_panel_style()->impl Fn(&Theme)->iced::widget::container::Style {
-    move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(rgb(0x111722).into()),border:border::rounded(6).color(rgb(0x303b50)).width(1.0),shadow:Default::default(),snap:true}
-}
-fn menu_item_style()->impl Fn(&Theme,button::Status)->button::Style {
-    move |_theme,status| {
-        let hover=matches!(status,button::Status::Hovered);
-        button::Style{background:Some(if hover{rgb(0x242f43).into()}else{Color::TRANSPARENT.into()}),text_color:TEXT,border:border::rounded(4).color(if hover{rgb(0x3d4c68)}else{Color::TRANSPARENT}).width(if hover{1.0}else{0.0}),shadow:Default::default(),snap:true}
-    }
-}
-fn text_input_style()->impl Fn(&Theme,text_input::Status)->text_input::Style {
-    move |_theme,_status| text_input::Style{background:rgb(0x101722).into(),border:border::rounded(6).color(rgb(0x2b3850)).width(1.0),icon:MUTED,placeholder:MUTED,value:TEXT,selection:ACCENT}
-}
-fn panel_style(bg:Color)->impl Fn(&Theme)->iced::widget::container::Style {
-    move |_theme| iced::widget::container::Style {
-        text_color:Some(TEXT),
-        background:Some(bg.into()),
-        border:border::rounded(8).color(rgb(0x20293a)).width(1.0),
-        shadow:Default::default(),
-        snap:true
-    }
-}
-fn accent_box()->impl Fn(&Theme)->iced::widget::container::Style {
-    move |_theme| iced::widget::container::Style {
-        text_color:Some(BG),background:Some(ACCENT.into()),
-        border:border::rounded(8).color(ACCENT).width(1.0),
-        shadow:Default::default(),snap:true
-    }
-}
-fn btn_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style {
-    move |_theme,status| {
-        let hover=matches!(status,button::Status::Hovered);
-        let pressed=matches!(status,button::Status::Pressed);
-        button::Style {
-            background:Some(
-                if active {rgb(0x8f7cff).into()}
-                else if pressed {rgb(0x202a3c).into()}
-                else if hover {rgb(0x182131).into()}
-                else {rgb(0x101722).into()}
-            ),
-            text_color:if active {BG}else if hover {TEXT}else{rgb(0xa9b2c3)},
-            border:border::rounded(7).color(
-                if active {rgb(0xb2a9ff)}
-                else if hover {rgb(0x34445f)}
-                else {rgb(0x1c2635)}
-            ).width(1.0),
-            shadow:Default::default(),
-            snap:true
-        }
-    }
-}
-
+fn rail_logo_style()->impl Fn(&Theme)->iced::widget::container::Style { floating_glass_style() }
+fn stage_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.018,0.024,0.038,0.72).into()),border:border::rounded(18).color(Color::from_rgba(0.40,0.46,0.60,0.22)).width(1.0),shadow:iced::Shadow{color:Color::from_rgba(0.,0.,0.,0.38),offset:iced::Vector::new(0.,8.),blur_radius:28.},snap:true} }
+fn chrome_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.025,0.032,0.050,0.88).into()),border:border::rounded(0).color(Color::from_rgba(0.35,0.40,0.55,0.18)).width(1.0),shadow:Default::default(),snap:true} }
+fn soft_chrome_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.025,0.032,0.050,0.55).into()),border:border::rounded(12).color(Color::from_rgba(0.45,0.50,0.65,0.14)).width(1.0),shadow:Default::default(),snap:true} }
+fn menu_bar_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.025,0.032,0.050,0.68).into()),border:border::rounded(0).color(Color::from_rgba(0.45,0.50,0.65,0.10)).width(1.0),shadow:Default::default(),snap:true} }
+fn floating_glass_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.045,0.055,0.082,0.80).into()),border:border::rounded(14).color(Color::from_rgba(0.62,0.66,0.82,0.24)).width(1.0),shadow:iced::Shadow{color:Color::from_rgba(0.,0.,0.,0.42),offset:iced::Vector::new(0.,7.),blur_radius:22.},snap:true} }
+fn menu_panel_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.045,0.055,0.082,0.96).into()),border:border::rounded(10).color(Color::from_rgba(0.62,0.66,0.82,0.28)).width(1.0),shadow:iced::Shadow{color:Color::from_rgba(0.,0.,0.,0.48),offset:iced::Vector::new(0.,8.),blur_radius:24.},snap:true} }
+fn menu_item_style()->impl Fn(&Theme,button::Status)->button::Style { move |_theme,status| { let hover=matches!(status,button::Status::Hovered); button::Style{background:Some(if hover{Color::from_rgba(0.36,0.31,0.62,0.32).into()}else{Color::TRANSPARENT.into()}),text_color:if hover{TEXT}else{rgb(0xd0d4e0)},border:border::rounded(6).color(if hover{Color::from_rgba(0.64,0.58,1.,0.28)}else{Color::TRANSPARENT}).width(if hover{1.0}else{0.0}),shadow:Default::default(),snap:true} } }
+fn menu_tab_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style { move |_theme,status| { let hover=matches!(status,button::Status::Hovered); button::Style{background:Some(if active{Color::from_rgba(0.42,0.35,0.78,0.30).into()}else if hover{Color::from_rgba(0.30,0.33,0.45,0.30).into()}else{Color::TRANSPARENT.into()}),text_color:if active{TEXT}else if hover{TEXT}else{MUTED},border:border::rounded(6).color(if active{Color::from_rgba(0.64,0.58,1.,0.30)}else{Color::TRANSPARENT}).width(if active{1.0}else{0.0}),shadow:Default::default(),snap:true} } }
+fn ghost_btn_style()->impl Fn(&Theme,button::Status)->button::Style { move |_theme,status| { let hover=matches!(status,button::Status::Hovered); button::Style{background:Some(if hover{Color::from_rgba(0.40,0.35,0.62,0.24).into()}else{Color::TRANSPARENT.into()}),text_color:if hover{TEXT}else{rgb(0xb6bed0)},border:border::rounded(7).color(if hover{Color::from_rgba(0.64,0.58,1.,0.28)}else{Color::TRANSPARENT}).width(if hover{1.0}else{0.0}),shadow:Default::default(),snap:true} } }
+fn accent_btn_style()->impl Fn(&Theme,button::Status)->button::Style { move |_theme,status| { let hover=matches!(status,button::Status::Hovered); button::Style{background:Some(if hover{rgb(0xb0a2ff).into()}else{ACCENT.into()}),text_color:BG,border:border::rounded(8).color(Color::from_rgba(0.85,0.80,1.,0.55)).width(1.0),shadow:iced::Shadow{color:Color::from_rgba(0.50,0.42,1.,0.22),offset:iced::Vector::new(0.,3.),blur_radius:10.},snap:true} } }
+fn status_bar_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.018,0.024,0.038,0.82).into()),border:border::rounded(0).color(Color::from_rgba(0.35,0.40,0.55,0.12)).width(1.0),shadow:Default::default(),snap:true} }
+fn text_input_style()->impl Fn(&Theme,text_input::Status)->text_input::Style { move |_theme,status| { let focused=matches!(status,text_input::Status::Focused{..}); text_input::Style{background:Color::from_rgba(0.06,0.07,0.10,0.78).into(),border:border::rounded(8).color(if focused{ACCENT}else{Color::from_rgba(0.45,0.50,0.65,0.18)}).width(1.0),icon:MUTED,placeholder:MUTED,value:TEXT,selection:ACCENT} } }
+fn panel_style(bg:Color)->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(bg.into()),border:border::rounded(10).color(Color::from_rgba(0.45,0.50,0.65,0.16)).width(1.0),shadow:Default::default(),snap:true} }
+fn accent_box()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(BG),background:Some(ACCENT.into()),border:border::rounded(9).color(Color::from_rgba(0.88,0.84,1.,0.70)).width(1.0),shadow:iced::Shadow{color:Color::from_rgba(0.55,0.45,1.,0.25),offset:iced::Vector::new(0.,3.),blur_radius:12.},snap:true} }
+fn btn_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style { move |_theme,status| { let hover=matches!(status,button::Status::Hovered); let pressed=matches!(status,button::Status::Pressed); button::Style{background:Some(if active{Color::from_rgba(0.57,0.50,1.,0.82).into()}else if pressed{Color::from_rgba(0.18,0.21,0.30,0.80).into()}else if hover{Color::from_rgba(0.28,0.31,0.43,0.68).into()}else{Color::from_rgba(0.08,0.10,0.15,0.62).into()}),text_color:if active{BG}else if hover{TEXT}else{rgb(0xaeb6c8)},border:border::rounded(8).color(if active{Color::from_rgba(0.72,0.66,1.,0.52)}else if hover{Color::from_rgba(0.45,0.50,0.65,0.28)}else{Color::from_rgba(0.35,0.40,0.55,0.14)}).width(1.0),shadow:Default::default(),snap:true} } }
 struct CanvasGestureState {
     first: Option<(touch::Finger, Point)>,
     second: Option<(touch::Finger, Point)>,
