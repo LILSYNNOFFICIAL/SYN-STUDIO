@@ -801,6 +801,14 @@ fn btn_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style {
     }
 }
 
+struct CanvasGestureState {
+    first: Option<(touch::Finger, Point)>,
+    second: Option<(touch::Finger, Point)>,
+    pinch_distance: Option<f32>,
+}
+impl Default for CanvasGestureState {
+    fn default() -> Self { Self { first:None, second:None, pinch_distance:None } }
+}
 struct SceneCanvas { scene:Scene, selected:Option<String>, playhead:f32, zoom:f32 }
 impl SceneCanvas {
     fn project3d(p:[f32;3], transform:Transform3D, center:Point)->Point {
@@ -815,8 +823,8 @@ impl SceneCanvas {
     }
 }
 impl Program<Message> for SceneCanvas {
-    type State=();
-    fn draw(&self,_state:&(),renderer:&Renderer,_theme:&Theme,bounds:Rectangle,_cursor:mouse::Cursor)->Vec<Geometry> {
+    type State=CanvasGestureState;
+    fn draw(&self,_state:&CanvasGestureState,renderer:&Renderer,_theme:&Theme,bounds:Rectangle,_cursor:mouse::Cursor)->Vec<Geometry> {
         let mut frame=Frame::new(renderer,bounds.size());
         frame.fill_rectangle(Point::ORIGIN,bounds.size(),rgb(0x090d14));
         let grid=Path::rectangle(Point::new(0.,0.),bounds.size());
@@ -860,22 +868,56 @@ impl Program<Message> for SceneCanvas {
         frame.fill_text(CanvasText{content:format!("FRAME {:04}   /   {:.2}s", (self.playhead*60.) as u32,self.playhead),position:Point::new(12.,bounds.height-10.),color:MUTED,size:9.into(),..Default::default()});
         vec![frame.into_geometry()]
     }
-    fn update(&self,_state:&mut (),event:&canvas::Event,bounds:Rectangle,cursor:mouse::Cursor)->Option<canvas::Action<Message>> {
-        if let canvas::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))=event {
-            if let Some(p)=cursor.position_in(bounds) {
-                let scale=self.zoom;
-                let ox=(bounds.width-self.scene.width*scale)/2.;
-                let oy=(bounds.height-self.scene.height*scale)/2.;
-                for o in self.scene.objects.iter().rev() {
-                    if o.kind=="model3d" {continue;}
-                    let r=Rectangle{x:ox+o.x*scale,y:oy+o.y*scale,width:o.width*scale,height:o.height*scale};
-                    if r.contains(p) {return Some(canvas::Action::publish(Message::SelectObject(o.id.clone())));}
+    fn update(&self,state:&mut CanvasGestureState,event:&canvas::Event,bounds:Rectangle,cursor:mouse::Cursor)->Option<canvas::Action<Message>> {
+        match event {
+            canvas::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                if let Some(p)=cursor.position_in(bounds) {
+                    let scale=self.zoom;
+                    let ox=(bounds.width-self.scene.width*scale)/2.;
+                    let oy=(bounds.height-self.scene.height*scale)/2.;
+                    for o in self.scene.objects.iter().rev() {
+                        if o.kind=="model3d" {continue;}
+                        let r=Rectangle{x:ox+o.x*scale,y:oy+o.y*scale,width:o.width*scale,height:o.height*scale};
+                        if r.contains(p) {return Some(canvas::Action::publish(Message::SelectObject(o.id.clone())));}
+                    }
                 }
             }
+            canvas::Event::Mouse(mouse::Event::WheelScrolled{delta}) => {
+                let amount=match delta {
+                    mouse::ScrollDelta::Lines{y,..} => *y,
+                    mouse::ScrollDelta::Pixels{y,..} => *y/120.0,
+                };
+                if amount.abs()>0.001 {
+                    return Some(canvas::Action::publish(Message::Zoom((self.zoom*(1.0+amount*0.08)).clamp(0.25,2.5))));
+                }
+            }
+            canvas::Event::Touch(touch::Event::FingerPressed{id,position}) => {
+                if state.first.is_none() { state.first=Some((*id,*position)); }
+                else if state.second.is_none() { state.second=Some((*id,*position)); state.pinch_distance=state.first.zip(state.second).map(|(a,b)|distance(a.1,b.1)); }
+            }
+            canvas::Event::Touch(touch::Event::FingerMoved{id,position}) => {
+                if let Some((fid,p))=state.first.as_mut() { if fid==id { *p=*position; } }
+                if let Some((fid,p))=state.second.as_mut() { if fid==id { *p=*position; } }
+                if let (Some(a),Some(b),Some(old))=(state.first,state.second,state.pinch_distance) {
+                    let now=distance(a.1,b.1);
+                    if old>2.0 && now>2.0 {
+                        state.pinch_distance=Some(now);
+                        return Some(canvas::Action::publish(Message::Zoom((self.zoom*(now/old)).clamp(0.25,2.5))));
+                    }
+                }
+            }
+            canvas::Event::Touch(touch::Event::FingerLifted{id,..}) | canvas::Event::Touch(touch::Event::FingerLost{id,..}) => {
+                if state.first.map(|v|v.0)==Some(*id) { state.first=None; }
+                if state.second.map(|v|v.0)==Some(*id) { state.second=None; }
+                if state.first.is_none() || state.second.is_none() { state.pinch_distance=None; }
+            }
+            _=>{}
         }
         None
     }
 }
+
+fn distance(a:Point,b:Point)->f32 { ((a.x-b.x).powi(2)+(a.y-b.y).powi(2)).sqrt() }
 
 fn timeline_canvas<'a>(tracks:&[Track],playhead:f32,duration:f32,zoom:f32)->Element<'a,Message> {
     let width=(720.*zoom).max(420.);
