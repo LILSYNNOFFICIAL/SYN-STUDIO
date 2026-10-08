@@ -1,5 +1,5 @@
 use iced::{
-    alignment, border, mouse, time, touch,
+    alignment, border, mouse, time, touch, window,
     widget::{
         button, canvas, column, container, pick_list, progress_bar,
         row, scrollable, slider, space, text, text_editor, text_input,
@@ -268,6 +268,11 @@ enum Message {
     ZoomReset,
     ZoomIn,
     ZoomOut,
+    WindowResized(Size),
+    SelectScene(usize),
+    RenameScene(String),
+    DuplicateScene,
+    DeleteScene,
     InspectorNarrow,
     InspectorWide,
     CloseOverlay,
@@ -293,6 +298,7 @@ struct App {
     last_tick: Option<iced::time::Instant>,
     history: Vec<Document>,
     future: Vec<Document>,
+    window_size: Size,
 }
 impl Default for App {
     fn default() -> Self {
@@ -311,6 +317,7 @@ impl Default for App {
             inspector:false, inspector_width:330, playhead:0., playing:false,
             timeline_zoom:1.0, zoom:1.0, status:"Ready".into(), code,
             overlay:None, menu_open:None, code_language:"SYN JSON".into(), last_tick:None, history:vec![], future:vec![],
+            window_size:Size::new(1280.0,800.0),
         }
     }
 }
@@ -437,6 +444,38 @@ impl App {
             Message::ZoomFit|Message::ZoomReset=>self.zoom=1.0,
             Message::ZoomIn=>self.zoom=(self.zoom+0.1).min(2.5),
             Message::ZoomOut=>self.zoom=(self.zoom-0.1).max(0.25),
+            Message::WindowResized(size)=>self.window_size=size,
+            Message::SelectScene(index)=>{
+                if index < self.doc.scenes.len() {
+                    self.doc.active_scene=index;
+                    self.selected=None;
+                    self.playhead=0.0;
+                    self.status=format!("Scene {} active", index+1);
+                }
+            },
+            Message::RenameScene(name)=>{
+                let trimmed=name.trim();
+                if !trimmed.is_empty() { self.scene_mut().name=trimmed.to_string(); }
+            },
+            Message::DuplicateScene=>{
+                self.snapshot();
+                let mut scene=self.doc.scene().clone();
+                scene.id=id("scene");
+                scene.name=format!("{} Copy",scene.name);
+                self.doc.scenes.insert(self.doc.active_scene+1,scene);
+                self.doc.active_scene+=1;
+                self.selected=None;
+                self.status="Scene duplicated".into();
+            },
+            Message::DeleteScene=>{
+                if self.doc.scenes.len()>1 {
+                    self.snapshot();
+                    self.doc.scenes.remove(self.doc.active_scene);
+                    self.doc.active_scene=self.doc.active_scene.min(self.doc.scenes.len()-1);
+                    self.selected=None;
+                    self.status="Scene deleted".into();
+                } else { self.status="A project needs at least one scene".into(); }
+            },
             Message::InspectorNarrow=>self.inspector_width=self.inspector_width.saturating_sub(20).max(240),
             Message::InspectorWide=>self.inspector_width=(self.inspector_width+20).min(520),
             Message::MenuOpen(name)=>{self.menu_open=if self.menu_open.as_deref()==Some(name.as_str()){None}else{Some(name)};},
@@ -586,10 +625,14 @@ impl App {
     }
 
     fn subscription(&self)->Subscription<Message> {
+        let resize=window::resize_events().map(|(_,size)|Message::WindowResized(size));
         if self.playing {
-            time::every(Duration::from_millis(16)).map(|_| Message::Tick)
-        } else { Subscription::none() }
+            Subscription::batch([resize,time::every(Duration::from_millis(16)).map(|_| Message::Tick)])
+        } else { resize }
     }
+
+    fn is_phone(&self)->bool { self.window_size.width < 560.0 }
+    fn is_compact(&self)->bool { self.window_size.width < 860.0 }
 
     fn view(&self)->Element<'_,Message> {
         if let Some(ref overlay)=self.overlay { return self.overlay_view(overlay); }
@@ -597,9 +640,16 @@ impl App {
         let workspaces=items.into_iter().map(|(s,label)|
             button(text(label).size(8)).on_press(Message::Surface(s)).padding([7,11]).style(btn_style(self.surface==s))
         ).map(Into::into).collect::<Vec<Element<'_,Message>>>();
-        let right=if self.inspector { container(self.inspector_view()).width(Length::Fixed(self.inspector_width as f32)).height(Length::Fill) }
-        else { container(space()).width(Length::Fixed(0.0)).height(Length::Fill) };
-        let body=row![self.rail(),container(self.center()).width(Length::Fill).height(Length::Fill),right].height(Length::Fill);
+        let right=if self.inspector && !self.is_phone() {
+            container(self.inspector_view()).width(Length::Fixed(if self.is_compact(){280.0}else{self.inspector_width as f32})).height(Length::Fill)
+        } else { container(space()).width(Length::Fixed(0.0)).height(Length::Fill) };
+        let desktop_body=row![self.rail(),container(self.center()).width(Length::Fill).height(Length::Fill),right].height(Length::Fill);
+        let body:Element<'_,Message>=if self.is_phone() {
+            column![
+                container(self.center()).width(Length::Fill).height(Length::Fill),
+                if self.inspector { container(self.inspector_view()).width(Length::Fill).height(Length::Fixed(320.0)).into() } else { container(space()).height(0).into() }
+            ].height(Length::Fill).into()
+        } else { desktop_body.into() };
         let workspace_bar=container(scrollable(
             row![
                 iced::widget::Row::with_children(workspaces),
@@ -618,15 +668,19 @@ impl App {
     }
 
     fn titlebar(&self)->Element<'_,Message> {
-        container(row![
-            container(text("S").size(15).font(Font::MONOSPACE).color(BG)).width(32).height(32).center(32).style(accent_box()),
-            column![text("SYN").size(13).font(Font::MONOSPACE).color(TEXT),text("STUDIO").size(7).color(MUTED)].spacing(0),
-            text("·").size(12).color(LINE),text(&self.doc.title).size(9).color(MUTED),space().width(Length::Fill),
+        let actions=row![
             button(text("↶").size(13)).on_press(Message::Undo).style(btn_style(false)).width(30).height(30),
             button(text("↷").size(13)).on_press(Message::Redo).style(btn_style(false)).width(30).height(30),
             button(text("Save").size(8)).on_press(Message::Save).style(btn_style(false)).padding([6,11]),
             button(text("Preview").size(8)).on_press(Message::Preview).style(btn_style(true)).padding([7,13])
-        ].spacing(7).padding([8,12]).align_y(alignment::Vertical::Center)).height(52).style(panel_style(rgb(0x070a10))).into()
+        ].spacing(5);
+        let brand=row![
+            container(text("S").size(15).font(Font::MONOSPACE).color(BG)).width(32).height(32).center(32).style(accent_box()),
+            column![text("SYN").size(13).font(Font::MONOSPACE).color(TEXT),text("STUDIO").size(7).color(MUTED)].spacing(0),
+            text("·").size(12).color(LINE),text(&self.doc.title).size(9).color(MUTED)
+        ].spacing(7).align_y(alignment::Vertical::Center);
+        container(scrollable(row![brand,space().width(Length::Fill),actions].spacing(7).padding([8,12]).align_y(alignment::Vertical::Center)).horizontal())
+            .height(52).width(Length::Fill).style(panel_style(rgb(0x070a10))).into()
     }
 
     fn menu_bar(&self)->Element<'_,Message> {
@@ -846,14 +900,17 @@ impl App {
     }
 
     fn scene_tabs(&self)->Element<'_,Message> {
-        container(row![
-            tab("Command Center",Surface::Design,self.surface),
-            tab("Motion Lab",Surface::Motion,self.surface),
-            tab("Architecture",Surface::Architecture,self.surface),
-            tab("Media Lab",Surface::Media,self.surface),
-            space().width(Length::Fill),
-            text("SCENES").size(7).color(MUTED),
-        ].spacing(2).padding([4,6]).align_y(alignment::Vertical::Center)).height(40).style(panel_style(rgb(0x0b0f16))).into()
+        let scene_buttons=self.doc.scenes.iter().enumerate().map(|(i,s)|{
+            button(text(format!("{}  {}",i+1,s.name)).size(8))
+                .on_press(Message::SelectScene(i)).style(btn_style(i==self.doc.active_scene)).padding([5,9]).into()
+        }).collect::<Vec<Element<'_,Message>>>();
+        container(scrollable(row![
+            iced::widget::Row::with_children(scene_buttons),
+            button(text("+").size(10)).on_press(Message::NewScene).style(btn_style(false)).padding([4,9]),
+            button(text("Duplicate").size(7)).on_press(Message::DuplicateScene).style(btn_style(false)).padding([5,8]),
+            button(text("Delete").size(7)).on_press(Message::DeleteScene).style(btn_style(false)).padding([5,8]),
+        ].spacing(2).padding([4,6]).align_y(alignment::Vertical::Center)).horizontal())
+            .height(40).width(Length::Fill).style(panel_style(rgb(0x0b0f16))).into()
     }
 
     fn timeline(&self)->Element<'_,Message> {
