@@ -329,7 +329,6 @@ fn App()->Element {
     let mut panel=use_signal(||"inspector".to_string());
     let mut workspace=use_signal(||"".to_string());
     let mut inspector_open=use_signal(||true);
-    let mut inspector_wide=use_signal(||false);
     let mut inspector_width=use_signal(||348i32);
 
     let active=doc.read().scenes.get(*scene.read()).cloned();
@@ -346,6 +345,8 @@ fn App()->Element {
         "assets" => "Assets",
         "timeline" => "Timeline",
         "interaction" => "Interactions",
+        "code" => "Code Intelligence",
+        "ai" => "AI Workbench",
         _ => "Workspace",
     };
     let selected_text=selected_id.as_ref().and_then(|id|active.as_ref().and_then(|s|s.objects.iter().find(|o|&o.id==id))).map(|o|o.kind=="text").unwrap_or(false);
@@ -493,9 +494,9 @@ fn App()->Element {
                     aside { class:"inspector",
                         div { class:"inspecthead",
                             div{class:"panel-title",strong{"{panel_title}"}}
-                            button{title:"Compact inspector",class:"panel-icon",onclick:{let mut inspector_width=inspector_width.clone();let mut inspector_wide=inspector_wide.clone();move |_|{inspector_width.set(288);inspector_wide.set(false)}},"−"}
-                            button{title:"Default inspector",class:"panel-icon",onclick:{let mut inspector_width=inspector_width.clone();let mut inspector_wide=inspector_wide.clone();move |_|{inspector_width.set(348);inspector_wide.set(false)}},"□"}
-                            button{title:"Wide inspector",class:"panel-icon",onclick:{let mut inspector_width=inspector_width.clone();let mut inspector_wide=inspector_wide.clone();move |_|{inspector_width.set(430);inspector_wide.set(true)}},"↔"}
+                            button{title:"Compact inspector",class:"panel-icon",onclick:{let mut inspector_width=inspector_width.clone();move |_|{inspector_width.set(288)}},"−"}
+                            button{title:"Default inspector",class:"panel-icon",onclick:{let mut inspector_width=inspector_width.clone();move |_|{inspector_width.set(348)}},"□"}
+                            button{title:"Wide inspector",class:"panel-icon",onclick:{let mut inspector_width=inspector_width.clone();move |_|{inspector_width.set(430)}},"↔"}
                             button{title:"Close panel",class:"panel-icon close",onclick:{let mut inspector_open=inspector_open.clone();move |_|inspector_open.set(false)},"×"}
                         }
                         if *panel.read()=="assets" {
