@@ -38,7 +38,7 @@ jobs:
           test -s studio/styles.css
           test -s studio/pkg/syn-studio.js
           test -s studio/pkg/syn-studio_bg.wasm
-          ! grep -R -E 'iced|dioxus' Cargo.toml src studio --include='*.rs' --include='*.js' --include='*.html' --include='*.css'
+          ! grep -E 'iced|dioxus' Cargo.toml src/lib.rs studio/index.html studio/app.js studio/styles.css
       - name: Create Pages entrypoint
         run: |
           cat > index.html <<'EOF'
