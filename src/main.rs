@@ -849,15 +849,7 @@ fn AiPanel(status:Signal<String>)->Element {
 #[component]
 fn Code(source:Signal<String>,doc:Signal<Document>,history:Signal<History>,status:Signal<String>,mode:Signal<String>)->Element {
     let mut language=use_signal(||"JSON".to_string());
-    let lang=match language.read().as_str() {
-        "Rust"=>CodeLanguage::Rust,
-        "CSS"=>CodeLanguage::Css,
-        "HTML"=>CodeLanguage::Html,
-        "JavaScript"=>CodeLanguage::Javascript,
-        "TypeScript"=>CodeLanguage::Typescript,
-        "Markdown"=>CodeLanguage::Markdown,
-        _=>CodeLanguage::Json,
-    };
+    let lang=CodeLanguage::from_slug(&language.read().to_lowercase()).unwrap_or(CodeLanguage::Json);
     let symbol_count=source.read().matches("\" : \"").count();
     rsx!{div{class:"code",
         div{class:"codehead",
