@@ -49,9 +49,30 @@ jobs:
             </style>
           </head>
           <body>
+            <div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#07090d;color:#d9def0;font:14px system-ui,sans-serif;z-index:9999">
+              <div style="text-align:center">
+                <div style="font-size:22px;font-weight:700;margin-bottom:8px">SYN Studio</div>
+                <div id="boot-status" style="opacity:.7">Starting Rust/WASM renderer…</div>
+              </div>
+            </div>
             <script type="module">
               import init from "./pkg/syn-studio.js";
-              init("./pkg/syn-studio_bg.wasm");
+
+              const boot = document.getElementById("boot");
+              const status = document.getElementById("boot-status");
+
+              try {
+                await init("./pkg/syn-studio_bg.wasm");
+                await new Promise(requestAnimationFrame);
+                if (!document.querySelector("canvas")) {
+                  throw new Error("SYN Studio initialized without creating its canvas.");
+                }
+                boot.remove();
+              } catch (error) {
+                console.error("SYN Studio failed to start:", error);
+                status.textContent = "Renderer failed to start. Open the browser console for details.";
+                status.style.color = "#ff8f9a";
+              }
             </script>
           </body>
           </html>
