@@ -26,6 +26,8 @@ const ACCENT: Color = Color::from_rgb(0.64, 0.56, 1.0);
 const PINK: Color = Color::from_rgb(0.87, 0.40, 0.95);
 const GOOD: Color = Color::from_rgb(0.30, 0.88, 0.66);
 
+fn parse_hex(hex:&str)->Color { let clean=hex.trim_start_matches('#'); u32::from_str_radix(clean,16).ok().map(rgb).unwrap_or(TEXT) }
+
 fn rgb(hex: u32) -> Color {
     Color::from_rgb(
         ((hex >> 16) & 0xff) as f32 / 255.0,
@@ -241,6 +243,10 @@ enum Message {
     AddTrack(String),
     SetEase(Ease),
     SetFps(u32),
+    TextSize(f32),
+    TextColor(String),
+    TextAlign(String),
+    TextFormat(String),
     ToggleLoop(bool),
     ToggleOnion(bool),
     Save,
@@ -386,6 +392,18 @@ impl App {
                 }
             },
             Message::SetFps(v)=>self.scene_mut().animation.fps=v,
+            Message::TextSize(v)=>{
+                if let Some(o)=self.selected_object_mut(){ if o.kind=="text" {o.props["fontSize"]=json!(v);} }
+            },
+            Message::TextColor(c)=>{
+                if let Some(o)=self.selected_object_mut(){ if o.kind=="text" {o.props["color"]=json!(c);} }
+            },
+            Message::TextAlign(a)=>{
+                if let Some(o)=self.selected_object_mut(){ if o.kind=="text" {o.props["textAlign"]=json!(a);} }
+            },
+            Message::TextFormat(f)=>{
+                if let Some(o)=self.selected_object_mut(){ if o.kind=="text" {o.props[&f]=json!(true);} }
+            },
             Message::ToggleLoop(v)=>self.scene_mut().animation.looped=v,
             Message::ToggleOnion(v)=>self.scene_mut().animation.onion_skin=v,
             Message::Save=>{save_document(&self.doc);self.status="Saved to project storage".into();},
@@ -715,6 +733,29 @@ impl App {
                 body=body.push(row![value_box("RX",o.transform3d.rx),value_box("RY",o.transform3d.ry),value_box("RZ",o.transform3d.rz)].spacing(5));
                 body=body.push(row![value_box("SX",o.transform3d.sx),value_box("SY",o.transform3d.sy),value_box("SZ",o.transform3d.sz)].spacing(5));
             }
+            if o.kind=="text" {
+                let fs=o.props.get("fontSize").and_then(Value::as_f64).unwrap_or(16.0) as f32;
+                let color=o.props.get("color").and_then(Value::as_str).unwrap_or("#ffffff").to_string();
+                body=body.push(text("TEXT FORMAT").size(8).color(MUTED));
+                body=body.push(row![
+                    button(text("B").size(10)).on_press(Message::TextFormat("bold".into())).style(btn_style(o.props.get("bold").and_then(Value::as_bool).unwrap_or(false))),
+                    button(text("I").size(10)).on_press(Message::TextFormat("italic".into())).style(btn_style(o.props.get("italic").and_then(Value::as_bool).unwrap_or(false))),
+                    button(text("U").size(10)).on_press(Message::TextFormat("underline".into())).style(btn_style(o.props.get("underline").and_then(Value::as_bool).unwrap_or(false))),
+                    button(text("L").size(9)).on_press(Message::TextAlign("left".into())).style(btn_style(o.props.get("textAlign").and_then(Value::as_str)==Some("left"))),
+                    button(text("C").size(9)).on_press(Message::TextAlign("center".into())).style(btn_style(o.props.get("textAlign").and_then(Value::as_str)==Some("center"))),
+                    button(text("R").size(9)).on_press(Message::TextAlign("right".into())).style(btn_style(o.props.get("textAlign").and_then(Value::as_str)==Some("right"))),
+                ].spacing(4));
+                body=body.push(row![
+                    text("Size").size(8).color(MUTED),
+                    slider(8.0..=96.0,fs,Message::TextSize).width(Length::Fill),
+                    text(format!("{:.0}px",fs)).size(8).color(TEXT),
+                ].spacing(6));
+                body=body.push(row![
+                    button(text("White").size(8)).on_press(Message::TextColor("#f4f6fb".into())).style(btn_style(color=="#f4f6fb")),
+                    button(text("Lavender").size(8)).on_press(Message::TextColor("#a897ff".into())).style(btn_style(color=="#a897ff")),
+                    button(text("Pink").size(8)).on_press(Message::TextColor("#df68f3".into())).style(btn_style(color=="#df68f3")),
+                ].spacing(4));
+            }
             body=body.push(text("ANIMATION").size(8).color(MUTED));
             body=body.push(row![
                 button(text("Capture Keyframe").size(9)).on_press(Message::AddKeyframe).style(btn_style(true)),
@@ -862,7 +903,14 @@ impl Program<Message> for SceneCanvas {
             frame.fill(&rect,color);
             frame.stroke(&rect,Stroke{style:canvas::Style::Solid(if self.selected.as_ref()==Some(&o.id){ACCENT}else{rgb(0x3a465f)}),width:if self.selected.as_ref()==Some(&o.id){2.}else{1.},..Default::default()});
             let label=if o.kind=="text"{"SYN STUDIO".to_string()}else{o.label.clone()};
-            frame.fill_text(CanvasText{content:label,position:Point::new(x+16.*scale,y+22.*scale),color:TEXT,size:(14.*scale).into(),..Default::default()});
+            let text_size=o.props.get("fontSize").and_then(Value::as_f64).unwrap_or(14.0) as f32;
+            let text_color=o.props.get("color").and_then(Value::as_str).map(parse_hex).unwrap_or(TEXT);
+            let align=match o.props.get("textAlign").and_then(Value::as_str) {
+                Some("center")=>alignment::Horizontal::Center,
+                Some("right")=>alignment::Horizontal::Right,
+                _=>alignment::Horizontal::Left,
+            };
+            frame.fill_text(CanvasText{content:label,position:Point::new(x+16.*scale,y+22.*scale),max_width:(o.width*scale-28.).max(40.),color:text_color,size:(text_size*scale).into(),align_x:align,..Default::default()});
         }
         frame.fill_rectangle(Point::new(0.,bounds.height-28.),Size::new(bounds.width,28.),rgb(0x0c121b));
         frame.fill_text(CanvasText{content:format!("FRAME {:04}   /   {:.2}s", (self.playhead*60.) as u32,self.playhead),position:Point::new(12.,bounds.height-10.),color:MUTED,size:9.into(),..Default::default()});
