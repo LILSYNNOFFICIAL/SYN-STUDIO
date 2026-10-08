@@ -653,7 +653,7 @@ impl App {
                     container(contextual).padding([10, 14])
                 ].spacing(0).height(Length::Fill).into()
             }
-            Surface::Architecture => self.architecture_surface(header.into()),
+            Surface::Architecture => self.architecture_surface(),
             Surface::Media => self.media_surface(),
             Surface::Code => self.code_surface(),
             Surface::Ai => self.ai_surface(),
@@ -700,7 +700,7 @@ impl App {
         .height(Length::Fill).style(content_style()).into()
     }
 
-    fn architecture_surface(&self, header:Element<'_,Message>)->Element<'_,Message> {
+    fn architecture_surface(&self)->Element<'_,Message> {
         let rows = [
             ("State", "Typed document, scene, object and animation state."),
             ("Render", "Iced Canvas owns the visual surface and interaction."),
@@ -718,7 +718,6 @@ impl App {
             .padding([13, 2]).style(list_row_style()).into()
         }).collect::<Vec<_>>();
         column![
-            header,
             scrollable(column![
                 text("System overview").size(22).color(TEXT),
                 text("The runtime is deliberately boring: state is explicit, rendering is native, and the document stays portable.")
