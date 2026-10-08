@@ -360,7 +360,7 @@ impl App {
             },
             Message::SetPlayhead(v)=>{self.playhead=v.clamp(0.,self.doc.scene().animation.duration);},
             Message::AddKeyframe=>{
-                if let Some(id)=self.selected.clone() {
+                if let Some(selected_id)=self.selected.clone() {
                     self.snapshot();
                     let t=self.playhead;
                     let current=self.doc.scene().objects.iter().find(|o|o.id==selected_id).cloned();
@@ -379,7 +379,7 @@ impl App {
                 } else {self.status="Select an object first".into();}
             },
             Message::AddTrack(property)=>{
-                if let Some(id)=self.selected.clone() {
+                if let Some(selected_id)=self.selected.clone() {
                     self.snapshot();
                     let value=self.doc.scene().objects.iter().find(|o|o.id==selected_id).map(|o|match property.as_str(){"x"=>o.x,"y"=>o.y,"rotation"=>o.rotation,"opacity"=>o.opacity,"z"=>o.transform3d.z,"rx"=>o.transform3d.rx,"ry"=>o.transform3d.ry,"rz"=>o.transform3d.rz,_=>0.}).unwrap_or(0.);
                     self.scene_mut().animation.tracks.push(Track{id:id("trk"),target:selected_id,property:property.clone(),keyframes:vec![Keyframe::new(self.playhead,value)],muted:false,locked:false});
@@ -409,9 +409,9 @@ impl App {
             Message::Save=>{save_document(&self.doc);self.status="Saved to project storage".into();},
             Message::New=>{self.snapshot();self.doc=Document::sample();self.selected=None;self.playhead=0.;self.status="New SYN project".into();},
             Message::Duplicate=>{
-                if let Some(id)=self.selected.clone() {
+                if let Some(selected_id)=self.selected.clone() {
                     self.snapshot();
-                    if let Some(o)=self.doc.scene().objects.iter().find(|o|o.id==id).cloned() {
+                    if let Some(o)=self.doc.scene().objects.iter().find(|o|o.id==selected_id).cloned() {
                         let mut n=o;n.id=id("obj");n.x+=32.;n.y+=32.;self.scene_mut().objects.push(n);self.status="Object duplicated".into();
                     }
                 }
@@ -801,7 +801,7 @@ fn rbtn<'a>(icon:&'a str,label:&'a str,msg:Message)->Element<'a,Message> {
     button(column![text(icon).size(15).color(ACCENT),text(label).size(7).color(TEXT)].align_x(alignment::Horizontal::Center).spacing(2))
         .on_press(msg).style(btn_style(false)).width(58).height(56).into()
 }
-fn tool_button(tool:Tool,icon:&str,label:&str,active:Tool)->Element<'_,Message> {
+fn tool_button<'a>(tool:Tool,icon:&'a str,label:&'a str,active:Tool)->Element<'a,Message> {
     button(column![text(icon).size(16).color(if tool==active{ACCENT}else{MUTED}),text(label).size(7).color(TEXT)].align_x(alignment::Horizontal::Center).spacing(2))
         .on_press(Message::Tool(tool)).style(btn_style(tool==active)).width(50).height(48).into()
 }
@@ -972,7 +972,7 @@ fn timeline_canvas<'a>(tracks:&[Track],playhead:f32,duration:f32,zoom:f32)->Elem
     let mut items=column![row![text("TIME").size(7).color(MUTED),space().width(Length::Fill),text(format!("{:.1}s",duration)).size(7).color(MUTED)].width(width)];
     for track in tracks.iter().take(5) {
         let mut r=row![text(format!("{:<10}",track.property)).size(8).color(MUTED).width(70)];
-        let mut line=column![progress_bar(0.0..=duration,playhead).width(width-80.)];
+        let mut line=column![progress_bar(0.0..=duration,playhead)];
         for k in &track.keyframes {
             line=line.push(text(format!("◆ {:.1}",k.time)).size(7).color(if (k.time-playhead).abs()<0.05{PINK}else{ACCENT}));
         }
