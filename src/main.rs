@@ -688,7 +688,7 @@ impl App {
                 button(row![text(label).size(10).color(TEXT),space().width(Length::Fill),text("›").size(10).color(MUTED)])
                     .on_press(Message::MenuAction(action.into())).width(236).height(32).padding([0,12]).style(menu_item_style()).into()
             }).collect::<Vec<Element<'_,Message>>>();
-            content=stack![content,container(column![text(name.to_uppercase()).size(7).color(ACCENT),iced::widget::Column::with_children(buttons).spacing(2).padding(7)].spacing(4).padding([8,0])).width(252).style(menu_panel_style())].height(Length::Shrink);
+            content=stack![content,container(column![text(name.to_uppercase()).size(7).color(ACCENT),iced::widget::Column::with_children(buttons).spacing(2).padding(7)].spacing(4).padding([8,0])).width(252).style(menu_panel_style())].height(Length::Shrink).into();
         }
         content
     }
