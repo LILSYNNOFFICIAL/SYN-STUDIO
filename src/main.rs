@@ -464,41 +464,62 @@ impl App {
         if let Some(ref overlay)=self.overlay {
             return self.overlay_view(overlay);
         }
-        let tabs=row![
-            tab("FILE",Surface::Publish,self.surface),
-            tab("HOME",Surface::Design,self.surface),
-            tab("INSERT",Surface::Design,self.surface),
-            tab("DESIGN",Surface::Design,self.surface),
-            tab("MOTION",Surface::Motion,self.surface),
-            tab("ARCHITECTURE",Surface::Architecture,self.surface),
-            tab("MEDIA",Surface::Media,self.surface),
-            tab("CODE",Surface::Code,self.surface),
-            tab("AI",Surface::Ai,self.surface),
-            tab("PUBLISH",Surface::Publish,self.surface),
-        ].spacing(2).padding([0,10]);
 
-        let ribbon=self.ribbon();
-        let rail=self.rail();
-        let center=self.center();
+        // SYN Studio uses a deliberately quiet chrome: one title bar, one
+        // compact workspace switcher, a tool rail, the canvas, and an
+        // optional right inspector. No faux-Office ribbon.
+        let workspace_items=[
+            (Surface::Design,"DESIGN"),
+            (Surface::Motion,"MOTION"),
+            (Surface::Architecture,"SYSTEM"),
+            (Surface::Media,"MEDIA"),
+            (Surface::Code,"CODE"),
+            (Surface::Ai,"AI"),
+            (Surface::Publish,"PUBLISH"),
+        ];
+        let workspaces=workspace_items.into_iter().map(|(s,label)|
+            button(text(label).size(8))
+                .on_press(Message::Surface(s))
+                .padding([6,10])
+                .style(btn_style(self.surface==s))
+                .into()
+        ).collect::<Vec<Element<'_,Message>>>();
+
         let right=if self.inspector {
             container(self.inspector_view())
                 .width(Length::Fixed(self.inspector_width as f32))
                 .height(Length::Fill)
         } else {
-            container(space().width(Length::Fixed(0.0))).width(Length::Fixed(0.0))
+            container(space()).width(Length::Fixed(0.0)).height(Length::Fill)
         };
-        let body=row![rail,center,right].height(Length::Fill);
+
+        let body=row![
+            self.rail(),
+            container(self.center()).width(Length::Fill).height(Length::Fill),
+            right
+        ].height(Length::Fill);
+
         let status=container(row![
-            text("SYN 0.3").size(11).color(MUTED),
-            text("•").size(11).color(GOOD),
-            text(&self.status).size(11).color(MUTED),
+            container(row![
+                text("●").size(7).color(GOOD),
+                text("READY").size(8).color(MUTED),
+            ].spacing(5)),
+            text(&self.status).size(8).color(MUTED),
             space().width(Length::Fill),
-            text(format!("{:.2}s / {:.2}s",self.playhead,self.doc.scene().animation.duration)).size(11).color(MUTED),
-        ].spacing(8).padding([5,12])).height(30).style(panel_style(rgb(0x090d13)));
+            text(format!("{:.2}s",self.playhead)).size(8).color(MUTED),
+            text(format!("{} FPS",self.doc.scene().animation.fps)).size(8).color(MUTED),
+        ].spacing(10).padding([4,12]))
+            .height(24)
+            .style(panel_style(rgb(0x080b11)));
+
         column![
             self.titlebar(),
-            container(tabs).height(34).style(panel_style(SURFACE)),
-            ribbon,
+            container(scrollable(row![
+                iced::widget::Row::with_children(workspaces)
+            ]).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::default())))
+                .height(34)
+                .padding([0,8])
+                .style(panel_style(rgb(0x0a0e15))),
             body,
             status,
         ].into()
@@ -506,67 +527,70 @@ impl App {
 
     fn titlebar(&self)->Element<'_,Message> {
         row![
-            container(text("S").size(15).font(Font::MONOSPACE).color(BG)).width(30).height(30).center(30).style(accent_box()),
-            column![text("SYN Studio").size(15).color(TEXT),text("RUST CREATIVE SYSTEMS IDE").size(8).color(MUTED)].spacing(0),
+            container(
+                text("S").size(13).font(Font::MONOSPACE).color(BG)
+            ).width(28).height(28).center(28).style(accent_box()),
+            column![
+                text("SYN").size(12).font(Font::MONOSPACE).color(TEXT),
+                text("CREATIVE SYSTEMS").size(7).color(MUTED),
+            ].spacing(0),
+            text(" / ").size(11).color(LINE),
+            text(&self.doc.title).size(10).color(MUTED),
             space().width(Length::Fill),
-            button(text("Save").size(10)).on_press(Message::Save).style(btn_style(false)),
-            button(text("Preview").size(10)).on_press(Message::Preview).style(btn_style(true)),
-        ].spacing(8).padding([7,14]).align_y(alignment::Vertical::Center).height(52).into()
+            button(text("UNDO").size(8)).on_press(Message::Undo).style(btn_style(false)),
+            button(text("REDO").size(8)).on_press(Message::Redo).style(btn_style(false)),
+            button(text("SAVE").size(8)).on_press(Message::Save).style(btn_style(false)),
+            button(text("PREVIEW").size(8)).on_press(Message::Preview).style(btn_style(true)),
+        ].spacing(7)
+            .padding([6,10])
+            .align_y(alignment::Vertical::Center)
+            .height(42)
+            .into()
     }
 
     fn ribbon(&self)->Element<'_,Message> {
-        let groups=match self.surface {
-            Surface::Motion=>row![
-                ribbon_group("PLAYBACK",vec![rbtn("▶", "Play",Message::PlayPause),rbtn("■","Stop",Message::Stop),rbtn("◆","Keyframe",Message::AddKeyframe)]),
-                ribbon_group("KEYING",vec![rbtn("X","Position",Message::AddTrack("x".into())),rbtn("R","Rotation",Message::AddTrack("rotation".into())),rbtn("A","Opacity",Message::AddTrack("opacity".into())),rbtn("3D","3D Transform",Message::AddTrack("rz".into()))]),
-                ribbon_group("EASING",vec![rbtn("⌁","Linear",Message::SetEase(Ease::Linear)),rbtn("↗","Ease In",Message::SetEase(Ease::EaseIn)),rbtn("↘","Ease Out",Message::SetEase(Ease::EaseOut)),rbtn("✦","Spring",Message::SetEase(Ease::Spring))]),
-                ribbon_group("VIEW",vec![rbtn("◉","Onion",Message::ToggleOnion(!self.doc.scene().animation.onion_skin)),rbtn("↻","Loop",Message::ToggleLoop(!self.doc.scene().animation.looped))]),
-            ],
-            Surface::Code=>row![
-                ribbon_group("SOURCE",vec![rbtn("{}","Format",Message::FormatCode),rbtn("✓","Validate",Message::Validate),rbtn("↕","Apply",Message::ApplyCode)]),
-                ribbon_group("MODEL",vec![rbtn("⌘","Architecture",Message::OpenWorkspace("Architecture".into())),rbtn("◈","Document",Message::OpenWorkspace("Document Model".into()))]),
-            ],
-            Surface::Design=>row![
-                ribbon_group("OBJECT",vec![rbtn("＋","New",Message::OpenWorkspace("Insert Object".into())),rbtn("⧉","Duplicate",Message::Duplicate),rbtn("⌫","Delete",Message::Delete)]),
-                ribbon_group("EDIT",vec![rbtn("↶","Undo",Message::Undo),rbtn("↷","Redo",Message::Redo),rbtn("✓","Validate",Message::Validate)]),
-                ribbon_group("CANVAS",vec![rbtn("Fit","Fit",Message::Zoom(0.72)),rbtn("100","100%",Message::Zoom(1.0)),rbtn("−","Zoom Out",Message::Zoom((self.zoom-0.1).max(0.25))),rbtn("+","Zoom In",Message::Zoom((self.zoom+0.1).min(2.0)))]),
-            ],
-            _=>row![
-                ribbon_group("WORKSPACE",vec![rbtn("＋","Insert",Message::OpenWorkspace("Insert".into())),rbtn("◫","Layers",Message::OpenWorkspace("Layers".into())),rbtn("◇","Scene Graph",Message::OpenWorkspace("Scene Graph".into()))]),
-                ribbon_group("PROJECT",vec![rbtn("✓","Validate",Message::Validate),rbtn("⇩","Export",Message::Export),rbtn("▶","Preview",Message::Preview)]),
-            ],
-        };
-        container(scrollable(groups).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::default())).height(66))
-            .style(panel_style(rgb(0x0a0e15))).into()
+        // Kept as a compatibility shim for older call sites.
+        container(space()).height(0).into()
     }
 
     fn rail(&self)->Element<'_,Message> {
         let items=[
-            (Tool::Select,"↖","Select"),
-            (Tool::Draw,"✎","Draw"),
-            (Tool::Text,"T","Text"),
-            (Tool::Shape,"◇","Shape"),
-            (Tool::Camera,"⌗","Camera"),
-            (Tool::Bone,"⌁","Rig"),
+            (Tool::Select,"↖",""),
+            (Tool::Draw,"✎",""),
+            (Tool::Text,"T",""),
+            (Tool::Shape,"◇",""),
+            (Tool::Camera,"⌗",""),
+            (Tool::Bone,"⌁",""),
         ];
-        iced::widget::Column::with_children(items.into_iter().map(|(t,i,l)|tool_button(t,i,l,self.tool)).collect::<Vec<_>>())
-            .spacing(4).padding(6).width(56).into()
+        let controls=items.into_iter()
+            .map(|(t,i,l)|tool_button(t,i,l,self.tool))
+            .collect::<Vec<_>>();
+        container(
+            iced::widget::Column::with_children(controls)
+                .spacing(3)
+                .padding([8,5])
+        ).width(50)
+            .height(Length::Fill)
+            .style(panel_style(rgb(0x090d14)))
+            .into()
     }
 
     fn center(&self)->Element<'_,Message> {
         let header=container(row![
             column![
-                text(self.surface_name()).size(13).color(TEXT),
+                text(self.surface_name()).size(12).color(TEXT),
                 text(self.surface_subtitle()).size(7).color(MUTED)
             ].spacing(1),
             space().width(Length::Fill),
-            container(row![
-                text(format!("{:.0}%",self.zoom*100.)).size(9).color(MUTED),
-                button(text(if self.inspector{"INSPECTOR"}else{"INSPECT"}).size(9))
-                    .on_press(Message::ToggleInspector)
-                    .style(btn_style(self.inspector)),
-            ].spacing(5)).padding([3,5]).style(panel_style(SURFACE_2)),
-        ].spacing(8).padding([7,12]).align_y(alignment::Vertical::Center).height(42)).style(panel_style(SURFACE));
+            button(text(format!("{:.0}%",self.zoom*100.)).size(8))
+                .on_press(Message::Zoom(self.zoom))
+                .style(btn_style(false)),
+            button(text(if self.inspector{"INSPECTOR"}else{"INSPECT"}).size(8))
+                .on_press(Message::ToggleInspector)
+                .style(btn_style(self.inspector)),
+        ].spacing(6).padding([7,10]).align_y(alignment::Vertical::Center))
+            .height(38)
+            .style(panel_style(rgb(0x0b1018)));
 
         match self.surface {
             Surface::Code => column![header,self.code_surface()].height(Length::Fill).into(),
@@ -576,11 +600,51 @@ impl App {
             Surface::Publish => column![header,self.publish_surface()].height(Length::Fill).into(),
             Surface::Design | Surface::Motion => {
                 let canvas_view=canvas(SceneCanvas{
-                    scene:self.doc.scene().clone(), selected:self.selected.clone(), playhead:self.playhead, zoom:self.zoom,
+                    scene:self.doc.scene().clone(),
+                    selected:self.selected.clone(),
+                    playhead:self.playhead,
+                    zoom:self.zoom,
                 }).width(Length::Fill).height(Length::Fill);
-                let main=container(canvas_view).padding(16).style(panel_style(BG));
-                let bottom=if self.surface==Surface::Motion {self.timeline()} else {self.scene_tabs()};
-                column![header,main,bottom].height(Length::Fill).into()
+
+                let canvas_shell=container(canvas_view)
+                    .padding(10)
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .style(panel_style(rgb(0x070a10)));
+
+                let actions=if self.surface==Surface::Motion {
+                    row![
+                        button(text(if self.playing{"PAUSE"}else{"PLAY"}).size(8))
+                            .on_press(Message::PlayPause).style(btn_style(self.playing)),
+                        button(text("STOP").size(8)).on_press(Message::Stop).style(btn_style(false)),
+                        button(text("KEYFRAME").size(8)).on_press(Message::AddKeyframe).style(btn_style(false)),
+                        space().width(Length::Fill),
+                        button(text("ONION").size(8)).on_press(Message::ToggleOnion(!self.doc.scene().animation.onion_skin)).style(btn_style(self.doc.scene().animation.onion_skin)),
+                        button(text("LOOP").size(8)).on_press(Message::ToggleLoop(!self.doc.scene().animation.looped)).style(btn_style(self.doc.scene().animation.looped)),
+                    ].spacing(4).padding([5,8])
+                } else {
+                    row![
+                        button(text("NEW").size(8)).on_press(Message::New).style(btn_style(false)),
+                        button(text("DUPLICATE").size(8)).on_press(Message::Duplicate).style(btn_style(false)),
+                        button(text("DELETE").size(8)).on_press(Message::Delete).style(btn_style(false)),
+                        space().width(Length::Fill),
+                        button(text("FIT").size(8)).on_press(Message::Zoom(0.72)).style(btn_style(false)),
+                        button(text("100%").size(8)).on_press(Message::Zoom(1.0)).style(btn_style(false)),
+                        button(text("−").size(9)).on_press(Message::Zoom((self.zoom-0.1).max(0.25))).style(btn_style(false)),
+                        button(text("+").size(9)).on_press(Message::Zoom((self.zoom+0.1).min(2.0))).style(btn_style(false)),
+                    ].spacing(4).padding([5,8])
+                };
+
+                let bottom=if self.surface==Surface::Motion {
+                    column![actions,self.timeline()]
+                } else {
+                    column![actions,self.scene_tabs()]
+                };
+
+                column![header,canvas_shell,bottom]
+                    .spacing(5)
+                    .height(Length::Fill)
+                    .into()
             }
         }
     }
@@ -812,12 +876,13 @@ fn rbtn<'a>(icon:&'a str,label:&'a str,msg:Message)->Element<'a,Message> {
     ].align_x(alignment::Horizontal::Center).spacing(1))
         .on_press(msg).style(btn_style(false)).width(54).height(48).into()
 }
-fn tool_button<'a>(tool:Tool,icon:&'a str,label:&'a str,active:Tool)->Element<'a,Message> {
-    button(column![
-        text(icon).size(15).color(if tool==active{ACCENT}else{MUTED}),
-        text(label).size(6).color(if tool==active{TEXT}else{MUTED})
-    ].align_x(alignment::Horizontal::Center).spacing(1))
-        .on_press(Message::Tool(tool)).style(btn_style(tool==active)).width(44).height(42).into()
+fn tool_button<'a>(tool:Tool,icon:&'a str,_label:&'a str,active:Tool)->Element<'a,Message> {
+    button(text(icon).size(15).color(if tool==active{BG}else{MUTED}))
+        .on_press(Message::Tool(tool))
+        .style(btn_style(tool==active))
+        .width(38)
+        .height(38)
+        .into()
 }
 fn media_card<'a>(kind:&'a str,desc:&'a str)->Element<'a,Message> {
     container(column![text(kind).size(9).color(ACCENT),text(desc).size(10).color(TEXT)].spacing(5)).padding(14).width(Length::Fill).style(panel_style(SURFACE_2)).into()
@@ -834,7 +899,7 @@ fn panel_style(bg:Color)->impl Fn(&Theme)->iced::widget::container::Style {
     move |_theme| iced::widget::container::Style {
         text_color:Some(TEXT),
         background:Some(bg.into()),
-        border:border::rounded(11).color(LINE).width(1.0),
+        border:border::rounded(9).color(rgb(0x1b2230)).width(1.0),
         shadow:Default::default(),
         snap:true
     }
@@ -851,9 +916,9 @@ fn btn_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style {
         let hover=matches!(status,button::Status::Hovered);
         let pressed=matches!(status,button::Status::Pressed);
         button::Style {
-            background:Some(if active {rgb(0x8d7cff).into()} else if pressed {rgb(0x171d2a).into()} else if hover {rgb(0x151b27).into()} else {Color::TRANSPARENT.into()}),
-            text_color:if active {BG}else{TEXT},
-            border:border::rounded(8).color(if active {rgb(0xa79cff)} else if hover {rgb(0x323b50)} else {Color::TRANSPARENT}).width(if active || hover {1.0}else{0.0}),
+            background:Some(if active {rgb(0x9b8cff).into()} else if pressed {rgb(0x171c28).into()} else if hover {rgb(0x111722).into()} else {Color::TRANSPARENT.into()}),
+            text_color:if active {BG}else if hover {TEXT}else{MUTED},
+            border:border::rounded(7).color(if active {rgb(0xb0a5ff)} else if hover {rgb(0x293348)} else {Color::TRANSPARENT}).width(if active || hover {1.0}else{0.0}),
             shadow:Default::default(),
             snap:true
         }
