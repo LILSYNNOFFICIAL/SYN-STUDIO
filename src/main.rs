@@ -654,10 +654,10 @@ impl App {
                 ].spacing(0).height(Length::Fill).into()
             }
             Surface::Architecture => self.architecture_surface(header.into()),
-            Surface::Media => self.media_surface(header),
-            Surface::Code => self.code_surface(header),
-            Surface::Ai => self.ai_surface(header),
-            Surface::Publish => self.publish_surface(header.into()),
+            Surface::Media => self.media_surface(),
+            Surface::Code => self.code_surface(),
+            Surface::Ai => self.ai_surface(),
+            Surface::Publish => self.publish_surface(),
         }
     }
 
@@ -695,8 +695,8 @@ impl App {
                 button(text("Validate").size(10)).on_press(Message::Validate).style(quiet_button_style(false)).padding([6, 9]),
                 button(text("Apply").size(10)).on_press(Message::ApplyCode).style(text_button_style(true)).padding([6, 10]),
             ].spacing(6).align_y(alignment::Vertical::Center),
-            container(editor).padding([10, 0, 0, 0]).height(Length::Fill),
-        ].spacing(4).padding([18, 18, 12, 18]))
+            container(editor).padding([10, 0]).height(Length::Fill),
+        ].spacing(4).padding([18, 18]))
         .height(Length::Fill).style(content_style()).into()
     }
 
@@ -715,7 +715,7 @@ impl App {
                 text(description).size(11).color(MUTED),
                 space().width(Length::Fill),
             ].spacing(18).align_y(alignment::Vertical::Center))
-            .padding([13, 2]).style(list_row_style())
+            .padding([13, 2]).style(list_row_style()).into()
         }).collect::<Vec<_>>();
         column![
             header,
