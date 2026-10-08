@@ -31,6 +31,10 @@ jobs:
           rm -rf studio/pkg
           mkdir -p studio/pkg
           wasm-bindgen target/wasm32-unknown-unknown/release/syn_studio.wasm --target web --out-dir studio/pkg
+          echo 'Generated WASM files:'
+          ls -lah studio/pkg
+          test -s studio/pkg/syn_studio_bg.wasm
+          test -s studio/pkg/syn_studio.js
       - name: Verify hybrid architecture
         run: |
           test -s studio/index.html
