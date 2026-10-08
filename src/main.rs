@@ -669,7 +669,7 @@ impl App {
         let tabs=names.into_iter().map(|name|{
             button(text(name).size(9).color(if self.menu_open.as_deref()==Some(name){TEXT}else{MUTED})).on_press(Message::MenuOpen(name.into())).padding([5,10]).style(menu_tab_style(self.menu_open.as_deref()==Some(name))).into()
         }).collect::<Vec<Element<'_,Message>>>();
-        let mut content=container(scrollable(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center)).horizontal().height(30).width(Length::Fill)).height(30).style(menu_bar_style());
+        let mut content: Element<'_,Message>=container(scrollable(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center)).horizontal().height(30).width(Length::Fill)).height(30).style(menu_bar_style()).into();
         if let Some(name)=&self.menu_open {
             let entries:Vec<(&str,&str)>=match name.as_str() {
                 "File"=>vec![("New Project","file.new"),("Save Project","file.save"),("Export .syn","file.export")],
@@ -690,7 +690,7 @@ impl App {
             }).collect::<Vec<Element<'_,Message>>>();
             content=stack![content,container(column![text(name.to_uppercase()).size(7).color(ACCENT),iced::widget::Column::with_children(buttons).spacing(2).padding(7)].spacing(4).padding([8,0])).width(252).style(menu_panel_style())].height(Length::Shrink);
         }
-        content.into()
+        content
     }
 
     fn rail(&self)->Element<'_,Message> {
@@ -715,12 +715,12 @@ impl App {
             Surface::Design | Surface::Motion => {
                 let canvas_view=canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:self.selected.clone(),playhead:self.playhead,zoom:self.zoom}).width(Length::Fill).height(Length::Fill);
                 let stage=container(canvas_view).padding(18).width(Length::Fill).height(Length::Fill).style(stage_style());
-                let left_tools=container(self.rail()).padding([18,0,18,14]).width(76).height(Length::Fill);
+                let left_tools=container(self.rail()).padding([18,14]).width(76).height(Length::Fill);
                 let inspector=if self.inspector && !self.is_phone() {
-                    container(self.inspector_view()).width(Length::Fixed(if self.is_compact(){280.0}else{self.inspector_width as f32})).height(Length::Fill).padding([18,14,18,0])
+                    container(self.inspector_view()).width(Length::Fixed(if self.is_compact(){280.0}else{self.inspector_width as f32})).height(Length::Fill).padding([18,14])
                 } else { container(space()).width(0).height(Length::Fill) };
                 let scene_or_motion:Element<'_,Message>=if self.surface==Surface::Motion{self.timeline()}else{self.scene_tabs()};
-                let bottom=container(scene_or_motion).padding([0,14,12,14]).width(Length::Fill);
+                let bottom=container(scene_or_motion).padding([0,14]).width(Length::Fill);
                 let overlays=stack![
                     stage,
                     container(row![left_tools,space().width(Length::Fill),inspector]).width(Length::Fill).height(Length::Fill),
