@@ -1,23 +1,14 @@
 [package]
 name = "syn-studio"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-iced = { version = "0.14", default-features = false, features = ["canvas", "highlighter", "image", "svg", "tokio", "fira-sans", "tiny-skia"] }
+dioxus = { version = "0.7.10", features = ["web"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4", "js"] }
-wasm-bindgen = "0.2"
-js-sys = "0.3"
-console_error_panic_hook = "0.1"
-console_log = "1"
-log = "0.4"
-web-sys = { version = "0.3", features = ["Window", "Storage", "HtmlAnchorElement"] }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-iced = { version = "0.14", default-features = false, features = ["wgpu", "tiny-skia", "crisp", "web-colors", "thread-pool", "linux-theme-detection", "x11", "wayland"] }
-
+web-sys = { version = "0.3", features = ["Window", "Storage"] }
 
 [profile.release]
 lto = "thin"
