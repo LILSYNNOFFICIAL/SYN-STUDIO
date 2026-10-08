@@ -534,7 +534,7 @@ impl App {
             (Tool::Camera,"⌗","Camera"),
             (Tool::Bone,"⌁","Rig"),
         ];
-        column(items.into_iter().map(|(t,i,l)|tool_button(t,i,l,self.tool)).collect::<Vec<_>>())
+        iced::widget::Column::with_children(items.into_iter().map(|(t,i,l)|tool_button(t,i,l,self.tool)).collect::<Vec<_>>())
             .spacing(6).padding(7).width(64).into()
     }
 
