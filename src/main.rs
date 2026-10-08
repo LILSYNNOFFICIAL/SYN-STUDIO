@@ -236,7 +236,7 @@ enum Message {
     InspectorSize(i32),
     PlayPause,
     Stop,
-    Tick(iced::time::Instant),
+    Tick,
     SetPlayhead(f32),
     AddKeyframe,
     AddTrack(String),
@@ -345,9 +345,8 @@ impl App {
             Message::InspectorSize(w)=>self.inspector_width=w.clamp(260,480) as u16,
             Message::PlayPause=>{self.playing=!self.playing;self.status=if self.playing{"Playing"}else{"Paused"}.into();},
             Message::Stop=>{self.playing=false;self.playhead=0.;},
-            Message::Tick(now)=>{
-                let dt=self.last_tick.map(|last|now.duration_since(last).as_secs_f32()).unwrap_or(0.);
-                self.last_tick=Some(now);
+            Message::Tick=>{
+                let dt=1.0/60.0;
                 if self.playing {
                     self.playhead+=dt;
                     let duration=self.doc.scene().animation.duration;
@@ -457,7 +456,7 @@ impl App {
 
     fn subscription(&self)->Subscription<Message> {
         if self.playing {
-            time::every(Duration::from_millis(16)).map(Message::Tick)
+            time::every(Duration::from_millis(16)).map(|_| Message::Tick)
         } else { Subscription::none() }
     }
 
