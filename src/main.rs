@@ -577,7 +577,11 @@ fn TextToolbar(doc:Signal<Document>,scene:usize,id:String,history:Signal<History
         button{class:if *weight.read()=="800"||*weight.read()=="900"{"fmt active"}else{"fmt"},onclick:move |_|{if *weight.read()=="800"{weight.set("650".into())}else{weight.set("800".into())}},"B"},
         button{class:if *italic.read(){"fmt active"}else{"fmt"},onclick:move |_|italic.toggle(),"I"},
         button{class:if *underline.read(){"fmt active"}else{"fmt"},onclick:move |_|underline.toggle(),"U"},
-        div{class:"align-group",for a in ["left","center","right"]{button{class:if *align.read()==a{"fmt active"}else{"fmt"},onclick:{let mut align=align.clone();let a=a.to_string();move |_|align.set(a.clone())},"{a.to_uppercase()}"}},
+        div{class:"align-group",
+            button{class:if *align.read()=="left"{"fmt active"}else{"fmt"},onclick:{let mut align=align.clone();move |_|align.set("left".into())},"L"},
+            button{class:if *align.read()=="center"{"fmt active"}else{"fmt"},onclick:{let mut align=align.clone();move |_|align.set("center".into())},"C"},
+            button{class:if *align.read()=="right"{"fmt active"}else{"fmt"},onclick:{let mut align=align.clone();move |_|align.set("right".into())},"R"}
+        },
         label{class:"color-control",title:"Text color",input{type:"color",value:"{color}",oninput:move|e|color.set(e.value())},span{"Color"}},
         button{class:"apply-text",onclick:{let mut doc=doc.clone();let mut history=history.clone();let mut status=status.clone();move |_|{
             let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;
