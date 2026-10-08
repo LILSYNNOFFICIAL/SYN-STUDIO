@@ -259,6 +259,8 @@ enum Message {
     MenuOpen(String),
     MenuAction(String),
     InsertObject(String),
+    NewScene,
+    SetInteraction(String),
     TextContent(String),
     FontFamily(String),
     SetCodeLanguage(String),
@@ -460,12 +462,12 @@ impl App {
                     "scene.motion"=>{let _=self.update(Message::Surface(Surface::Motion));},
                     "scene.architecture"=>{let _=self.update(Message::Surface(Surface::Architecture));},
                     "scene.media"=>{let _=self.update(Message::Surface(Surface::Media));},
-                    "scene.new"=>{let _=self.update(Message::New);},
-                    "media.image"=>{let _=self.update(Message::InsertObject("card".into()));},
-                    "media.audio"=>{let _=self.update(Message::Status("Audio asset slot ready".into()));},
-                    "media.video"=>{let _=self.update(Message::Status("Video asset slot ready".into()));},
-                    "interaction.link"=>{let _=self.update(Message::Status("Interaction link mode armed".into()));},
-                    "interaction.trigger"=>{let _=self.update(Message::Status("Interaction trigger mode armed".into()));},
+                    "scene.new"=>{let _=self.update(Message::NewScene);},
+                    "media.image"=>{let _=self.update(Message::InsertObject("image".into()));},
+                    "media.audio"=>{let _=self.update(Message::InsertObject("audio".into()));},
+                    "media.video"=>{let _=self.update(Message::InsertObject("video".into()));},
+                    "interaction.link"=>{let _=self.update(Message::SetInteraction("link".into()));},
+                    "interaction.trigger"=>{let _=self.update(Message::SetInteraction("trigger".into()));},
                     "code.rust"=>{let _=self.update(Message::SetCodeLanguage("Rust".into()));},
                     "code.syn"=>{let _=self.update(Message::SetCodeLanguage("SYN JSON".into()));},
                     "code.format"=>{let _=self.update(Message::FormatCode);},
@@ -495,11 +497,35 @@ impl App {
                     "circle"=>Object::rect(&id("circle"),"Orb",700.,170.+(n as f32*12.0)%220.0,150.,150.,"circle"),
                     "button"=>Object::rect(&id("button"),"BUTTON",760.,500.,180.,56.,"button"),
                     "line"=>Object::rect(&id("line"),"Divider",160.,540.,620.,4.,"line"),
+                    "image"=>Object::rect(&id("image"),"IMAGE ASSET",700.,360.,280.,170.,"media"),
+                    "audio"=>Object::rect(&id("audio"),"AUDIO TRACK",700.,550.,280.,58.,"audio"),
+                    "video"=>Object::rect(&id("video"),"VIDEO ASSET",700.,360.,280.,170.,"video"),
                     _=>Object::rect(&id("card"),"Card",140.,380.,280.,120.,"card"),
                 };
                 let oid=object.id.clone();
                 self.doc.scenes[self.doc.active_scene].objects.push(object);
                 self.selected=Some(oid);self.inspector=true;self.status=format!("Inserted {}",kind);
+            },
+            Message::NewScene=>{
+                self.snapshot();
+                let mut scene=Document::sample().scenes.into_iter().next().unwrap_or_else(||Scene{id:id("scene"),name:"Scene".into(),width:1200.,height:700.,objects:vec![],animation:AnimationState::default()});
+                let number=self.doc.scenes.len()+1;
+                scene.id=id("scene");
+                scene.name=format!("Scene {:02}",number);
+                self.doc.scenes.push(scene);
+                self.doc.active_scene=self.doc.scenes.len()-1;
+                self.selected=None;
+                self.status=format!("Created Scene {:02}",number);
+            },
+            Message::SetInteraction(kind)=>{
+                if let Some(id)=self.selected.clone(){
+                    if let Some(o)=self.scene_mut().objects.iter_mut().find(|o|o.id==id){
+                        o.props[kind.clone()]=json!(true);
+                        self.status=if kind=="link"{"Link interaction attached to selection".into()}else{"Trigger interaction attached to selection".into()};
+                    }
+                } else {
+                    self.status="Select an object before creating an interaction".into();
+                }
             },
             Message::ToggleLoop(v)=>self.scene_mut().animation.looped=v,
             Message::ToggleOnion(v)=>self.scene_mut().animation.onion_skin=v,
@@ -566,10 +592,13 @@ impl App {
         let right=if self.inspector { container(self.inspector_view()).width(Length::Fixed(self.inspector_width as f32)).height(Length::Fill) }
         else { container(space()).width(Length::Fixed(0.0)).height(Length::Fill) };
         let body=row![self.rail(),container(self.center()).width(Length::Fill).height(Length::Fill),right].height(Length::Fill);
-        let workspace_bar=container(row![
-            iced::widget::Row::with_children(workspaces),space().width(Length::Fill),
-            text(if self.inspector{"INSPECTOR OPEN"}else{"INSPECTOR CLOSED"}).size(7).color(MUTED)
-        ].spacing(3).align_y(alignment::Vertical::Center)).height(36).padding([0,12]).style(panel_style(rgb(0x080b10)));
+        let workspace_bar=container(scrollable(
+            row![
+                iced::widget::Row::with_children(workspaces),
+                space().width(Length::Fill),
+                text(if self.inspector{"INSPECTOR OPEN"}else{"INSPECTOR CLOSED"}).size(7).color(MUTED)
+            ].spacing(3).align_y(alignment::Vertical::Center)
+        ).horizontal().height(36).width(Length::Fill)).height(36).padding([0,12]).style(panel_style(rgb(0x080b10)));
         let status=container(row![
             row![text("●").size(7).color(GOOD),text("READY").size(8).color(TEXT)].spacing(5),
             text(&self.status).size(8).color(MUTED),space().width(Length::Fill),
@@ -601,7 +630,8 @@ impl App {
                 .into()
         }).collect::<Vec<Element<'_,Message>>>();
         let mut content=column![
-            container(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center))
+            container(scrollable(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center))
+                .horizontal().height(30).width(Length::Fill))
                 .height(30).style(panel_style(rgb(0x0b0f16)))
         ];
         if let Some(name)=&self.menu_open {
@@ -1058,7 +1088,12 @@ impl Program<Message> for SceneCanvas {
                 continue;
             }
             let selected=self.selected.as_ref()==Some(&o.id);
-            let fill_color=o.props.get("color").and_then(Value::as_str).map(parse_hex).unwrap_or(if o.kind=="text"{rgb(0x151b2a)}else{rgb(0x1b2130)});
+            let fill_color=o.props.get("color").and_then(Value::as_str).map(parse_hex).unwrap_or(match o.kind.as_str(){
+                "text"=>rgb(0x151b2a),
+                "media"|"video"=>rgb(0x142033),
+                "audio"=>rgb(0x13251f),
+                _=>rgb(0x1b2130)
+            });
             if o.kind=="circle" {
                 let circle=Path::circle(Point::new(x+o.width*scale/2.,y+o.height*scale/2.),(o.width.min(o.height)*scale/2.).max(2.));
                 frame.fill(&circle,fill_color);
@@ -1082,6 +1117,9 @@ impl Program<Message> for SceneCanvas {
             if o.props.get("bold").and_then(Value::as_bool).unwrap_or(false) { font.weight=iced::font::Weight::Bold; }
             if o.props.get("italic").and_then(Value::as_bool).unwrap_or(false) { font.style=iced::font::Style::Italic; }
             frame.fill_text(CanvasText{content:label,position:Point::new(x+16.*scale,y+22.*scale),max_width:(o.width*scale-28.).max(40.),color:text_color,size:(text_size*scale).into(),font,align_x:align.into(),..Default::default()});
+            if o.props.get("underline").and_then(Value::as_bool).unwrap_or(false) && o.kind=="text" {
+                frame.stroke(&Path::line(Point::new(x+16.*scale,y+31.*scale),Point::new(x+(o.width-16.).max(24.)*scale,y+31.*scale)),Stroke{style:canvas::Style::Solid(text_color),width:(1.2*scale).max(1.0),..Default::default()});
+            }
         }
         frame.fill_rectangle(Point::new(0.,bounds.height-28.),Size::new(bounds.width,28.),rgb(0x0c121b));
         frame.fill_text(CanvasText{content:format!("FRAME {:04}   /   {:.2}s", (self.playhead*60.) as u32,self.playhead),position:Point::new(12.,bounds.height-10.),color:MUTED,size:9.into(),..Default::default()});
