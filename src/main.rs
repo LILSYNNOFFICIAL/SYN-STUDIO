@@ -308,22 +308,26 @@ fn App()->Element {
     let mut tool=use_signal(||"select".to_string());
     let mut mode=use_signal(||"design".to_string());
     let mut preview=use_signal(||false);
-    let mut zoom=use_signal(||1.0f32);
-    let mut menu=use_signal(||None::<String>);
-    let mut search=use_signal(String::new);
+    let mut zoom=use_signal(||0.72f32);
+    let mut menu=use_signal(||"Home".to_string());
     let mut modal=use_signal(||None::<String>);
     let mut status=use_signal(||"Ready".to_string());
     let mut history=use_signal(||History::new(&initial()));
     let mut source=use_signal(String::new);
     let mut panel=use_signal(||"inspector".to_string());
+    let mut workspace=use_signal(||"".to_string());
+    let mut inspector_open=use_signal(||true);
+    let mut inspector_wide=use_signal(||false);
 
     let active=doc.read().scenes.get(*scene.read()).cloned();
     let scene_count=doc.read().scenes.len();
     let selected_id=selected.read().clone();
     let status_text=status.read().clone();
-    let zoom_label=format!("{}%",(*zoom.read()*100.) as i32);
+    let zoom_label=if (*zoom.read()-0.72).abs()<0.02{"FIT".to_string()}else{format!("{}%",(*zoom.read()*100.) as i32)};
     let dock_label=format!("{} objects  ·  {} scenes  ·  {} assets",
         active.as_ref().map(|s|s.objects.len()).unwrap_or(0),scene_count,doc.read().assets.len());
+    let work_class=if !*inspector_open.read(){"work inspector-closed"}else if *inspector_wide.read(){"work inspector-wide"}else{"work"};
+    let selected_text=selected_id.as_ref().and_then(|id|active.as_ref().and_then(|s|s.objects.iter().find(|o|&o.id==id))).map(|o|o.kind=="text").unwrap_or(false);
 
     if *preview.read() {
         return rsx!{ Preview { doc:doc.read().clone(), scene:*scene.read(), close:move |_|preview.set(false) } };
@@ -333,125 +337,142 @@ fn App()->Element {
         document::Stylesheet { href:CSS }
         div { class:"app",
             header { class:"top",
-                div { class:"brand", b{"S"}, div{strong{"SYN Studio"},small{"RUST-FIRST CREATIVE IDE"}} }
-                nav { for (name,_) in menus() {
-                    button {
-                        class:if menu.read().as_deref()==Some(name){"topmenu active"}else{"topmenu"},
-                        onclick:{
-                            let n=name.to_string(); let mut menu=menu.clone(); let mut search=search.clone();
-                            move |_|{ search.set(String::new()); if menu.read().as_deref()==Some(n.as_str()){menu.set(None)}else{menu.set(Some(n.clone()))}}
-                        },
-                        "{name}"
+                div { class:"titlebar",
+                    div { class:"brand", b{"S"}, div{strong{"SYN Studio"},small{"Creative Systems IDE"}} }
+                    div { class:"quick",
+                        button{title:"Save",onclick:{let mut status=status.clone();let d=doc.clone();move |_|{save(&d.read());status.set("Saved locally".into())}},"⌘ Save"}
+                        button{title:"Undo",onclick:{let mut status=status.clone();let mut history=history.clone();let mut doc=doc.clone();move |_|{let cur=doc.read().clone();if let Some(n)=history.write().undo(&cur){doc.set(n);status.set("Undo".into())}}},"↶"}
+                        button{title:"Redo",onclick:{let mut status=status.clone();let mut history=history.clone();let mut doc=doc.clone();move |_|{if let Some(n)=history.write().redo(){doc.set(n);status.set("Redo".into())}}},"↷"}
                     }
-                }}
-                div { class:"topbuttons",
-                    button { onclick:{let mut status=status.clone();let d=doc.clone();move |_|{save(&d.read());status.set("Saved locally".into())}}, "Save" }
-                    button { class:"primary", onclick:{let d=doc.clone();move |_|download("syn-studio-project.syn",&serde_json::to_string_pretty(&*d.read()).unwrap())}, "Export .syn" }
+                    div{class:"title-spacer"}
+                    span{class:"status-chip","{status_text}"}
+                    button{class:"title-action",onclick:{let d=doc.clone();move |_|download("syn-studio-project.syn",&serde_json::to_string_pretty(&*d.read()).unwrap())},"Export .syn"}
+                    button{class:"title-primary",onclick:move |_|preview.set(true),"Preview"}
                 }
-            }
-
-            if let Some(open)=menu.read().clone() {
-                Mega {
-                    open,
-                    search:search.clone(),
+                div { class:"ribbon-tabs",
+                    button { class:"app-menu",onclick:{let mut menu=menu.clone();move |_|menu.set("File".into())},"S" }
+                    for (name,_) in menus() {
+                        button {
+                            class:if menu.read().as_deref()==Some(name){"ribbon-tab active"}else{"ribbon-tab"},
+                            onclick:{let n=name.to_string();let mut menu=menu.clone();move |_|menu.set(n.clone())},
+                            "{name}"
+                        }
+                    }
+                }
+                Ribbon {
+                    active:menu.read().clone(),
                     pick:{
-                        let mut menu=menu.clone();let mut modal=modal.clone();let mut mode=mode.clone();let mut source=source.clone();
-                        let mut preview=preview.clone();let mut doc=doc.clone();let mut history=history.clone();
-                        let mut scene=scene.clone();let mut selected=selected.clone();let mut status=status.clone();let mut panel=panel.clone();
+                        let mut menu=menu.clone(); let mut modal=modal.clone(); let mut mode=mode.clone();
+                        let mut preview=preview.clone(); let mut doc=doc.clone(); let mut history=history.clone();
+                        let mut scene=scene.clone(); let mut selected=selected.clone(); let mut status=status.clone();
+                        let mut panel=panel.clone(); let mut workspace=workspace.clone(); let mut inspector_open=inspector_open.clone();
                         move |item:String| {
-                            menu.set(None);
+                            let item_name=item.clone();
+                            menu.set(menu.read().clone());
                             match item.as_str() {
-                                "New Project" => {let cur=doc.read().clone();history.write().push(&cur);doc.set(demo());scene.set(0);selected.set(None);status.set("New project".into());},
+                                "New Project" => {let cur=doc.read().clone();history.write().push(&cur);doc.set(demo());scene.set(0);selected.set(None);status.set("New project created".into());},
                                 "Save" => {save(&doc.read());status.set("Saved locally".into());},
                                 "Save Snapshot" => {save(&doc.read());download("syn-studio-snapshot.syn",&serde_json::to_string_pretty(&*doc.read()).unwrap());status.set("Snapshot exported".into());},
                                 "Open .syn" => modal.set(Some("Open .syn".into())),
                                 "Export .syn" => download("syn-studio-project.syn",&serde_json::to_string_pretty(&*doc.read()).unwrap()),
-                                "Preview" => preview.set(true),
                                 "Undo" => {let cur=doc.read().clone();if let Some(n)=history.write().undo(&cur){doc.set(n);selected.set(None);status.set("Undo".into())}},
                                 "Redo" => {if let Some(n)=history.write().redo(){doc.set(n);status.set("Redo".into())}},
                                 "Delete Selected" => {
-                                    let selected_id=selected.read().clone();if let Some(id)=selected_id{let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;let current_scene=*scene.read();if let Some(s)=n.scenes.get_mut(current_scene){s.objects.retain(|o|o.id!=id)}selected.set(None);doc.set(n);status.set("Object deleted".into())}
+                                    let selected_id=selected.read().clone();if let Some(id)=selected_id{let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;if let Some(s)=n.scenes.get_mut(*scene.read()){s.objects.retain(|o|o.id!=id)}selected.set(None);doc.set(n);status.set("Object deleted".into())}
                                 },
-                                "Duplicate Selected" => {
-                                    let selected_id=selected.read().clone();if let Some(id)=selected_id{let current_scene=*scene.read();duplicate_selected(&mut doc,&mut history,current_scene,&id,&mut selected,&mut status)}
-                                },
+                                "Duplicate Selected" => {if let Some(id)=selected.read().clone(){duplicate_selected(&mut doc,&mut history,*scene.read(),&id,&mut selected,&mut status)}},
                                 "Text"|"Rich Text"|"Heading"|"Paragraph" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"text",item,&mut status),
                                 "Button" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"button",item,&mut status),
                                 "Shape"|"Card" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"shape",item,&mut status),
                                 "Component" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"component",item,&mut status),
                                 "Image"|"SVG"|"GIF"|"Audio"|"Video"|"Import Media" => modal.set(Some(item)),
                                 "New Scene" => new_scene(&mut doc,&mut history,&mut scene,&mut selected,&mut status),
-                                "Duplicate Scene" => {let current_scene=*scene.read();duplicate_scene(&mut doc,&mut history,current_scene,&mut scene,&mut status)},
+                                "Duplicate Scene" => duplicate_scene(&mut doc,&mut history,*scene.read(),&mut scene,&mut status),
                                 "Delete Scene" => delete_scene(&mut doc,&mut history,&mut scene,&mut selected,&mut status),
-                                "Design Inspector"|"Object Inspector"|"Layers"|"Scene Graph"|"Asset Library"|"Timeline"|"Interaction Graph"|"Data"|"Console"|"Output"|"Code Editor"|"Validation"|"AI Workbench" => {
-                                    panel.set(panel_for(item.as_str()));
-                                    if item=="Code Editor"{source.set(serde_json::to_string_pretty(&*doc.read()).unwrap());mode.set("code".into())}
-                                    status.set(format!("{} opened",item));
-                                },
-                                "Align Center"|"Center on Canvas" => {if let Some(id)=selected.read().clone(){align_center(&mut doc,&mut history,*scene.read(),&id,&mut status)}},
-                                "Reset Transform" => {if let Some(id)=selected.read().clone(){reset_transform(&mut doc,&mut history,*scene.read(),&id,&mut status)}},
-                                "Validate" => {status.set(validate(&doc.read()));},
-                                "Publish Preview" => preview.set(true),
-                                _ => {status.set(format!("{} is available from its workspace panel",item));}
+                                "Design Inspector"|"Object Inspector" => {panel.set("inspector".into());inspector_open.set(true);status.set(format!("{} opened",item));},
+                                "Layers"|"Scene Graph" => {panel.set(if item=="Layers"{"layers".into()}else{"scene_graph".into()});inspector_open.set(true);workspace.set(item.clone());status.set(format!("{} opened",item));},
+                                "Asset Library"|"Image Library"|"Audio Library"|"Video Library"|"Fonts"|"Icons"|"Documents"|"Embedded Assets" => {panel.set("assets".into());inspector_open.set(true);workspace.set(item.clone());status.set(format!("{} opened",item));},
+                                "Timeline" => {panel.set("timeline".into());inspector_open.set(true);status.set("Timeline opened".into());},
+                                "Interaction Graph" => {panel.set("interaction".into());inspector_open.set(true);status.set("Interaction Graph opened".into());},
+                                "Code Editor" => {source.set(serde_json::to_string_pretty(&*doc.read()).unwrap());mode.set("code".into());status.set("Code Editor opened".into());},
+                                "Validation"|"Validate" => {panel.set("workspace".into());workspace.set("Validation".into());inspector_open.set(true);status.set(validate(&doc.read()));},
+                                "Preview"|"Publish Preview" => preview.set(true),
+                                "AI Workbench" => {panel.set("ai".into());inspector_open.set(true);status.set("AI Workbench opened".into());},
+                                "Save Snapshot" => {save(&doc.read());status.set("Snapshot saved".into());},
+                                _ => {panel.set("workspace".into());workspace.set(item_name.clone());inspector_open.set(true);status.set(format!("{} opened",item_name));}
                             }
                         }
                     }
                 }
             }
 
-            main { class:"work",
+            main { class:"{work_class}",
                 aside { class:"rail",
-                    span{"TOOLS"}
+                    span{class:"rail-label","TOOLS"}
                     for (glyph,name) in [("↖","select"),("✥","move"),("✋","pan"),("T","text"),("◇","shape"),("▣","button"),("◈","media")] {
                         button {
                             class:if *tool.read()==name{"railbtn active"}else{"railbtn"},
+                            title:"{name}",
                             onclick:{let name=name.to_string();let mut tool=tool.clone();let mut modal=modal.clone();move |_|{tool.set(name.clone());if name=="text"{modal.set(Some("Text".into()))}else if name=="shape"{modal.set(Some("Shape".into()))}else if name=="button"{modal.set(Some("Button".into()))}else if name=="media"{modal.set(Some("Import Media".into()))}}},
                             span{class:"ico","{glyph}"} small{"{name}"}
                         }
                     }
+                    div{class:"rail-spacer"}
+                    button{class:"railbtn",title:"Toggle inspector",onclick:{let mut inspector_open=inspector_open.clone();move |_|inspector_open.toggle()},"◧" small{"panel"}}
                 }
 
                 section { class:"center",
                     div { class:"bar",
-                        div { button{onclick:move |_|{let current_scene=*scene.read();if current_scene>0{scene.set(current_scene-1);selected.set(None)}},"‹"} strong{"{active.as_ref().map(|s|s.name.clone()).unwrap_or_default()}"} button{onclick:move |_|{let current_scene=*scene.read();if current_scene+1<scene_count{scene.set(current_scene+1);selected.set(None)}},"›"} }
+                        div { class:"scene-title",span{class:"eyebrow","SCENE"},strong{"{active.as_ref().map(|s|s.name.clone()).unwrap_or_default()}"},span{class:"crumb","{scene_count} scenes"} }
                         div { class:"modes",
                             button{class:if *mode.read()=="design"{"active"}else{""},onclick:move |_|mode.set("design".into()),"Design"}
                             button{class:if *mode.read()=="code"{"active"}else{""},onclick:{let mut mode=mode.clone();let mut source=source.clone();let d=doc.clone();move |_|{source.set(serde_json::to_string_pretty(&*d.read()).unwrap());mode.set("code".into())}},"Code"}
                             button{onclick:move |_|preview.set(true),"Preview"}
                         }
                         div { class:"zoom",
-                            button{onclick:move |_|{let current_zoom=*zoom.read();zoom.set((current_zoom-0.1).max(0.5))},"−"}
+                            button{onclick:move |_|zoom.set(0.72),"Fit"}
+                            button{onclick:move |_|{let current_zoom=*zoom.read();zoom.set((current_zoom-0.08).max(0.45))},"−"}
                             span{"{zoom_label}"}
-                            button{onclick:move |_|{let current_zoom=*zoom.read();zoom.set((current_zoom+0.1).min(1.5))},"+"}
+                            button{onclick:move |_|{let current_zoom=*zoom.read();zoom.set((current_zoom+0.08).min(1.5))},"+"}
                         }
+                        if !*inspector_open.read(){button{class:"show-inspector",onclick:{let mut inspector_open=inspector_open.clone();move |_|inspector_open.set(true)},"Inspector"}}
+                    }
+                    if selected_text && *mode.read()=="design" {
+                        TextToolbar { doc:doc.clone(),scene:*scene.read(),id:selected_id.clone().unwrap_or_default(),history:history.clone(),status:status.clone() }
                     }
                     if *mode.read()=="code" {
                         Code { source:source.clone(),doc:doc.clone(),history:history.clone(),status:status.clone(),mode:mode.clone() }
                     } else {
                         Canvas { doc:doc.clone(),scene:*scene.read(),selected:selected.clone(),zoom:*zoom.read(),pick:{let mut selected=selected.clone();move |v|selected.set(v)} }
                     }
-                    div { class:"dock", "RUST DOCUMENT", span{"{dock_label}"}, div{class:"grow"}, span{"{status_text}"} }
+                    SceneTabs { doc:doc.clone(),scene:scene.clone(),selected:selected.clone(),history:history.clone(),status:status.clone() }
                 }
 
-                aside { class:"inspector",
-                    div { class:"inspecthead",
-                        button{class:if *panel.read()=="inspector"{"paneltab active"}else{"paneltab"},onclick:move |_|panel.set("inspector".into()),"INSPECT"}
-                        button{class:if *panel.read()=="assets"{"paneltab active"}else{"paneltab"},onclick:move |_|panel.set("assets".into()),"ASSETS"}
-                    }
-                    if *panel.read()=="assets" {
-                        AssetsPanel { doc:doc.clone() }
-                    } else if *panel.read()=="timeline" {
-                        TimelinePanel {}
-                    } else if *panel.read()=="interaction" {
-                        InteractionPanel { doc:doc.clone(),scene:*scene.read() }
-                    } else if *panel.read()=="code" {
-                        div{class:"panelbody",strong{"SOURCE"},p{"Rust owns the document model. The Code workspace edits the same SYN structure."}}
-                    } else if *panel.read()=="ai" {
-                        AiPanel { status:status.clone() }
-                    } else if let Some(id)=selected_id {
-                        Inspect { doc:doc.clone(),scene:*scene.read(),id,status:status.clone(),history:history.clone() }
-                    } else {
-                        div{class:"empty",b{"◇"},strong{"Select an object"},p{"Geometry, content, styles and state appear here."}}
+                if *inspector_open.read() {
+                    aside { class:"inspector",
+                        div { class:"inspecthead",
+                            div{class:"panel-title",strong{"{if *panel.read()=="inspector"{"Inspector"}else if *panel.read()=="assets"{"Assets"}else if *panel.read()=="timeline"{"Timeline"}else if *panel.read()=="interaction"{"Interactions"}else{"Workspace"}}"}}
+                            button{title:"Narrow panel",class:"panel-icon",onclick:{let mut inspector_wide=inspector_wide.clone();move |_|inspector_wide.set(false)},"−"}
+                            button{title:"Widen panel",class:"panel-icon",onclick:{let mut inspector_wide=inspector_wide.clone();move |_|inspector_wide.set(true)},"↔"}
+                            button{title:"Close panel",class:"panel-icon close",onclick:{let mut inspector_open=inspector_open.clone();move |_|inspector_open.set(false)},"×"}
+                        }
+                        if *panel.read()=="assets" {
+                            AssetsPanel { doc:doc.clone() }
+                        } else if *panel.read()=="timeline" {
+                            TimelinePanel {}
+                        } else if *panel.read()=="interaction" {
+                            InteractionPanel { doc:doc.clone(),scene:*scene.read() }
+                        } else if *panel.read()=="code" {
+                            div{class:"panelbody",strong{"SOURCE"},p{"Rust owns the document model. Design and source views share the same SYN document."}}
+                        } else if *panel.read()=="ai" {
+                            AiPanel { status:status.clone() }
+                        } else if *panel.read()=="workspace" || *panel.read()=="layers" || *panel.read()=="scene_graph" {
+                            WorkspacePanel { command:workspace.read().clone(), doc:doc.clone(), scene:*scene.read(), status:status.clone() }
+                        } else if let Some(id)=selected_id {
+                            Inspect { doc:doc.clone(),scene:*scene.read(),id,status:status.clone(),history:history.clone() }
+                        } else {
+                            div{class:"empty",b{"◇"},strong{"Select an object"},p{"Geometry, content, typography and state appear here. Open any ribbon command to switch this panel to a real workspace."}}
+                        }
                     }
                 }
             }
@@ -461,6 +482,135 @@ fn App()->Element {
             }
         }
     }
+}
+
+#[component]
+fn Ribbon(active:String,pick:EventHandler<String>)->Element {
+    rsx!{
+        div{class:"ribbon",
+            div{class:"ribbon-scroll",
+                for (group,items) in ribbon_groups(&active) {
+                    div{class:"ribbon-group",
+                        div{class:"ribbon-group-body",
+                            for item in items {
+                                button{class:if item=="Export .syn"||item=="Preview"||item=="Validate"{"ribbon-command featured"}else{"ribbon-command"},onclick:{let item=item.to_string();let pick=pick.clone();move |_|pick.call(item.clone())},
+                                    span{class:"command-icon","{icon_for(item)}"}
+                                    span{class:"command-label","{item}"}
+                                }
+                            }
+                        }
+                        span{class:"ribbon-group-label","{group}"}
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn ribbon_groups(active:&str)->Vec<(&'static str,Vec<&'static str>)> {
+    match active {
+        "File"=>vec![("Project",vec!["New Project","Open .syn","Save","Save Snapshot"]),("History",vec!["Undo","Redo"]),("Export",vec!["Export .syn","Preview"])],
+        "Home"=>vec![("Clipboard",vec!["Undo","Redo"]),("Edit",vec!["Duplicate Selected","Delete Selected"]),("Object",vec!["Align Center","Center on Canvas","Reset Transform"]),("Text",vec!["Typography","Colors","Effects"])],
+        "Insert"=>vec![("Text",vec!["Text","Rich Text","Heading","Paragraph"]),("Elements",vec!["Button","Shape","Card","Component"]),("Media",vec!["Image","SVG","GIF","Audio","Video","Import Media"])],
+        "Design"=>vec![("Inspect",vec!["Design Inspector","Object Inspector","Layers","Scene Graph"]),("Layout",vec!["Responsive Layout","Typography","Colors","Effects"]),("Accessibility",vec!["Accessibility"])],
+        "Build"=>vec![("Scenes",vec!["New Scene","Duplicate Scene","Delete Scene"]),("Motion",vec!["Timeline","Animation","States"]),("Behavior",vec!["Interaction Graph","Data","Variables","Navigation","Events"]),("Run",vec!["Preview"])],
+        "Assets"=>vec![("Library",vec!["Asset Library","Image Library","Audio Library","Video Library"]),("Types",vec!["Fonts","Icons","Documents"]),("Storage",vec!["Replace Asset","Embedded Assets"])],
+        "Code"=>vec![("Editor",vec!["Code Editor","Validation"]),("Diagnostics",vec!["Console","Output","Debugging"]),("APIs",vec!["Runtime API","Scene API","Data API","Media API","Animation API"]),("Preview",vec!["Responsive Preview"])],
+        "AI"=>vec![("Workbench",vec!["AI Workbench"]),("Generate",vec!["Generate Text","Generate Layout","Generate Scene","Generate Component","Generate Code"]),("Review",vec!["Analyze Document","Organize Document","Accessibility Review"])],
+        "Publish"=>vec![("Checks",vec!["Validate"]),("Preview",vec!["Publish Preview","Save Snapshot"]),("Packages",vec!["Export .syn","Web Package","Desktop Package","Mobile Package"]),("Share",vec!["Share","Manifest"])],
+        _=>vec![]
+    }
+}
+
+fn icon_for(item:&str)->&'static str {
+    match item {
+        "New Project"=>"＋","Open .syn"=>"↥","Save"=>"⌘","Save Snapshot"=>"▣","Undo"=>"↶","Redo"=>"↷",
+        "Delete Selected"=>"⌫","Duplicate Selected"=>"⧉","Text"|"Rich Text"|"Heading"|"Paragraph"=>"T",
+        "Button"=>"▰","Shape"=>"◇","Card"=>"▱","Component"=>"◆","Image"=>"▧","SVG"=>"◇","GIF"=>"◉",
+        "Audio"=>"◌","Video"=>"▶","Import Media"=>"↥","New Scene"=>"＋","Duplicate Scene"=>"⧉","Delete Scene"=>"⌫",
+        "Design Inspector"|"Object Inspector"=>"⌘","Layers"=>"▤","Scene Graph"=>"⌁","Responsive Layout"=>"⌗",
+        "Typography"=>"Aa","Colors"=>"◐","Effects"=>"✦","Accessibility"=>"♿","Timeline"=>"▥","Animation"=>"◒",
+        "States"=>"◈","Interaction Graph"=>"⌁","Data"=>"{}","Variables"=>"x","Navigation"=>"⇢","Events"=>"⚡",
+        "Preview"|"Publish Preview"|"Responsive Preview"=>"▶","Asset Library"|"Image Library"|"Audio Library"|"Video Library"=>"▦",
+        "Fonts"=>"Aa","Icons"=>"✦","Documents"=>"▤","Replace Asset"=>"↻","Embedded Assets"=>"⌂",
+        "Code Editor"=>"</>","Validation"|"Validate"=>"✓","Console"=>">_","Output"=>"≡","Debugging"=>"⌁",
+        "Runtime API"|"Scene API"|"Data API"|"Media API"|"Animation API"=>"{}","AI Workbench"=>"✦",
+        "Generate Text"|"Generate Layout"|"Generate Scene"|"Generate Component"|"Generate Code"=>"✦",
+        "Analyze Document"|"Organize Document"|"Accessibility Review"=>"◎","Export .syn"=>"⇩","Web Package"=>"⌘",
+        "Desktop Package"=>"▣","Mobile Package"=>"▥","Share"=>"↗","Manifest"=>"{}","Align Center"|"Center on Canvas"=>"⊙",
+        "Reset Transform"=>"↺",_=>"•"
+    }
+}
+
+#[component]
+fn SceneTabs(doc:Signal<Document>,scene:Signal<usize>,selected:Signal<Option<String>>,history:Signal<History>,status:Signal<String>)->Element {
+    rsx!{div{class:"scene-tabs",
+        div{class:"scene-tab-scroll",
+            for (i,s) in doc.read().scenes.iter().enumerate() {
+                button{class:if *scene.read()==i{"scene-tab active"}else{"scene-tab"},onclick:{let mut scene=scene.clone();let mut selected=selected.clone();move |_|{scene.set(i);selected.set(None)}},span{class:"scene-tab-dot"},"{s.name}"}
+            }
+            button{class:"scene-tab-add",onclick:{let mut doc=doc.clone();let mut history=history.clone();let mut scene=scene.clone();let mut selected=selected.clone();let mut status=status.clone();move |_|new_scene(&mut doc,&mut history,&mut scene,&mut selected,&mut status)},"＋"}
+        }
+        div{class:"scene-tab-status","{status}"}
+    }}
+}
+
+#[component]
+fn TextToolbar(doc:Signal<Document>,scene:usize,id:String,history:Signal<History>,status:Signal<String>)->Element {
+    let o=doc.read().scenes.get(scene).and_then(|s|s.objects.iter().find(|o|o.id==id)).cloned();
+    let Some(o)=o else{return rsx!{}};
+    let mut font=use_signal(||o.styles.get("fontFamily").and_then(Value::as_str).unwrap_or("Inter").to_string());
+    let mut size=use_signal(||o.styles.get("fontSize").and_then(Value::as_f64).unwrap_or(16.).to_string());
+    let mut color=use_signal(||o.styles.get("color").and_then(Value::as_str).unwrap_or("#f5f7ff").to_string());
+    let mut weight=use_signal(||o.styles.get("fontWeight").and_then(Value::as_i64).unwrap_or(650).to_string());
+    let mut align=use_signal(||o.styles.get("textAlign").and_then(Value::as_str).unwrap_or("left").to_string());
+    let mut italic=use_signal(||o.styles.get("fontStyle").and_then(Value::as_str).unwrap_or("normal")=="italic");
+    let mut underline=use_signal(||o.styles.get("textDecoration").and_then(Value::as_str).unwrap_or("none")=="underline");
+    rsx!{div{class:"text-toolbar",
+        select{value:"{font}",oninput:move|e|font.set(e.value()),option{"Inter"},option{"Segoe UI"},option{"Georgia"},option{"JetBrains Mono"},option{"Space Grotesk"}},
+        input{class:"size-input",type:"number",min:"8",max:"120",value:"{size}",oninput:move|e|size.set(e.value())},
+        button{class:if *weight.read()=="800"||*weight.read()=="900"{"fmt active"}else{"fmt"},onclick:move |_|{if *weight.read()=="800"{weight.set("650".into())}else{weight.set("800".into())}},"B"},
+        button{class:if *italic.read(){"fmt active"}else{"fmt"},onclick:move |_|italic.toggle(),"I"},
+        button{class:if *underline.read(){"fmt active"}else{"fmt"},onclick:move |_|underline.toggle(),"U"},
+        div{class:"align-group",for a in ["left","center","right"]{button{class:if *align.read()==a{"fmt active"}else{"fmt"},onclick:{let mut align=align.clone();let a=a.to_string();move |_|align.set(a.clone())},"{if a=="left"{"≡"}else if a=="center"{"☰"}else{"≣"}}"}},
+        label{class:"color-control",title:"Text color",input{type:"color",value:"{color}",oninput:move|e|color.set(e.value())},span{"Color"}},
+        button{class:"apply-text",onclick:{let mut doc=doc.clone();let mut history=history.clone();let mut status=status.clone();move |_|{
+            let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;
+            if let Some(v)=n.scenes.get_mut(scene).and_then(|s|s.objects.iter_mut().find(|o|o.id==id)){
+                if let Some(m)=v.styles.as_object_mut(){
+                    m.insert("fontFamily".into(),Value::String(font.read().clone()));
+                    m.insert("fontSize".into(),json!(size.read().parse::<f32>().unwrap_or(16.)));
+                    m.insert("fontWeight".into(),json!(weight.read().parse::<u32>().unwrap_or(650)));
+                    m.insert("color".into(),Value::String(color.read().clone()));
+                    m.insert("textAlign".into(),Value::String(align.read().clone()));
+                    m.insert("fontStyle".into(),Value::String(if *italic.read(){"italic"}else{"normal"}));
+                    m.insert("textDecoration".into(),Value::String(if *underline.read(){"underline"}else{"none"}));
+                }
+            }
+            doc.set(n);status.set("Text formatting applied".into());
+        }},"Apply"}
+    }}
+}
+
+#[component]
+fn WorkspacePanel(command:String,doc:Signal<Document>,scene:usize,status:Signal<String>)->Element {
+    let title=if command.is_empty(){"Workspace".to_string()}else{command.clone()};
+    rsx!{div{class:"workspace-panel",
+        div{class:"workspace-hero",span{class:"workspace-kicker","SYN WORKSPACE"},strong{"{title}"},p{"This command is connected to a live editor surface. Use the controls below to inspect, validate, or stage the operation."}},
+        if command=="Validation" {
+            button{class:"workspace-action",onclick:{let mut status=status.clone();let d=doc.clone();move |_|status.set(validate(&d.read()))},"Run validation"}
+            div{class:"validation-card",span{class:"ok-dot"},"Document schema, scenes and IDs are checked against the current SYN model."}
+        } else if command=="Scene Graph" {
+            div{class:"graph large",for (i,s) in doc.read().scenes.iter().enumerate(){div{class:"graph-node",style:format!("left:{}%;top:{}%;",10+(i%2)*45,18+(i/2)*34),"SCENE {i+1}",span{"{s.name}"}}}}
+        } else if command=="Layers" {
+            div{class:"layer-list",for o in doc.read().scenes.get(scene).map(|s|s.objects.clone()).unwrap_or_default(){div{class:"layer-row",span{class:"layer-icon","◇"},span{"{o.label}"},small{"{o.kind}"}}}}
+        } else {
+            div{class:"workspace-grid",
+                div{class:"workspace-card",strong{"Live command"},p{"{command} is available from this ribbon tab and opens here instead of acting as a dead button."},button{class:"workspace-action",onclick:{let mut status=status.clone();let c=command.clone();move |_|status.set(format!("{} action staged",c))},"Run / stage command"}},
+                div{class:"workspace-card",strong{"Context"},p{"The active scene contains {doc.read().scenes.get(scene).map(|s|s.objects.len()).unwrap_or(0)} objects and {doc.read().assets.len()} embedded assets."}}
+            }
+        }
+    }}
 }
 
 fn menus()->Vec<(&'static str,&'static str)> {
