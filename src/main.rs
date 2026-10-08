@@ -853,7 +853,7 @@ impl App {
                     header,
                     container(column![
                         container(canvas_shell).width(Length::Fill).height(Length::Fill),
-                        container(floating).padding([0,14,5,14])
+                        container(floating).padding([0u16,14u16,5u16,14u16])
                     ]).height(Length::Fill),
                     bottom
                 ].spacing(5).height(Length::Fill).into()
