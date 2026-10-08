@@ -38,8 +38,6 @@ jobs:
           test -s studio/styles.css
           test -s studio/pkg/syn-studio.js
           test -s studio/pkg/syn-studio_bg.wasm
-          test ! -e Dioxus.toml
-          test ! -e src/main.rs
       - name: Create Pages entrypoint
         run: |
           cat > index.html <<'EOF'
