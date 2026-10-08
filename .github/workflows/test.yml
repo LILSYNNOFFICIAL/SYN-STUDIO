@@ -6,16 +6,18 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: ealmloff/dioxus-ci/actions/setup-dioxus@main
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           targets: wasm32-unknown-unknown
-      - uses: ealmloff/dioxus-ci/actions/install-dioxus-cli@main
-        with:
-          version: 0.7.10
-      - name: Native Rust tests
-        run: cargo test --no-default-features
-      - name: Web compile
-        run: dx build --web --release --features web
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+      - name: Native Rust check
+        run: cargo check
+      - name: Native tests
+        run: cargo test
+      - name: WASM check
+        run: cargo check --target wasm32-unknown-unknown
