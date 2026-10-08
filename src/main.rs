@@ -509,12 +509,9 @@ impl App {
             container(text("S").size(15).font(Font::MONOSPACE).color(BG)).width(30).height(30).center(30).style(accent_box()),
             column![text("SYN Studio").size(15).color(TEXT),text("RUST CREATIVE SYSTEMS IDE").size(8).color(MUTED)].spacing(0),
             space().width(Length::Fill),
-            button(text("New").size(11)).on_press(Message::New).style(btn_style(false)),
-            button(text("Undo").size(11)).on_press(Message::Undo).style(btn_style(false)),
-            button(text("Redo").size(11)).on_press(Message::Redo).style(btn_style(false)),
-            button(text("Save").size(11)).on_press(Message::Save).style(btn_style(false)),
-            button(text("Preview").size(11)).on_press(Message::Preview).style(btn_style(true)),
-        ].spacing(7).padding([8,12]).align_y(alignment::Vertical::Center).height(46).into()
+            button(text("Save").size(10)).on_press(Message::Save).style(btn_style(false)),
+            button(text("Preview").size(10)).on_press(Message::Preview).style(btn_style(true)),
+        ].spacing(8).padding([7,14]).align_y(alignment::Vertical::Center).height(52).into()
     }
 
     fn ribbon(&self)->Element<'_,Message> {
@@ -539,8 +536,8 @@ impl App {
                 ribbon_group("PROJECT",vec![rbtn("✓","Validate",Message::Validate),rbtn("⇩","Export",Message::Export),rbtn("▶","Preview",Message::Preview)]),
             ],
         };
-        container(scrollable(groups).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::default())).height(82))
-            .style(panel_style(rgb(0x0b1017))).into()
+        container(scrollable(groups).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::default())).height(66))
+            .style(panel_style(rgb(0x0a0e15))).into()
     }
 
     fn rail(&self)->Element<'_,Message> {
@@ -553,16 +550,23 @@ impl App {
             (Tool::Bone,"⌁","Rig"),
         ];
         iced::widget::Column::with_children(items.into_iter().map(|(t,i,l)|tool_button(t,i,l,self.tool)).collect::<Vec<_>>())
-            .spacing(6).padding(7).width(64).into()
+            .spacing(4).padding(6).width(56).into()
     }
 
     fn center(&self)->Element<'_,Message> {
         let header=container(row![
-            column![text(self.surface_name()).size(14).color(TEXT),text(self.surface_subtitle()).size(8).color(MUTED)].spacing(0),
+            column![
+                text(self.surface_name()).size(13).color(TEXT),
+                text(self.surface_subtitle()).size(7).color(MUTED)
+            ].spacing(1),
             space().width(Length::Fill),
-            text(format!("{:.0}%",self.zoom*100.)).size(10).color(MUTED),
-            button(text(if self.inspector{"Hide Inspector"}else{"Inspector"}).size(10)).on_press(Message::ToggleInspector).style(btn_style(false)),
-        ].spacing(8).padding([8,12]).align_y(alignment::Vertical::Center).height(46)).style(panel_style(SURFACE));
+            container(row![
+                text(format!("{:.0}%",self.zoom*100.)).size(9).color(MUTED),
+                button(text(if self.inspector{"INSPECTOR"}else{"INSPECT"}).size(9))
+                    .on_press(Message::ToggleInspector)
+                    .style(btn_style(self.inspector)),
+            ].spacing(5)).padding([3,5]).style(panel_style(SURFACE_2)),
+        ].spacing(8).padding([7,12]).align_y(alignment::Vertical::Center).height(42)).style(panel_style(SURFACE));
 
         match self.surface {
             Surface::Code => column![header,self.code_surface()].height(Length::Fill).into(),
@@ -796,15 +800,24 @@ fn tab(label:&str, surface:Surface, active:Surface)->Element<'_,Message> {
     button(text(label).size(8)).on_press(Message::Surface(surface)).style(btn_style(surface==active)).into()
 }
 fn ribbon_group<'a>(name:&'a str, items:Vec<Element<'a,Message>>)->Element<'a,Message> {
-    container(column![text(name).size(7).color(MUTED),iced::widget::Row::with_children(items).spacing(4)].spacing(4).padding([5,8])).style(panel_style(SURFACE_2)).into()
+    container(column![
+        text(name).size(6).color(MUTED),
+        iced::widget::Row::with_children(items).spacing(3)
+    ].spacing(3).padding([5,7])).style(panel_style(SURFACE_2)).into()
 }
 fn rbtn<'a>(icon:&'a str,label:&'a str,msg:Message)->Element<'a,Message> {
-    button(column![text(icon).size(15).color(ACCENT),text(label).size(7).color(TEXT)].align_x(alignment::Horizontal::Center).spacing(2))
-        .on_press(msg).style(btn_style(false)).width(58).height(56).into()
+    button(column![
+        text(icon).size(14).color(ACCENT),
+        text(label).size(6).color(TEXT)
+    ].align_x(alignment::Horizontal::Center).spacing(1))
+        .on_press(msg).style(btn_style(false)).width(54).height(48).into()
 }
 fn tool_button<'a>(tool:Tool,icon:&'a str,label:&'a str,active:Tool)->Element<'a,Message> {
-    button(column![text(icon).size(16).color(if tool==active{ACCENT}else{MUTED}),text(label).size(7).color(TEXT)].align_x(alignment::Horizontal::Center).spacing(2))
-        .on_press(Message::Tool(tool)).style(btn_style(tool==active)).width(50).height(48).into()
+    button(column![
+        text(icon).size(15).color(if tool==active{ACCENT}else{MUTED}),
+        text(label).size(6).color(if tool==active{TEXT}else{MUTED})
+    ].align_x(alignment::Horizontal::Center).spacing(1))
+        .on_press(Message::Tool(tool)).style(btn_style(tool==active)).width(44).height(42).into()
 }
 fn media_card<'a>(kind:&'a str,desc:&'a str)->Element<'a,Message> {
     container(column![text(kind).size(9).color(ACCENT),text(desc).size(10).color(TEXT)].spacing(5)).padding(14).width(Length::Fill).style(panel_style(SURFACE_2)).into()
@@ -819,9 +832,11 @@ fn value_box(label:&str,value:f32)->Element<'_,Message> {
 }
 fn panel_style(bg:Color)->impl Fn(&Theme)->iced::widget::container::Style {
     move |_theme| iced::widget::container::Style {
-        text_color:Some(TEXT),background:Some(bg.into()),
-        border:border::rounded(8).color(LINE).width(1.0),
-        shadow:Default::default(),snap:true
+        text_color:Some(TEXT),
+        background:Some(bg.into()),
+        border:border::rounded(11).color(LINE).width(1.0),
+        shadow:Default::default(),
+        snap:true
     }
 }
 fn accent_box()->impl Fn(&Theme)->iced::widget::container::Style {
@@ -834,11 +849,13 @@ fn accent_box()->impl Fn(&Theme)->iced::widget::container::Style {
 fn btn_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style {
     move |_theme,status| {
         let hover=matches!(status,button::Status::Hovered);
+        let pressed=matches!(status,button::Status::Pressed);
         button::Style {
-            background:Some(if active {ACCENT.into()} else if hover {SURFACE_2.into()} else {SURFACE.into()}),
+            background:Some(if active {rgb(0x8d7cff).into()} else if pressed {rgb(0x171d2a).into()} else if hover {rgb(0x151b27).into()} else {Color::TRANSPARENT.into()}),
             text_color:if active {BG}else{TEXT},
-            border:border::rounded(7).color(if active {ACCENT}else{LINE}).width(1.0),
-            shadow:Default::default(),snap:true
+            border:border::rounded(8).color(if active {rgb(0xa79cff)} else if hover {rgb(0x323b50)} else {Color::TRANSPARENT}).width(if active || hover {1.0}else{0.0}),
+            shadow:Default::default(),
+            snap:true
         }
     }
 }
@@ -853,6 +870,13 @@ impl Default for CanvasGestureState {
 }
 struct SceneCanvas { scene:Scene, selected:Option<String>, playhead:f32, zoom:f32 }
 impl SceneCanvas {
+    fn effective_scale(&self, bounds:Rectangle)->f32 {
+        let available_w=(bounds.width-40.0).max(80.0);
+        let available_h=(bounds.height-52.0).max(80.0);
+        let fit=(available_w/self.scene.width).min(available_h/self.scene.height);
+        (fit*(self.zoom/0.72)).clamp(0.08,2.5)
+    }
+
     fn project3d(p:[f32;3], transform:Transform3D, center:Point)->Point {
         let (mut x,mut y,mut z)=(p[0]*transform.sx,p[1]*transform.sy,p[2]*transform.sz);
         let rx=transform.rx*PI/180.; let ry=transform.ry*PI/180.; let rz=transform.rz*PI/180.;
@@ -871,7 +895,7 @@ impl Program<Message> for SceneCanvas {
         frame.fill_rectangle(Point::ORIGIN,bounds.size(),rgb(0x090d14));
         let grid=Path::rectangle(Point::new(0.,0.),bounds.size());
         frame.stroke(&grid,Stroke{style:canvas::Style::Solid(LINE),width:1.,..Default::default()});
-        let scale=self.zoom;
+        let scale=self.effective_scale(bounds);
         let ox=(bounds.width-self.scene.width*scale)/2.;
         let oy=(bounds.height-self.scene.height*scale)/2.;
         let art=Path::rounded_rectangle(Point::new(ox,oy),Size::new(self.scene.width*scale,self.scene.height*scale),border::Radius::from(18.));
@@ -921,7 +945,7 @@ impl Program<Message> for SceneCanvas {
         match event {
             canvas::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
                 if let Some(p)=cursor.position_in(bounds) {
-                    let scale=self.zoom;
+                    let scale=self.effective_scale(bounds);
                     let ox=(bounds.width-self.scene.width*scale)/2.;
                     let oy=(bounds.height-self.scene.height*scale)/2.;
                     for o in self.scene.objects.iter().rev() {
