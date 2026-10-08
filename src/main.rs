@@ -336,6 +336,13 @@ fn App()->Element {
     let dock_label=format!("{} objects  ·  {} scenes  ·  {} assets",
         active.as_ref().map(|s|s.objects.len()).unwrap_or(0),scene_count,doc.read().assets.len());
     let work_class=if !*inspector_open.read(){"work inspector-closed"}else if *inspector_wide.read(){"work inspector-wide"}else{"work"};
+    let panel_title=match panel.read().as_str() {
+        "inspector" => "Inspector",
+        "assets" => "Assets",
+        "timeline" => "Timeline",
+        "interaction" => "Interactions",
+        _ => "Workspace",
+    };
     let selected_text=selected_id.as_ref().and_then(|id|active.as_ref().and_then(|s|s.objects.iter().find(|o|&o.id==id))).map(|o|o.kind=="text").unwrap_or(false);
 
     if *preview.read() {
@@ -460,7 +467,7 @@ fn App()->Element {
                 if *inspector_open.read() {
                     aside { class:"inspector",
                         div { class:"inspecthead",
-                            div{class:"panel-title",strong{"{if *panel.read()=="inspector"{"Inspector"}else if *panel.read()=="assets"{"Assets"}else if *panel.read()=="timeline"{"Timeline"}else if *panel.read()=="interaction"{"Interactions"}else{"Workspace"}}"}}
+                            div{class:"panel-title",strong{"{panel_title}"}}
                             button{title:"Narrow panel",class:"panel-icon",onclick:{let mut inspector_wide=inspector_wide.clone();move |_|inspector_wide.set(false)},"−"}
                             button{title:"Widen panel",class:"panel-icon",onclick:{let mut inspector_wide=inspector_wide.clone();move |_|inspector_wide.set(true)},"↔"}
                             button{title:"Close panel",class:"panel-icon close",onclick:{let mut inspector_open=inspector_open.clone();move |_|inspector_open.set(false)},"×"}
