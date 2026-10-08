@@ -1009,53 +1009,127 @@ impl Program<Message> for SceneCanvas {
     type State=CanvasGestureState;
     fn draw(&self,_state:&CanvasGestureState,renderer:&Renderer,_theme:&Theme,bounds:Rectangle,_cursor:mouse::Cursor)->Vec<Geometry> {
         let mut frame=Frame::new(renderer,bounds.size());
-        frame.fill_rectangle(Point::ORIGIN,bounds.size(),rgb(0x090d14));
-        let grid=Path::rectangle(Point::new(0.,0.),bounds.size());
-        frame.stroke(&grid,Stroke{style:canvas::Style::Solid(LINE),width:1.,..Default::default()});
+        frame.fill_rectangle(Point::ORIGIN,bounds.size(),rgb(0x0b0d10));
+
         let scale=self.effective_scale(bounds);
         let ox=(bounds.width-self.scene.width*scale)/2.;
         let oy=(bounds.height-self.scene.height*scale)/2.;
-        let art=Path::rounded_rectangle(Point::new(ox,oy),Size::new(self.scene.width*scale,self.scene.height*scale),border::Radius::from(18.));
-        frame.fill(&art,rgb(0x101722));
-        frame.stroke(&art,Stroke{style:canvas::Style::Solid(rgb(0x344058)),width:1.,..Default::default()});
+        let art=Path::rounded_rectangle(
+            Point::new(ox,oy),
+            Size::new(self.scene.width*scale,self.scene.height*scale),
+            border::Radius::from(10.)
+        );
+        frame.fill(&art,rgb(0x15171b));
+
+        // A restrained working grid: enough to orient the user, never enough to become decoration.
+        let grid_step=(40.0*scale).max(18.0);
+        let mut gx=ox;
+        while gx <= ox+self.scene.width*scale {
+            frame.stroke(
+                &Path::line(Point::new(gx,oy),Point::new(gx,oy+self.scene.height*scale)),
+                Stroke{style:canvas::Style::Solid(rgb(0x1c1f24)),width:1.,..Default::default()}
+            );
+            gx+=grid_step;
+        }
+        let mut gy=oy;
+        while gy <= oy+self.scene.height*scale {
+            frame.stroke(
+                &Path::line(Point::new(ox,gy),Point::new(ox+self.scene.width*scale,gy)),
+                Stroke{style:canvas::Style::Solid(rgb(0x1c1f24)),width:1.,..Default::default()}
+            );
+            gy+=grid_step;
+        }
+
         for o0 in &self.scene.objects {
             if o0.hidden {continue;}
             let o=o0.clone();
-            let x=ox+o.x*scale;let y=oy+o.y*scale;
+            let x=ox+o.x*scale;
+            let y=oy+o.y*scale;
+            let selected=self.selected.as_ref()==Some(&o.id);
+
             if o.kind=="model3d" {
                 let center=Point::new(ox+o.transform3d.x*scale,oy+o.transform3d.y*scale);
                 let s=70.*scale;
-                let verts=[[-1.,-1.,-1.], [1.,-1.,-1.], [1.,1.,-1.], [-1.,1.,-1.], [-1.,-1.,1.], [1.,-1.,1.], [1.,1.,1.], [-1.,1.,1.]];
+                let verts=[[-1.,-1.,-1.],[1.,-1.,-1.],[1.,1.,-1.],[-1.,1.,-1.],[-1.,-1.,1.],[1.,-1.,1.],[1.,1.,1.],[-1.,1.,1.]];
                 let edges=[(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),(0,4),(1,5),(2,6),(3,7)];
-                for (a,b) in edges {frame.stroke(&Path::line(Self::project3d([verts[a][0]*s,verts[a][1]*s,verts[a][2]*s],o.transform3d,center),Self::project3d([verts[b][0]*s,verts[b][1]*s,verts[b][2]*s],o.transform3d,center)),Stroke{style:canvas::Style::Solid(PINK),width:2.,..Default::default()});}
-                frame.fill_text(CanvasText{content:"3D MODEL".into(),position:Point::new(center.x-35.,center.y+90.),color:TEXT,size:iced::Pixels(10.0),..Default::default()});
+                for (a,b) in edges {
+                    frame.stroke(
+                        &Path::line(
+                            Self::project3d([verts[a][0]*s,verts[a][1]*s,verts[a][2]*s],o.transform3d,center),
+                            Self::project3d([verts[b][0]*s,verts[b][1]*s,verts[b][2]*s],o.transform3d,center)
+                        ),
+                        Stroke{style:canvas::Style::Solid(ACCENT),width:1.2,..Default::default()}
+                    );
+                }
+                frame.fill_text(CanvasText{content:"3D".into(),position:Point::new(center.x-8.,center.y+92.*scale),color:MUTED,size:iced::Pixels(10.0),..Default::default()});
                 continue;
             }
+
             if o.kind=="drawing" {
                 if o.points.len()>1 {
                     let mut b=canvas::path::Builder::new();
-                    let p0=o.points[0];b.move_to(Point::new(x+p0[0]*scale,y+p0[1]*scale));
-                    for p in &o.points[1..] {b.line_to(Point::new(x+p[0]*scale,y+p[1]*scale));}
-                    frame.stroke(&b.build(),Stroke{style:canvas::Style::Solid(PINK),width:3.,..Default::default()});
+                    let p0=o.points[0];
+                    b.move_to(Point::new(x+p0[0]*scale,y+p0[1]*scale));
+                    for p in &o.points[1..] { b.line_to(Point::new(x+p[0]*scale,y+p[1]*scale)); }
+                    frame.stroke(&b.build(),Stroke{style:canvas::Style::Solid(ACCENT),width:2.,..Default::default()});
                 }
                 continue;
             }
-            let rect=Path::rounded_rectangle(Point::new(x,y),Size::new(o.width*scale,o.height*scale),border::Radius::from(14.));
-            let color=if o.kind=="text"{rgb(0x151b2a)}else{rgb(0x1b2130)};
-            frame.fill(&rect,color);
-            frame.stroke(&rect,Stroke{style:canvas::Style::Solid(if self.selected.as_ref()==Some(&o.id){ACCENT}else{rgb(0x3a465f)}),width:if self.selected.as_ref()==Some(&o.id){2.}else{1.},..Default::default()});
-            let label=if o.kind=="text"{"SYN STUDIO".to_string()}else{o.label.clone()};
-            let text_size=o.props.get("fontSize").and_then(Value::as_f64).unwrap_or(14.0) as f32;
-            let text_color=o.props.get("color").and_then(Value::as_str).map(parse_hex).unwrap_or(TEXT);
-            let align=match o.props.get("textAlign").and_then(Value::as_str) {
-                Some("center")=>alignment::Horizontal::Center,
-                Some("right")=>alignment::Horizontal::Right,
-                _=>alignment::Horizontal::Left,
-            };
-            frame.fill_text(CanvasText{content:label,position:Point::new(x+16.*scale,y+22.*scale),max_width:(o.width*scale-28.).max(40.),color:text_color,size:(text_size*scale).into(),align_x:align.into(),..Default::default()});
+
+            if o.kind=="text" {
+                let label=if o.label.is_empty(){"SYN STUDIO".to_string()}else{o.label.clone()};
+                let text_size=o.props.get("fontSize").and_then(Value::as_f64).unwrap_or(28.0) as f32;
+                let text_color=o.props.get("color").and_then(Value::as_str).map(parse_hex).unwrap_or(TEXT);
+                let align=match o.props.get("textAlign").and_then(Value::as_str) {
+                    Some("center")=>alignment::Horizontal::Center,
+                    Some("right")=>alignment::Horizontal::Right,
+                    _=>alignment::Horizontal::Left,
+                };
+                frame.fill_text(CanvasText{
+                    content:label,
+                    position:Point::new(x,y+(text_size*scale).max(18.)),
+                    max_width:(o.width*scale).max(40.),
+                    color:text_color,
+                    size:(text_size*scale).into(),
+                    align_x:align.into(),
+                    ..Default::default()
+                });
+                if selected {
+                    let outline=Path::rounded_rectangle(
+                        Point::new(x-6.*scale,y-8.*scale),
+                        Size::new((o.width+12.)*scale,(o.height+16.)*scale),
+                        border::Radius::from(5.)
+                    );
+                    frame.stroke(&outline,Stroke{style:canvas::Style::Solid(ACCENT),width:1.,..Default::default()});
+                }
+                continue;
+            }
+
+            if o.label=="Hero" {
+                let background=Path::rounded_rectangle(Point::new(x,y),Size::new(o.width*scale,o.height*scale),border::Radius::from(8.));
+                frame.fill(&background,rgb(0x171a1f));
+                if selected {
+                    frame.stroke(&background,Stroke{style:canvas::Style::Solid(ACCENT),width:1.,..Default::default()});
+                }
+                continue;
+            }
+
+            if o.label=="Motion Orb" {
+                let radius=(o.width.min(o.height)*scale)/2.;
+                let center=Point::new(x+radius,y+radius);
+                frame.fill(&Path::circle(center,radius),rgb(0x24212e));
+                frame.stroke(&Path::circle(center,radius),Stroke{style:canvas::Style::Solid(ACCENT),width:1.,..Default::default()});
+                frame.fill(&Path::circle(center,radius*0.16),ACCENT);
+                continue;
+            }
+
+            let rect=Path::rounded_rectangle(Point::new(x,y),Size::new(o.width*scale,o.height*scale),border::Radius::from(7.));
+            frame.fill(&rect,rgb(0x1b1e23));
+            if selected {
+                frame.stroke(&rect,Stroke{style:canvas::Style::Solid(ACCENT),width:1.,..Default::default()});
+            }
         }
-        frame.fill_rectangle(Point::new(0.,bounds.height-28.),Size::new(bounds.width,28.),rgb(0x0c121b));
-        frame.fill_text(CanvasText{content:format!("FRAME {:04}   /   {:.2}s", (self.playhead*60.) as u32,self.playhead),position:Point::new(12.,bounds.height-10.),color:MUTED,size:9.into(),..Default::default()});
+
         vec![frame.into_geometry()]
     }
     fn update(&self,state:&mut CanvasGestureState,event:&canvas::Event,bounds:Rectangle,cursor:mouse::Cursor)->Option<canvas::Action<Message>> {
