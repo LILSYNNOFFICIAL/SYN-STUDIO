@@ -562,7 +562,7 @@ impl App {
         let items=[(Surface::Design,"DESIGN"),(Surface::Motion,"MOTION"),(Surface::Architecture,"SYSTEM"),(Surface::Media,"MEDIA"),(Surface::Code,"CODE"),(Surface::Ai,"AI"),(Surface::Publish,"PUBLISH")];
         let workspaces=items.into_iter().map(|(s,label)|
             button(text(label).size(8)).on_press(Message::Surface(s)).padding([7,11]).style(btn_style(self.surface==s))
-        ).collect::<Vec<Element<'_,Message>>>();
+        ).map(Into::into).collect::<Vec<Element<'_,Message>>>();
         let right=if self.inspector { container(self.inspector_view()).width(Length::Fixed(self.inspector_width as f32)).height(Length::Fill) }
         else { container(space()).width(Length::Fixed(0.0)).height(Length::Fill) };
         let body=row![self.rail(),container(self.center()).width(Length::Fill).height(Length::Fill),right].height(Length::Fill);
@@ -598,7 +598,8 @@ impl App {
             button(text(name).size(9).color(if self.menu_open.as_deref()==Some(name){TEXT}else{MUTED}))
                 .on_press(Message::MenuOpen(name.into())).padding([5,9])
                 .style(btn_style(self.menu_open.as_deref()==Some(name)))
-        }).collect::<Vec<_>>();
+                .into()
+        }).collect::<Vec<Element<'_,Message>>>();
         let mut content=column![
             container(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center))
                 .height(30).style(panel_style(rgb(0x0b0f16)))
@@ -621,7 +622,8 @@ impl App {
             let buttons=entries.into_iter().map(|(label,action)|{
                 button(row![text(label).size(9).color(TEXT),space().width(Length::Fill),text("›").size(9).color(MUTED)])
                     .on_press(Message::MenuAction(action.into())).width(210).height(28).padding([0,10]).style(menu_item_style())
-            }).collect::<Vec<_>>();
+                    .into()
+            }).collect::<Vec<Element<'_,Message>>>();
             content=content.push(container(column![iced::widget::Column::with_children(buttons).spacing(1).padding(5)]).width(230).style(menu_panel_style()));
         }
         content.height(Length::Shrink).into()
@@ -677,14 +679,14 @@ impl App {
                     ].spacing(4).padding([6,10])
                 };
                 let bottom=if self.surface==Surface::Motion {column![actions,self.timeline()]} else {column![actions,self.scene_tabs()]};
-                column![header,container(column![canvas_shell,container(floating).padding([0,0,12,0])].height(Length::Fill)).height(Length::Fill),bottom]
+                column![header,container(column![canvas_shell,container(floating).padding([0,12])].height(Length::Fill)).height(Length::Fill),bottom]
                     .spacing(4).height(Length::Fill).into()
             }
-            Surface::Architecture=>self.architecture_surface(header),
-            Surface::Media=>self.media_surface(header),
-            Surface::Code=>self.code_surface(header),
-            Surface::Ai=>self.ai_surface(header),
-            Surface::Publish=>self.publish_surface(header),
+            Surface::Architecture=>column![header,self.architecture_surface()].into(),
+            Surface::Media=>column![header,self.media_surface()].into(),
+            Surface::Code=>column![header,self.code_surface()].into(),
+            Surface::Ai=>column![header,self.ai_surface()].into(),
+            Surface::Publish=>column![header,self.publish_surface()].into(),
         }
     }
 
