@@ -384,7 +384,6 @@ fn App()->Element {
                         let mut panel=panel.clone(); let mut workspace=workspace.clone(); let mut inspector_open=inspector_open.clone();
                         move |item:String| {
                             let item_name=item.clone();
-                            menu.set(menu.read().clone());
                             match item.as_str() {
                                 "New Project" => {let cur=doc.read().clone();history.write().push(&cur);doc.set(demo());scene.set(0);selected.set(None);status.set("New project created".into());},
                                 "Save" => {save(&doc.read());status.set("Saved locally".into());},
@@ -396,14 +395,21 @@ fn App()->Element {
                                 "Delete Selected" => {
                                     let selected_id=selected.read().clone();if let Some(id)=selected_id{let cur=doc.read().clone();history.write().push(&cur);let mut n=cur;if let Some(s)=n.scenes.get_mut(*scene.read()){s.objects.retain(|o|o.id!=id)}selected.set(None);doc.set(n);status.set("Object deleted".into())}
                                 },
-                                "Duplicate Selected" => {if let Some(id)=selected.read().clone(){duplicate_selected(&mut doc,&mut history,*scene.read(),&id,&mut selected,&mut status)}},
+                                "Duplicate Selected" => {
+                                    let selected_id=selected.read().clone();
+                                    let current_scene=*scene.read();
+                                    if let Some(id)=selected_id { duplicate_selected(&mut doc,&mut history,current_scene,&id,&mut selected,&mut status) }
+                                },
                                 "Text"|"Rich Text"|"Heading"|"Paragraph" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"text",item,&mut status),
                                 "Button" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"button",item,&mut status),
                                 "Shape"|"Card" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"shape",item,&mut status),
                                 "Component" => insert(&mut doc,&mut history,*scene.read(),&mut selected,"component",item,&mut status),
                                 "Image"|"SVG"|"GIF"|"Audio"|"Video"|"Import Media" => modal.set(Some(item)),
                                 "New Scene" => new_scene(&mut doc,&mut history,&mut scene,&mut selected,&mut status),
-                                "Duplicate Scene" => duplicate_scene(&mut doc,&mut history,*scene.read(),&mut scene,&mut status),
+                                "Duplicate Scene" => {
+                                    let current_scene=*scene.read();
+                                    duplicate_scene(&mut doc,&mut history,current_scene,&mut scene,&mut status);
+                                },
                                 "Delete Scene" => delete_scene(&mut doc,&mut history,&mut scene,&mut selected,&mut status),
                                 "Design Inspector"|"Object Inspector" => {panel.set("inspector".into());inspector_open.set(true);status.set(format!("{} opened",item));},
                                 "Layers"|"Scene Graph" => {panel.set(if item=="Layers"{"layers".into()}else{"scene_graph".into()});inspector_open.set(true);workspace.set(item.clone());status.set(format!("{} opened",item));},
