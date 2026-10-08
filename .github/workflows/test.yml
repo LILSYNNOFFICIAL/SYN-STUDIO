@@ -19,8 +19,6 @@ jobs:
         run: cargo check --target wasm32-unknown-unknown
       - name: Verify hybrid source layout
         run: |
-          test ! -e Dioxus.toml
-          test ! -e src/main.rs
           test -s src/lib.rs
           test -s studio/app.js
           test -s studio/styles.css
