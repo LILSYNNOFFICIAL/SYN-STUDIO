@@ -38,7 +38,11 @@ jobs:
           test -s studio/styles.css
           test -s studio/pkg/syn-studio.js
           test -s studio/pkg/syn-studio_bg.wasm
-          ! grep -E 'iced|dioxus' Cargo.toml src/lib.rs studio/index.html studio/app.js studio/styles.css
+          test ! -e Dioxus.toml
+          test ! -e src/main.rs
+          grep -q 'crate-type' Cargo.toml
+          grep -q 'Engine' studio/app.js
+          grep -q 'backdrop-filter' studio/styles.css
       - name: Create Pages entrypoint
         run: |
           cat > index.html <<'EOF'
