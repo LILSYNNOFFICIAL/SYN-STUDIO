@@ -5,7 +5,6 @@ use iced::{
         row, scrollable, slider, space, text, text_editor,
     },
     Color, Element, Font, Length, Point, Rectangle, Renderer, Size, Subscription, Theme,
-    Vector,
 };
 use iced::widget::canvas::{Frame, Geometry, Path, Program, Stroke, Text as CanvasText};
 use serde::{Deserialize, Serialize};
@@ -381,14 +380,16 @@ impl App {
             Message::AddTrack(property)=>{
                 if let Some(selected_id)=self.selected.clone() {
                     self.snapshot();
+                    let playhead=self.playhead;
                     let value=self.doc.scene().objects.iter().find(|o|o.id==selected_id).map(|o|match property.as_str(){"x"=>o.x,"y"=>o.y,"rotation"=>o.rotation,"opacity"=>o.opacity,"z"=>o.transform3d.z,"rx"=>o.transform3d.rx,"ry"=>o.transform3d.ry,"rz"=>o.transform3d.rz,_=>0.}).unwrap_or(0.);
-                    self.scene_mut().animation.tracks.push(Track{id:id("trk"),target:selected_id,property:property.clone(),keyframes:vec![Keyframe::new(self.playhead,value)],muted:false,locked:false});
+                    self.scene_mut().animation.tracks.push(Track{id:id("trk"),target:selected_id,property:property.clone(),keyframes:vec![Keyframe::new(playhead,value)],muted:false,locked:false});
                     self.status=format!("Track {} created",property);
                 }
             },
             Message::SetEase(e)=>{
+                let playhead=self.playhead;
                 for track in &mut self.scene_mut().animation.tracks {
-                    if let Some(k)=track.keyframes.iter_mut().min_by(|a,b|(a.time-self.playhead).abs().total_cmp(&(b.time-self.playhead).abs())) {k.easing=e;}
+                    if let Some(k)=track.keyframes.iter_mut().min_by(|a,b|(a.time-playhead).abs().total_cmp(&(b.time-playhead).abs())) {k.easing=e;}
                 }
             },
             Message::SetFps(v)=>self.scene_mut().animation.fps=v,
@@ -774,6 +775,7 @@ impl App {
     }
 
     fn overlay_view(&self,name:&str)->Element<'_,Message> {
+        let overlay_name=name.to_string();
         let content=match name {
             "Preview"=>column![
                 text("LIVE PREVIEW").size(9).color(ACCENT),
@@ -782,7 +784,7 @@ impl App {
                 container(canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:None,playhead:self.playhead,zoom:0.75}).width(Length::Fill).height(Length::Fill)).padding(10).style(panel_style(BG)),
             ],
             "Document Model"=>column![text("DOCUMENT MODEL").size(9).color(ACCENT),text("Rust state → SYN serialization → canvas/runtime").size(18).color(TEXT),text(serde_json::to_string_pretty(&self.doc).unwrap_or_default()).size(9).color(MUTED)],
-            other=>column![text("WORKSPACE").size(9).color(ACCENT),text(other).size(24).color(TEXT),text("This surface is wired to the same Rust state machine. It is an executable workspace, not a decorative dead button.").size(11).color(MUTED)],
+            other=>column![text("WORKSPACE").size(9).color(ACCENT),text(overlay_name).size(24).color(TEXT),text("This surface is wired to the same Rust state machine. It is an executable workspace, not a decorative dead button.").size(11).color(MUTED)],
         };
         container(column![
             row![text("SYN Studio").size(12).color(TEXT),space().width(Length::Fill),button(text("Close").size(10)).on_press(Message::CloseOverlay).style(btn_style(false))].padding(12),
