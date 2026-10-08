@@ -60,18 +60,42 @@ jobs:
 
               const boot = document.getElementById("boot");
               const status = document.getElementById("boot-status");
+              let started = false;
 
-              try {
-                await init("./pkg/syn-studio_bg.wasm");
-                await new Promise(requestAnimationFrame);
-                if (!document.querySelector("canvas")) {
-                  throw new Error("SYN Studio initialized without creating its canvas.");
-                }
-                boot.remove();
-              } catch (error) {
+              const showError = (error) => {
                 console.error("SYN Studio failed to start:", error);
                 status.textContent = "Renderer failed to start. Open the browser console for details.";
                 status.style.color = "#ff8f9a";
+              };
+
+              const removeBootWhenCanvasExists = () => {
+                if (!started || !document.querySelector("canvas")) return false;
+                boot.remove();
+                return true;
+              };
+
+              const observer = new MutationObserver(() => {
+                if (removeBootWhenCanvasExists()) observer.disconnect();
+              });
+              observer.observe(document.body, { childList: true, subtree: true });
+
+              window.addEventListener("error", event => showError(event.error || event.message));
+              window.addEventListener("unhandledrejection", event => showError(event.reason));
+
+              try {
+                await init("./pkg/syn-studio_bg.wasm");
+                started = true;
+                if (removeBootWhenCanvasExists()) observer.disconnect();
+
+                setTimeout(() => {
+                  if (!document.querySelector("canvas")) {
+                    showError(new Error("SYN Studio did not create its canvas."));
+                    observer.disconnect();
+                  }
+                }, 12000);
+              } catch (error) {
+                showError(error);
+                observer.disconnect();
               }
             </script>
           </body>
