@@ -1,4 +1,4 @@
-import init, { Engine } from "./pkg/syn-studio.js";
+import init, { Engine } from "./pkg/syn_studio.js";
 
 const MENUS={
 File:[["New Project","new","⌘N"],["Open .syn","open","⌘O"],["Save","save","⌘S"],["Export .syn","export"],["Project Settings","settings"]],
