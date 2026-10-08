@@ -25,7 +25,10 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - name: Install Dioxus CLI 0.7.10
-        run: cargo install dioxus-cli --version 0.7.10 --locked
+        uses: ealmloff/dioxus-ci/actions/install-dioxus-cli@main
+        with:
+          version: 0.7.10
+          force: true
       - name: Build web application
         run: dx bundle --release --out-dir build
       - name: Assemble Pages site
