@@ -1,17 +1,21 @@
 # SYN Studio
-SYN Studio is the visual authoring environment for the SYN 0.1 creative document format.
+
+SYN Studio is the Rust + Iced visual authoring environment for the SYN creative document format.
 
 ## Rust-first architecture
-The editor UI, document model, state, history, source editor and media workflow are now implemented in Rust with Dioxus. The web target compiles to WebAssembly and keeps the browser build first-class. Dioxus also provides a path to native desktop and mobile targets from the same Rust codebase.
 
-The Rust-WebUI project was evaluated as well. It is a legitimate MIT-licensed Rust wrapper around the WebUI C library and is excellent as a lightweight native browser/WebView shell, but it is not itself a replacement for a hosted browser frontend. SYN Studio therefore uses Dioxus for the web/editor surface and leaves WebUI as a future native-shell integration boundary.
+The editor UI, document model, state, history, source editor, canvas renderer, animation system, and interaction model are implemented in Rust with Iced. The web target compiles to WebAssembly, while the same architecture remains suitable for native desktop and mobile targets.
 
-## Product changes
-- Smaller top-level command system with grouped searchable panels.
-- Insert > Video opens a real file workflow and embeds selected media bytes.
+## Product direction
+
+SYN Studio is being built as a serious creative workstation, not a decorative mockup:
+
+- Refined Iced-native visual system with compact, layered chrome.
+- Design, Motion, Architecture, Media, Code, AI, and Publish workspaces share one typed Rust document model.
+- Interactive Iced Canvas rendering with object selection, 3D projection, drawing, zoom, and touch pinch support.
+- Motion editing with tracks, keyframes, easing, looping, onion-skin state, and playback.
+- Source editing and validation operate on the same serialized SYN document.
 - Save persists the document locally in the browser.
-- Export creates a SYN file.
-- Design and Code views edit the same Rust document model.
-- Undo and redo are document-state based.
-- Showcase is a real multi-scene SYN document, not a static marketing mock.
-- Responsive chrome keeps the artboard usable on narrow screens.
+- Export creates a portable `.syn` project.
+- The Inspector is a right-side dock and remains closed until explicitly opened or an object is selected.
+- The artboard automatically fits its available viewport, including narrow phone-sized WebAssembly viewports, while preserving manual zoom.
