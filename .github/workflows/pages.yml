@@ -27,7 +27,7 @@ jobs:
         run: cargo build --release --target wasm32-unknown-unknown
       - name: Generate browser bindings
         run: |
-          cargo install wasm-bindgen-cli --version 0.2.129 --locked
+          cargo install wasm-bindgen-cli --version 0.2.129 --locked --force
           rm -rf studio/pkg
           mkdir -p studio/pkg
           wasm-bindgen target/wasm32-unknown-unknown/release/syn_studio.wasm --target web --out-dir studio/pkg
