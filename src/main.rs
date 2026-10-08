@@ -288,6 +288,11 @@ fn style(o:&Object)->String {
                 ("boxShadow",Value::String(v))=>s+=&format!("box-shadow:{};",v),
                 ("letterSpacing",Value::Number(n))=>s+=&format!("letter-spacing:{}px;",n),
                 ("lineHeight",Value::Number(n))=>s+=&format!("line-height:{};",n),
+                ("fontFamily",Value::String(v))=>s+=&format!("font-family:{};",v),
+                ("textAlign",Value::String(v))=>s+=&format!("text-align:{};",v),
+                ("fontStyle",Value::String(v))=>s+=&format!("font-style:{};",v),
+                ("textDecoration",Value::String(v))=>s+=&format!("text-decoration:{};",v),
+                ("opacity",Value::Number(n))=>s+=&format!("opacity:{};",n),
                 _=>{}
             }
         }
