@@ -1197,21 +1197,11 @@ fn main() -> iced::Result {
     console_error_panic_hook::set_once();
     #[cfg(target_arch="wasm32")]
     console_log::init_with_level(log::Level::Info).ok();
-    let app = iced::application(App::default, App::update, App::view)
+    iced::application(App::default, App::update, App::view)
         .subscription(App::subscription)
         .theme(Theme::Dark)
-        .title("SYN Studio");
-
-    // Web builds run in browsers where GPU backend selection can vary wildly
-    // between devices/drivers. Keep the public web build on Iced's software
-    // renderer so a broken WebGPU/WebGL path cannot take down the browser GPU
-    // process or leave the app as a blank canvas.
-    #[cfg(target_arch = "wasm32")]
-    let app = app
-        .backend(iced::Backend::Software)
-        .antialiasing(false);
-
-    app.run()
+        .title("SYN Studio")
+        .run()
 }
 
 #[cfg(target_arch="wasm32")]
