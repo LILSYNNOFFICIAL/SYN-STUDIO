@@ -17,6 +17,10 @@ jobs:
         run: cargo test
       - name: WASM check
         run: cargo check --target wasm32-unknown-unknown
-      - name: Verify framework removal
+      - name: Verify hybrid source layout
         run: |
-          ! grep -R -E 'iced|dioxus' Cargo.toml src studio --include='*.rs' --include='*.js' --include='*.html' --include='*.css'
+          test ! -e Dioxus.toml
+          test ! -e src/main.rs
+          test -s src/lib.rs
+          test -s studio/app.js
+          test -s studio/styles.css
