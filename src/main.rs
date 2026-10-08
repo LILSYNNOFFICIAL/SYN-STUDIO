@@ -632,7 +632,7 @@ impl App {
             ("INPUT","Canvas events map directly into typed Message values."),
             ("ASYNC","Iced subscriptions drive playback without a JavaScript animation loop."),
         ];
-        let content=cards.into_iter().map(|(a,b)|container(column![text(a).size(8).color(ACCENT),text(b).size(10).color(TEXT)].spacing(7)).padding(14).width(Length::Fill).style(panel_style(SURFACE_2))).collect::<Vec<_>>();
+        let content=cards.into_iter().map(|(a,b)| container(column![text(a).size(8).color(ACCENT),text(b).size(10).color(TEXT)].spacing(7)).padding(14).width(Length::Fill).style(panel_style(SURFACE_2)).into()).collect::<Vec<_>>();
         container(scrollable(iced::widget::Column::with_children(content).spacing(10).padding(16))).height(Length::Fill).style(panel_style(BG)).into()
     }
     fn media_surface(&self)->Element<'_,Message> {
@@ -795,7 +795,7 @@ fn tab(label:&str, surface:Surface, active:Surface)->Element<'_,Message> {
     button(text(label).size(8)).on_press(Message::Surface(surface)).style(btn_style(surface==active)).into()
 }
 fn ribbon_group<'a>(name:&'a str, items:Vec<Element<'a,Message>>)->Element<'a,Message> {
-    container(column![text(name).size(7).color(MUTED),row(items).spacing(4)].spacing(4).padding([5,8])).style(panel_style(SURFACE_2)).into()
+    container(column![text(name).size(7).color(MUTED),iced::widget::Row::with_children(items).spacing(4)].spacing(4).padding([5,8])).style(panel_style(SURFACE_2)).into()
 }
 fn rbtn<'a>(icon:&'a str,label:&'a str,msg:Message)->Element<'a,Message> {
     button(column![text(icon).size(15).color(ACCENT),text(label).size(7).color(TEXT)].align_x(alignment::Horizontal::Center).spacing(2))
@@ -886,7 +886,7 @@ impl Program<Message> for SceneCanvas {
                 let verts=[[-1.,-1.,-1.], [1.,-1.,-1.], [1.,1.,-1.], [-1.,1.,-1.], [-1.,-1.,1.], [1.,-1.,1.], [1.,1.,1.], [-1.,1.,1.]];
                 let edges=[(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),(0,4),(1,5),(2,6),(3,7)];
                 for (a,b) in edges {frame.stroke(&Path::line(Self::project3d([verts[a][0]*s,verts[a][1]*s,verts[a][2]*s],o.transform3d,center),Self::project3d([verts[b][0]*s,verts[b][1]*s,verts[b][2]*s],o.transform3d,center)),Stroke{style:canvas::Style::Solid(PINK),width:2.,..Default::default()});}
-                frame.fill_text(CanvasText{content:"3D MODEL".into(),position:Point::new(center.x-35.,center.y+90.),color:TEXT,size:10.,..Default::default()});
+                frame.fill_text(CanvasText{content:"3D MODEL".into(),position:Point::new(center.x-35.,center.y+90.),color:TEXT,size:iced::Pixels(10.0),..Default::default()});
                 continue;
             }
             if o.kind=="drawing" {
@@ -910,7 +910,7 @@ impl Program<Message> for SceneCanvas {
                 Some("right")=>alignment::Horizontal::Right,
                 _=>alignment::Horizontal::Left,
             };
-            frame.fill_text(CanvasText{content:label,position:Point::new(x+16.*scale,y+22.*scale),max_width:(o.width*scale-28.).max(40.),color:text_color,size:(text_size*scale).into(),align_x:align,..Default::default()});
+            frame.fill_text(CanvasText{content:label,position:Point::new(x+16.*scale,y+22.*scale),max_width:(o.width*scale-28.).max(40.),color:text_color,size:(text_size*scale).into(),align_x:align.into(),..Default::default()});
         }
         frame.fill_rectangle(Point::new(0.,bounds.height-28.),Size::new(bounds.width,28.),rgb(0x0c121b));
         frame.fill_text(CanvasText{content:format!("FRAME {:04}   /   {:.2}s", (self.playhead*60.) as u32,self.playhead),position:Point::new(12.,bounds.height-10.),color:MUTED,size:9.into(),..Default::default()});
@@ -979,7 +979,7 @@ fn timeline_canvas<'a>(tracks:&[Track],playhead:f32,duration:f32,zoom:f32)->Elem
         r=r.push(line);
         items=items.push(r.height(28));
     }
-    container(scrollable(items).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::new()))).height(120).width(Length::Fill).style(panel_style(BG)).into()
+    container(scrollable(items).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::default()))).height(120).width(Length::Fill).style(panel_style(BG)).into()
 }
 
 fn load_document()->Option<Document> {
@@ -1036,5 +1036,5 @@ fn main() -> iced::Result {
 #[cfg(target_arch="wasm32")]
 #[wasm_bindgen(start)]
 pub fn wasm_start() {
-    main();
+    let _ = main();
 }
