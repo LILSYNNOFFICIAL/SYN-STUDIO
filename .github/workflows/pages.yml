@@ -1,4 +1,4 @@
-name: Deploy SYN Studio to GitHub Pages
+name: Deploy SYN Studio (Iced)
 on:
   push:
     branches: ["main"]
@@ -11,85 +11,67 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install Rust toolchain
+      - uses: actions/checkout@v4
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Install Dioxus CLI 0.7.10
-        uses: ealmloff/dioxus-ci/actions/install-dioxus-cli@main
-        with:
-          version: 0.7.10
-          force: true
-      - name: Build web application
-        run: dx bundle --release --out-dir build
-      - name: Assemble Pages site
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+      - name: Install wasm-bindgen CLI
+        run: cargo install wasm-bindgen-cli --version 0.2.126 --locked
+      - name: Check native Rust
+        run: cargo check
+      - name: Build WASM
+        run: cargo build --release --target wasm32-unknown-unknown
+      - name: Generate web bindings
         run: |
-          rm -rf studio/*
-          cp -R build/public/. studio/
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("studio/index.html")
-          s = p.read_text()
-          lines = [
-              line for line in s.splitlines()
-              if '<meta http-equiv="refresh"' not in line
-              and 'navigator.serviceWorker.register' not in line
-          ]
-          s = "\n".join(lines).rstrip() + '\n'
-          s += '<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js", { updateViaCache: "none" }).catch(() => {});</script>\n'
-          p.write_text(s)
-          PY
-          cp studio/index.html studio/404.html
-          cat > index.html <<'EOF'
+          mkdir -p studio/pkg
+          wasm-bindgen target/wasm32-unknown-unknown/release/syn-studio.wasm --target web --out-dir studio/pkg
+      - name: Create Pages entrypoint
+        run: |
+          cat > studio/index.html <<'EOF'
           <!doctype html>
           <html lang="en">
           <head>
             <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <meta http-equiv="refresh" content="0; url=/SYN-STUDIO/studio/">
+            <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+            <meta name="theme-color" content="#07090d">
             <title>SYN Studio</title>
+            <style>
+              html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#07090d; }
+              body { touch-action:none; font-family:system-ui,sans-serif; }
+              canvas { width:100vw!important; height:100vh!important; display:block; }
+            </style>
           </head>
           <body>
-            <p>Opening <a href="/SYN-STUDIO/studio/">SYN Studio</a>…</p>
+            <script type="module">
+              import init from "./pkg/syn-studio.js";
+              init("./pkg/syn-studio_bg.wasm");
+            </script>
           </body>
           </html>
           EOF
-      - name: Verify assembled Pages site
+          cat > index.html <<'EOF'
+          <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=/SYN-STUDIO/studio/"><title>SYN Studio</title></head><body><a href="/SYN-STUDIO/studio/">Open SYN Studio</a></body></html>
+          EOF
+          cp studio/index.html studio/404.html
+      - name: Verify Pages artifact
         run: |
-          test -f index.html
-          test -f studio/index.html
-          test -f studio/404.html
-          test -d studio/assets
           test -s studio/index.html
-          python3 - <<'PY'
-          from pathlib import Path
-          s = Path("studio/index.html").read_text()
-          checks = {
-              "non-empty studio index": bool(s.strip()),
-              "no root redirect": 'url=/SYN-STUDIO/studio/' not in s,
-              "no meta refresh": '<meta http-equiv="refresh"' not in s,
-              "no relative studio redirect": 'url=./studio/' not in s,
-              "Dioxus main mount": 'id="main"' in s,
-              "absolute studio assets": '/SYN-STUDIO/studio/assets/' in s,
-              "service worker path": 'navigator.serviceWorker.register("../sw.js"' in s,
-          }
-          failed = [name for name, ok in checks.items() if not ok]
-          if failed:
-              raise SystemExit("Verification failed: " + ", ".join(failed))
-          print("All assembled Pages checks passed.")
-          PY
+          test -s studio/pkg/syn-studio.js
+          test -s studio/pkg/syn-studio_bg.wasm
+          test -s studio/404.html
+          test -s index.html
+          grep -q 'pkg/syn-studio.js' studio/index.html
+          grep -q 'SYN-STUDIO/studio/' index.html
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload static site
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
