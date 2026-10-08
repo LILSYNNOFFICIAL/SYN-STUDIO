@@ -672,33 +672,59 @@ impl App {
 
     fn titlebar(&self)->Element<'_,Message> {
         let actions=row![
-            button(text("↶").size(13)).on_press(Message::Undo).style(btn_style(false)).width(30).height(30),
-            button(text("↷").size(13)).on_press(Message::Redo).style(btn_style(false)).width(30).height(30),
-            button(text("Save").size(8)).on_press(Message::Save).style(btn_style(false)).padding([6,11]),
-            button(text("Preview").size(8)).on_press(Message::Preview).style(btn_style(true)).padding([7,13])
+            button(text("↶").size(16)).on_press(Message::Undo).style(btn_style(false)).width(34).height(34),
+            button(text("↷").size(16)).on_press(Message::Redo).style(btn_style(false)).width(34).height(34),
+            button(text("Save").size(10)).on_press(Message::Save).style(btn_style(false)).padding([7,14]),
+            button(text("Preview").size(10)).on_press(Message::Preview).style(btn_style(true)).padding([7,15])
         ].spacing(5);
+
         let brand=row![
-            container(text("S").size(15).font(Font::MONOSPACE).color(BG)).width(32).height(32).center(32).style(accent_box()),
-            column![text("SYN").size(13).font(Font::MONOSPACE).color(TEXT),text("STUDIO").size(7).color(MUTED)].spacing(0),
-            text("·").size(12).color(LINE),text(&self.doc.title).size(9).color(MUTED)
-        ].spacing(7).align_y(alignment::Vertical::Center);
-        container(scrollable(row![brand,space().width(Length::Fill),actions].spacing(7).padding([8,12]).align_y(alignment::Vertical::Center)).horizontal())
-            .height(52).width(Length::Fill).style(panel_style(rgb(0x070a10))).into()
+            container(text("S").size(17).font(Font::MONOSPACE).color(BG))
+                .width(36).height(36).center(36).style(accent_box()),
+            column![
+                text("SYN STUDIO").size(15).font(Font::MONOSPACE).color(TEXT),
+                text("CREATIVE SYSTEMS").size(7).color(MUTED)
+            ].spacing(1),
+            container(text("●").size(8).color(GOOD)).padding([0,5]),
+            text(&self.doc.title).size(10).color(MUTED)
+        ].spacing(8).align_y(alignment::Vertical::Center);
+
+        container(
+            row![
+                brand,
+                space().width(Length::Fill),
+                container(actions).padding([3,4]).style(panel_style(SURFACE)),
+            ]
+            .padding([8,14])
+            .align_y(alignment::Vertical::Center)
+        )
+        .height(58)
+        .width(Length::Fill)
+        .style(panel_style(rgb(0x070a10)))
+        .into()
     }
 
     fn menu_bar(&self)->Element<'_,Message> {
         let names=["File","Edit","View","Insert","Format","Scene","Media","Interaction","Code","Window","Help"];
         let tabs=names.into_iter().map(|name|{
             button(text(name).size(9).color(if self.menu_open.as_deref()==Some(name){TEXT}else{MUTED}))
-                .on_press(Message::MenuOpen(name.into())).padding([5,9])
+                .on_press(Message::MenuOpen(name.into()))
+                .padding([6,10])
                 .style(btn_style(self.menu_open.as_deref()==Some(name)))
                 .into()
         }).collect::<Vec<Element<'_,Message>>>();
+
         let mut content=column![
-            container(scrollable(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center))
-                .horizontal().height(30).width(Length::Fill))
-                .height(30).style(panel_style(rgb(0x0b0f16)))
+            container(
+                scrollable(
+                    iced::widget::Row::with_children(tabs)
+                        .spacing(2)
+                        .padding([0,10])
+                        .align_y(alignment::Vertical::Center)
+                ).horizontal().height(34).width(Length::Fill)
+            ).height(34).style(panel_style(rgb(0x0b0f16)))
         ];
+
         if let Some(name)=&self.menu_open {
             let entries:Vec<(&str,&str)>=match name.as_str() {
                 "File"=>vec![("New Project","file.new"),("Save Project","file.save"),("Export .syn","file.export")],
@@ -715,67 +741,122 @@ impl App {
                 _=>vec![]
             };
             let buttons=entries.into_iter().map(|(label,action)|{
-                button(row![text(label).size(9).color(TEXT),space().width(Length::Fill),text("›").size(9).color(MUTED)])
-                    .on_press(Message::MenuAction(action.into())).width(210).height(28).padding([0,10]).style(menu_item_style())
-                    .into()
+                button(row![
+                    text(label).size(10).color(TEXT),
+                    space().width(Length::Fill),
+                    text("›").size(10).color(MUTED)
+                ])
+                .on_press(Message::MenuAction(action.into()))
+                .width(230).height(32).padding([0,12]).style(menu_item_style())
+                .into()
             }).collect::<Vec<Element<'_,Message>>>();
-            content=content.push(container(column![iced::widget::Column::with_children(buttons).spacing(1).padding(5)]).width(230).style(menu_panel_style()));
+            content=content.push(
+                container(column![iced::widget::Column::with_children(buttons).spacing(2).padding(7)])
+                    .width(250).style(menu_panel_style())
+            );
         }
         content.height(Length::Shrink).into()
     }
 
     fn rail(&self)->Element<'_,Message> {
-        let items=[(Tool::Select,"↖"),(Tool::Draw,"✎"),(Tool::Text,"T"),(Tool::Shape,"◇"),(Tool::Camera,"⌗"),(Tool::Bone,"⌁")];
-        let controls=items.into_iter().map(|(t,i)|tool_button(t,i,"",self.tool)).collect::<Vec<_>>();
+        let items=[
+            (Tool::Select,"↖","Select"),
+            (Tool::Draw,"✎","Draw"),
+            (Tool::Text,"T","Text"),
+            (Tool::Shape,"◇","Shape"),
+            (Tool::Camera,"⌗","Camera"),
+            (Tool::Bone,"⌁","Rig")
+        ];
+        let controls=items.into_iter().map(|(t,i,l)|tool_button(t,i,l,self.tool)).collect::<Vec<_>>();
         container(column![
-            container(text("S").size(10).font(Font::MONOSPACE).color(ACCENT)).width(38).height(38).center(38).style(rail_logo_style()),
-            iced::widget::Column::with_children(controls).spacing(4),
+            container(text("S").size(13).font(Font::MONOSPACE).color(ACCENT))
+                .width(44).height(44).center(44).style(rail_logo_style()),
+            text("TOOLS").size(7).color(MUTED),
+            iced::widget::Column::with_children(controls).spacing(5),
             space().height(Length::Fill),
-            button(text("?").size(12)).on_press(Message::OpenWorkspace("Shortcuts".into())).style(btn_style(false)).width(38).height(38)
-        ].spacing(7).padding([12,7])).width(54).height(Length::Fill).style(panel_style(rgb(0x070a0f))).into()
+            button(text("?").size(13)).on_press(Message::OpenWorkspace("Shortcuts".into()))
+                .style(btn_style(false)).width(44).height(38)
+        ].spacing(7).padding([12,8]))
+        .width(72).height(Length::Fill)
+        .style(panel_style(rgb(0x080b11)))
+        .into()
     }
 
     fn center(&self)->Element<'_,Message> {
         let header=container(row![
-            column![text(self.surface_name()).size(13).color(TEXT),text(self.surface_subtitle()).size(7).color(MUTED)].spacing(2),
+            column![
+                text(self.surface_name()).size(17).font(Font::MONOSPACE).color(TEXT),
+                text(self.surface_subtitle()).size(8).color(MUTED)
+            ].spacing(3),
             space().width(Length::Fill),
-            button(text(format!("{:.0}%",self.zoom*100.)).size(8)).on_press(Message::ZoomReset).style(btn_style(self.zoom==1.0)),
-            button(text("Fit").size(8)).on_press(Message::ZoomFit).style(btn_style(false)),
-            button(text(if self.inspector{"Inspector"}else{"Inspect"}).size(8)).on_press(Message::ToggleInspector).style(btn_style(self.inspector))
-        ].spacing(5).padding([8,14]).align_y(alignment::Vertical::Center)).height(50).style(panel_style(rgb(0x090d13)));
+            container(row![
+                button(text("−").size(13)).on_press(Message::ZoomOut).style(btn_style(false)).width(30).height(30),
+                text(format!("{:.0}%",self.zoom*100.)).size(9).color(TEXT),
+                button(text("+").size(13)).on_press(Message::ZoomIn).style(btn_style(false)).width(30).height(30),
+                button(text("FIT").size(8)).on_press(Message::ZoomFit).style(btn_style(false)).padding([6,10]),
+                button(text(if self.inspector{"Inspector"}else{"Inspect"}).size(8))
+                    .on_press(Message::ToggleInspector).style(btn_style(self.inspector)).padding([6,11])
+            ].spacing(3).align_y(alignment::Vertical::Center)).padding([3,4]).style(panel_style(SURFACE))
+        ].spacing(12).padding([11,14]).align_y(alignment::Vertical::Center))
+        .height(60).style(panel_style(rgb(0x0a0e15)));
+
         match self.surface {
             Surface::Design | Surface::Motion => {
-                let canvas_view=canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:self.selected.clone(),playhead:self.playhead,zoom:self.zoom}).width(Length::Fill).height(Length::Fill);
-                let canvas_shell=container(canvas_view).padding(12).width(Length::Fill).height(Length::Fill).style(stage_style());
+                let canvas_view=canvas(SceneCanvas{
+                    scene:self.doc.scene().clone(),
+                    selected:self.selected.clone(),
+                    playhead:self.playhead,
+                    zoom:self.zoom
+                }).width(Length::Fill).height(Length::Fill);
+
+                let canvas_shell=container(canvas_view)
+                    .padding(18)
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .style(stage_style());
+
                 let floating=row![
-                    button(text(if self.tool==Tool::Select{"SELECT"}else{"TOOL"}).size(7)).on_press(Message::Tool(self.tool)).style(btn_style(true)),
-                    button(text("SNAP").size(7)).on_press(Message::Status("Snap ready".into())).style(btn_style(false)),
-                    button(text("GRID").size(7)).on_press(Message::Status("Grid ready".into())).style(btn_style(false))
-                ].spacing(2).padding([3,4]);
+                    button(text(if self.tool==Tool::Select{"SELECT"}else{"TOOL"}).size(8))
+                        .on_press(Message::Tool(self.tool)).style(btn_style(true)),
+                    button(text("SNAP").size(8)).on_press(Message::Status("Snap ready".into())).style(btn_style(false)),
+                    button(text("GRID").size(8)).on_press(Message::Status("Grid ready".into())).style(btn_style(false))
+                ].spacing(3).padding([4,5]);
+
                 let actions=if self.surface==Surface::Motion {
                     row![
-                        button(text(if self.playing{"PAUSE"}else{"PLAY"}).size(8)).on_press(Message::PlayPause).style(btn_style(self.playing)),
-                        button(text("STOP").size(8)).on_press(Message::Stop).style(btn_style(false)),
-                        button(text("KEYFRAME").size(8)).on_press(Message::AddKeyframe).style(btn_style(false)),
+                        button(text(if self.playing{"PAUSE"}else{"PLAY"}).size(9))
+                            .on_press(Message::PlayPause).style(btn_style(self.playing)).padding([7,12]),
+                        button(text("STOP").size(9)).on_press(Message::Stop).style(btn_style(false)).padding([7,12]),
+                        button(text("KEYFRAME").size(9)).on_press(Message::AddKeyframe).style(btn_style(false)).padding([7,12]),
                         space().width(Length::Fill),
-                        button(text("ONION").size(8)).on_press(Message::ToggleOnion(!self.doc.scene().animation.onion_skin)).style(btn_style(self.doc.scene().animation.onion_skin)),
-                        button(text("LOOP").size(8)).on_press(Message::ToggleLoop(!self.doc.scene().animation.looped)).style(btn_style(self.doc.scene().animation.looped))
-                    ].spacing(4).padding([6,10])
+                        button(text("ONION").size(8)).on_press(Message::ToggleOnion(!self.doc.scene().animation.onion_skin)).style(btn_style(self.doc.scene().animation.onion_skin)).padding([7,10]),
+                        button(text("LOOP").size(8)).on_press(Message::ToggleLoop(!self.doc.scene().animation.looped)).style(btn_style(self.doc.scene().animation.looped)).padding([7,10])
+                    ].spacing(5).padding([7,11])
                 } else {
                     row![
-                        button(text("NEW").size(8)).on_press(Message::New).style(btn_style(false)),
-                        button(text("DUPLICATE").size(8)).on_press(Message::Duplicate).style(btn_style(false)),
-                        button(text("DELETE").size(8)).on_press(Message::Delete).style(btn_style(false)),
+                        button(text("+ NEW").size(9)).on_press(Message::New).style(btn_style(false)).padding([7,12]),
+                        button(text("DUPLICATE").size(9)).on_press(Message::Duplicate).style(btn_style(false)).padding([7,12]),
+                        button(text("DELETE").size(9)).on_press(Message::Delete).style(btn_style(false)).padding([7,12]),
                         space().width(Length::Fill),
-                        button(text("−").size(10)).on_press(Message::ZoomOut).style(btn_style(false)),
-                        text(format!("{:.0}%",self.zoom*100.)).size(8).color(MUTED),
-                        button(text("+").size(10)).on_press(Message::ZoomIn).style(btn_style(false)),
-                        button(text("FIT").size(7)).on_press(Message::ZoomFit).style(btn_style(false))
-                    ].spacing(4).padding([6,10])
+                        text("SCENE").size(8).color(MUTED),
+                        text(format!("{:02}",self.doc.active_scene+1)).size(10).color(TEXT)
+                    ].spacing(5).padding([7,11])
                 };
-                let bottom=if self.surface==Surface::Motion {column![actions,self.timeline()]} else {column![actions,self.scene_tabs()]};
-                column![header,container(column![canvas_shell,container(floating).padding([0,12])].height(Length::Fill)).height(Length::Fill),bottom]
-                    .spacing(4).height(Length::Fill).into()
+
+                let bottom=if self.surface==Surface::Motion {
+                    column![actions,self.timeline()]
+                } else {
+                    column![actions,self.scene_tabs()]
+                };
+
+                column![
+                    header,
+                    container(column![
+                        container(canvas_shell).width(Length::Fill).height(Length::Fill),
+                        container(floating).padding([0,14,5,14])
+                    ]).height(Length::Fill),
+                    bottom
+                ].spacing(5).height(Length::Fill).into()
             }
             Surface::Architecture=>column![header,self.architecture_surface()].into(),
             Surface::Media=>column![header,self.media_surface()].into(),
@@ -904,16 +985,25 @@ impl App {
 
     fn scene_tabs(&self)->Element<'_,Message> {
         let scene_buttons=self.doc.scenes.iter().enumerate().map(|(i,s)|{
-            button(text(format!("{}  {}",i+1,s.name)).size(8))
-                .on_press(Message::SelectScene(i)).style(btn_style(i==self.doc.active_scene)).padding([5,9]).into()
+            button(column![
+                text(format!("{:02}",i+1)).size(8).color(if i==self.doc.active_scene{ACCENT}else{MUTED}),
+                text(&s.name).size(9).color(TEXT)
+            ].spacing(1))
+            .on_press(Message::SelectScene(i))
+            .style(btn_style(i==self.doc.active_scene))
+            .padding([6,12])
+            .into()
         }).collect::<Vec<Element<'_,Message>>>();
-        container(scrollable(row![
-            iced::widget::Row::with_children(scene_buttons),
-            button(text("+").size(10)).on_press(Message::NewScene).style(btn_style(false)).padding([4,9]),
-            button(text("Duplicate").size(7)).on_press(Message::DuplicateScene).style(btn_style(false)).padding([5,8]),
-            button(text("Delete").size(7)).on_press(Message::DeleteScene).style(btn_style(false)).padding([5,8]),
-        ].spacing(2).padding([4,6]).align_y(alignment::Vertical::Center)).horizontal())
-            .height(40).width(Length::Fill).style(panel_style(rgb(0x0b0f16))).into()
+
+        container(
+            scrollable(row![
+                iced::widget::Row::with_children(scene_buttons),
+                button(text("+  Scene").size(9)).on_press(Message::NewScene).style(btn_style(false)).padding([7,12]),
+                button(text("Duplicate").size(8)).on_press(Message::DuplicateScene).style(btn_style(false)).padding([7,10]),
+                button(text("Delete").size(8)).on_press(Message::DeleteScene).style(btn_style(false)).padding([7,10]),
+            ].spacing(4).padding([5,7]).align_y(alignment::Vertical::Center)).horizontal()
+        )
+        .height(52).width(Length::Fill).style(panel_style(rgb(0x0b0f16))).into()
     }
 
     fn timeline(&self)->Element<'_,Message> {
@@ -1025,13 +1115,16 @@ fn rbtn<'a>(icon:&'a str,label:&'a str,msg:Message)->Element<'a,Message> {
     ].align_x(alignment::Horizontal::Center).spacing(1))
         .on_press(msg).style(btn_style(false)).width(54).height(48).into()
 }
-fn tool_button<'a>(tool:Tool,icon:&'a str,_label:&'a str,active:Tool)->Element<'a,Message> {
-    button(text(icon).size(15).color(if tool==active{BG}else{MUTED}))
-        .on_press(Message::Tool(tool))
-        .style(btn_style(tool==active))
-        .width(38)
-        .height(38)
-        .into()
+fn tool_button<'a>(tool:Tool,icon:&'a str,label:&'a str,active:Tool)->Element<'a,Message> {
+    button(column![
+        text(icon).size(16).color(if tool==active{BG}else{MUTED}),
+        text(label).size(7).color(if tool==active{BG}else{MUTED})
+    ].align_x(alignment::Horizontal::Center).spacing(2))
+    .on_press(Message::Tool(tool))
+    .style(btn_style(tool==active))
+    .width(54)
+    .height(48)
+    .into()
 }
 fn media_card<'a>(kind:&'a str,desc:&'a str)->Element<'a,Message> {
     container(column![text(kind).size(9).color(ACCENT),text(desc).size(10).color(TEXT)].spacing(5)).padding(14).width(Length::Fill).style(panel_style(SURFACE_2)).into()
@@ -1045,10 +1138,22 @@ fn value_box(label:&str,value:f32)->Element<'_,Message> {
         .padding(7).width(Length::Fill).style(panel_style(SURFACE_2)).into()
 }
 fn rail_logo_style()->impl Fn(&Theme)->iced::widget::container::Style {
-    move |_theme| iced::widget::container::Style{text_color:Some(ACCENT),background:Some(rgb(0x0c1018).into()),border:border::rounded(10).color(rgb(0x252d3c)).width(1.0),shadow:Default::default(),snap:true}
+    move |_theme| iced::widget::container::Style{
+        text_color:Some(ACCENT),
+        background:Some(rgb(0x17152a).into()),
+        border:border::rounded(11).color(rgb(0x4b4275)).width(1.0),
+        shadow:Default::default(),
+        snap:true
+    }
 }
 fn stage_style()->impl Fn(&Theme)->iced::widget::container::Style {
-    move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(rgb(0x06090e).into()),border:border::rounded(0).color(Color::TRANSPARENT).width(0.0),shadow:Default::default(),snap:true}
+    move |_theme| iced::widget::container::Style{
+        text_color:Some(TEXT),
+        background:Some(rgb(0x070a10).into()),
+        border:border::rounded(10).color(rgb(0x151d2b)).width(1.0),
+        shadow:Default::default(),
+        snap:true
+    }
 }
 fn menu_panel_style()->impl Fn(&Theme)->iced::widget::container::Style {
     move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(rgb(0x111722).into()),border:border::rounded(6).color(rgb(0x303b50)).width(1.0),shadow:Default::default(),snap:true}
@@ -1066,7 +1171,7 @@ fn panel_style(bg:Color)->impl Fn(&Theme)->iced::widget::container::Style {
     move |_theme| iced::widget::container::Style {
         text_color:Some(TEXT),
         background:Some(bg.into()),
-        border:border::rounded(9).color(rgb(0x1b2230)).width(1.0),
+        border:border::rounded(8).color(rgb(0x20293a)).width(1.0),
         shadow:Default::default(),
         snap:true
     }
@@ -1083,9 +1188,18 @@ fn btn_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style {
         let hover=matches!(status,button::Status::Hovered);
         let pressed=matches!(status,button::Status::Pressed);
         button::Style {
-            background:Some(if active {rgb(0x8d7dff).into()} else if pressed {rgb(0x171c28).into()} else if hover {rgb(0x151d2b).into()} else {Color::TRANSPARENT.into()}),
-            text_color:if active {BG}else if hover {TEXT}else{MUTED},
-            border:border::rounded(6).color(if active {rgb(0xa99dff)} else if hover {rgb(0x34445f)} else {Color::TRANSPARENT}).width(if active || hover {1.0}else{0.0}),
+            background:Some(
+                if active {rgb(0x8f7cff).into()}
+                else if pressed {rgb(0x202a3c).into()}
+                else if hover {rgb(0x182131).into()}
+                else {rgb(0x101722).into()}
+            ),
+            text_color:if active {BG}else if hover {TEXT}else{rgb(0xa9b2c3)},
+            border:border::rounded(7).color(
+                if active {rgb(0xb2a9ff)}
+                else if hover {rgb(0x34445f)}
+                else {rgb(0x1c2635)}
+            ).width(1.0),
             shadow:Default::default(),
             snap:true
         }
