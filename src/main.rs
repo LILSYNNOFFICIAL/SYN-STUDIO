@@ -475,6 +475,7 @@ impl App {
                 .on_press(Message::Surface(surface))
                 .padding([6, 9])
                 .style(tab_style(surface == self.surface))
+                .into()
         }).collect::<Vec<Element<'_, Message>>>();
 
         let workspace_nav = scrollable(
@@ -563,7 +564,7 @@ impl App {
         ];
         let controls = items.into_iter().map(|(tool, path)| {
             button(icon(path)).on_press(Message::Tool(tool))
-                .style(icon_button_style(tool == self.tool)).width(38).height(38)
+                .style(icon_button_style(tool == self.tool)).width(38).height(38).into()
         }).collect::<Vec<_>>();
 
         container(column![
@@ -612,7 +613,7 @@ impl App {
                 }).width(Length::Fill).height(Length::Fill);
 
                 let stage = container(canvas_view).width(Length::Fill)
-                    .height(Length::Fill).style(stage_style());
+                    .height(Length::Fill).style(content_style());
 
                 let controls = if self.surface == Surface::Motion {
                     row![
@@ -648,15 +649,15 @@ impl App {
 
                 column![
                     header,
-                    container(stage).padding([8, 14, 4, 14]).height(Length::Fill),
-                    container(contextual).padding([0, 14, 10, 14])
+                    container(stage).padding([8, 14]).height(Length::Fill),
+                    container(contextual).padding([10, 14])
                 ].spacing(0).height(Length::Fill).into()
             }
-            Surface::Architecture => self.architecture_surface(header),
+            Surface::Architecture => self.architecture_surface(header.into()),
             Surface::Media => self.media_surface(header),
             Surface::Code => self.code_surface(header),
             Surface::Ai => self.ai_surface(header),
-            Surface::Publish => self.publish_surface(header),
+            Surface::Publish => self.publish_surface(header.into()),
         }
     }
 
@@ -758,14 +759,14 @@ impl App {
                 workspace_button("Generate layout","Prepare a structured scene operation",Message::OpenWorkspace("Layout Generator".into())),
                 workspace_button("Motion assist","Open the keyframe workflow",Message::Surface(Surface::Motion)),
             ].spacing(10),
-        ].spacing(14).padding(18)).height(Length::Fill).style(panel_style(BG)).into()
+        ].spacing(14).padding(18)).height(Length::Fill).style(content_style()).into()
     }
     fn publish_surface(&self)->Element<'_,Message> {
         let valid=self.doc.scenes.iter().all(|s|s.width>0. && s.height>0.);
         container(column![
             text("PUBLISH").size(9).color(ACCENT),
             text("Validate. Preview. Export.").size(24).color(TEXT),
-            container(row![text(if valid{"✓"}else{"!"}).size(18).color(if valid{GOOD}else{PINK}),text(if valid{"Document is structurally valid"}else{"Document needs attention"}).size(11).color(TEXT)]).padding(14).style(panel_style(SURFACE_2)),
+            container(row![text(if valid{"✓"}else{"!"}).size(18).color(if valid{GOOD}else{PINK}),text(if valid{"Document is structurally valid"}else{"Document needs attention"}).size(11).color(TEXT)]).padding(14).style(content_rule_style()),
             row![
                 workspace_button("Validate","Run structural and animation checks",Message::Validate),
                 workspace_button("Preview","Run the current scene at the current playhead",Message::Preview),
@@ -810,7 +811,7 @@ impl App {
         container(row![
             container(labels).width(170),
             container(timeline).width(Length::Fill),
-        ]).padding([10, 0, 0, 0]).height(184).style(timeline_style()).into()
+        ]).padding([10, 0]).height(184).style(timeline_style()).into()
     }
 
     fn inspector_view(&self)->Element<'_,Message> {
@@ -879,14 +880,20 @@ impl App {
             other=>column![text("WORKSPACE").size(9).color(ACCENT),text(overlay_name).size(24).color(TEXT),text("This surface is wired to the same Rust state machine. It is an executable workspace, not a decorative dead button.").size(11).color(MUTED)],
         };
         container(column![
-            row![text("SYN Studio").size(12).color(TEXT),space().width(Length::Fill),button(text("Close").size(10)).on_press(Message::CloseOverlay).style(btn_style(false))].padding(12),
+            row![text("SYN Studio").size(12).color(TEXT),space().width(Length::Fill),button(text("Close").size(10)).on_press(Message::CloseOverlay).style(quiet_button_style(false))].padding(12),
             container(content).padding(22).width(Length::Fill).height(Length::Fill),
         ]).width(Length::Fill).height(Length::Fill).style(panel_style(BG)).into()
     }
 }
 
+fn panel_style(bg:Color)->impl Fn(&Theme)->iced::widget::container::Style {
+    move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(bg.into()),border:border::rounded(7).color(rgb(0x202328)).width(1.0),shadow:Default::default(),snap:true}
+}
+fn stage_style()->impl Fn(&Theme)->iced::widget::container::Style { content_style() }
+fn btn_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style { quiet_button_style(active) }
+
 fn icon<'a>(path:&'a str)->Element<'a,Message> {
-    let svg = format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a8a0d9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{}"/></svg>"#, path);
+    let svg = format!(r##"<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a8a0d9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{}"/></svg>"##, path);
     iced::widget::svg(iced::widget::svg::Handle::from_memory(svg.into_bytes())).width(17).height(17).into()
 }
 fn media_card<'a>(kind:&'a str,desc:&'a str)->Element<'a,Message> {
