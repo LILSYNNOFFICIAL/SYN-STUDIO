@@ -1,4 +1,4 @@
-name: Deploy SYN Studio (Iced)
+name: Deploy SYN Studio (Hybrid Rust/WASM + Browser UI)
 on:
   push:
     branches: ["main"]
@@ -20,87 +20,27 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-      - name: Install wasm-bindgen CLI
-        run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
-      - name: Check native Rust
-        run: cargo check
-      - name: Build WASM
+      - uses: Swatinem/rust-cache@v2
+      - name: Check and test Rust engine
+        run: cargo test
+      - name: Build WASM engine
         run: cargo build --release --target wasm32-unknown-unknown
-      - name: Generate web bindings
+      - name: Generate browser bindings
         run: |
+          cargo install wasm-bindgen-cli --version 0.2.129 --locked
+          rm -rf studio/pkg
           mkdir -p studio/pkg
-          wasm-bindgen target/wasm32-unknown-unknown/release/syn-studio.wasm --target web --out-dir studio/pkg
+          wasm-bindgen target/wasm32-unknown-unknown/release/syn_studio.wasm --target web --out-dir studio/pkg
+      - name: Verify hybrid architecture
+        run: |
+          test -s studio/index.html
+          test -s studio/app.js
+          test -s studio/styles.css
+          test -s studio/pkg/syn-studio.js
+          test -s studio/pkg/syn-studio_bg.wasm
+          ! grep -R -E 'iced|dioxus' Cargo.toml src studio --include='*.rs' --include='*.js' --include='*.html' --include='*.css'
       - name: Create Pages entrypoint
         run: |
-          cat > studio/index.html <<'EOF'
-          <!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-            <meta name="theme-color" content="#07090d">
-            <title>SYN Studio</title>
-            <style>
-              html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#07090d; }
-              body { touch-action:none; font-family:system-ui,sans-serif; }
-              canvas { width:100vw!important; height:100vh!important; display:block; }
-            </style>
-          </head>
-          <body>
-            <div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#07090d;color:#d9def0;font:14px system-ui,sans-serif;z-index:9999">
-              <div style="text-align:center">
-                <div style="font-size:22px;font-weight:700;margin-bottom:8px">SYN Studio</div>
-                <div id="boot-status" style="opacity:.7">Starting Rust/WASM renderer…</div>
-              </div>
-            </div>
-            <script type="module">
-              import init from "./pkg/syn-studio.js";
-
-              const boot = document.getElementById("boot");
-              const status = document.getElementById("boot-status");
-              let started = false;
-
-              const showError = (error) => {
-                console.error("SYN Studio failed to start:", error);
-                status.textContent = "Renderer failed to start. Open the browser console for details.";
-                status.style.color = "#ff8f9a";
-              };
-
-              const removeBootWhenCanvasExists = () => {
-                if (!started || !document.querySelector("canvas")) return false;
-                boot.remove();
-                return true;
-              };
-
-              const observer = new MutationObserver(() => {
-                if (removeBootWhenCanvasExists()) observer.disconnect();
-              });
-              observer.observe(document.body, { childList: true, subtree: true });
-
-              window.addEventListener("error", event => showError(event.error || event.message));
-              window.addEventListener("unhandledrejection", event => showError(event.reason));
-
-              try {
-                await init("./pkg/syn-studio_bg.wasm");
-                started = true;
-                if (removeBootWhenCanvasExists()) observer.disconnect();
-
-                setTimeout(() => {
-                  if (!document.querySelector("canvas")) {
-                    showError(new Error("SYN Studio did not create its canvas."));
-                    observer.disconnect();
-                  }
-                }, 12000);
-              } catch (error) {
-                showError(error);
-                observer.disconnect();
-              }
-            </script>
-          </body>
-          </html>
-          EOF
           cat > index.html <<'EOF'
           <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=/SYN-STUDIO/studio/"><title>SYN Studio</title></head><body><a href="/SYN-STUDIO/studio/">Open SYN Studio</a></body></html>
           EOF
@@ -119,18 +59,16 @@ jobs:
           test -s _site/manifest.webmanifest
           test -s _site/sw.js
           test -s _site/studio/index.html
+          test -s _site/studio/app.js
+          test -s _site/studio/styles.css
           test -s _site/studio/pkg/syn-studio.js
           test -s _site/studio/pkg/syn-studio_bg.wasm
           test -s _site/studio/404.html
-          grep -q 'pkg/syn-studio.js' _site/studio/index.html
-          grep -q 'SYN-STUDIO/studio/' _site/index.html
           test ! -e _site/src
           test ! -e _site/target
           test ! -e _site/.git
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
       - name: Deploy to Pages
