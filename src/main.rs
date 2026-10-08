@@ -650,77 +650,118 @@ impl App {
 
     fn titlebar(&self)->Element<'_,Message> {
         let brand=row![
-            container(text("S").size(18).font(Font::MONOSPACE).color(BG)).width(34).height(34).center(34).style(accent_box()),
-            column![text("SYN STUDIO").size(14).font(Font::MONOSPACE).color(TEXT),text("CREATIVE SYSTEMS").size(7).color(MUTED)].spacing(1),
-            container(text("●").size(7).color(GOOD)).padding([0,2]),
+            container(text("S").size(17).font(Font::MONOSPACE).color(BG)).width(31).height(31).center(31).style(accent_box()),
+            column![
+                text("SYN STUDIO").size(13).font(Font::MONOSPACE).color(TEXT),
+                text("CREATIVE SYSTEMS").size(6).color(MUTED)
+            ].spacing(1),
         ].spacing(8).align_y(alignment::Vertical::Center);
+        let project=row![
+            text(&self.doc.title).size(9).color(rgb(0xc6cbd8)),
+            text("•").size(8).color(ACCENT),
+            text(self.surface_name()).size(8).color(MUTED)
+        ].spacing(7).align_y(alignment::Vertical::Center);
         let actions=row![
-            button(text("↶").size(16)).on_press(Message::Undo).style(ghost_btn_style()).width(32).height(32),
-            button(text("↷").size(16)).on_press(Message::Redo).style(ghost_btn_style()).width(32).height(32),
-            container(text(&self.doc.title).size(9).color(MUTED)).padding([0,8]),space().width(Length::Fill),
-            button(text("Save").size(9)).on_press(Message::Save).style(ghost_btn_style()).padding([7,13]),
-            button(text("Preview").size(9)).on_press(Message::Preview).style(accent_btn_style()).padding([7,15]),
-        ].spacing(4).align_y(alignment::Vertical::Center);
-        container(row![brand,actions].padding([7,12]).align_y(alignment::Vertical::Center)).height(50).width(Length::Fill).style(chrome_style()).into()
+            button(text("↶").size(15)).on_press(Message::Undo).style(ghost_btn_style()).width(30).height(30),
+            button(text("↷").size(15)).on_press(Message::Redo).style(ghost_btn_style()).width(30).height(30),
+            space().width(Length::Fill),
+            container(row![text("●").size(7).color(GOOD),text("Saved").size(8).color(MUTED)].spacing(5)).padding([0,8]),
+            button(text("Save").size(9)).on_press(Message::Save).style(ghost_btn_style()).padding([6,12]),
+            button(text("Preview").size(9)).on_press(Message::Preview).style(accent_btn_style()).padding([6,14]),
+        ].spacing(3).align_y(alignment::Vertical::Center);
+        container(row![brand,space().width(Length::Fill),project,space().width(Length::Fill),actions].padding([6,12]).align_y(alignment::Vertical::Center))
+            .height(46).width(Length::Fill).style(chrome_style()).into()
     }
 
     fn menu_bar(&self)->Element<'_,Message> {
         let names=["File","Edit","View","Insert","Format","Scene","Media","Interaction","Code","Window","Help"];
         let tabs=names.into_iter().map(|name|{
-            button(text(name).size(9).color(if self.menu_open.as_deref()==Some(name){TEXT}else{MUTED})).on_press(Message::MenuOpen(name.into())).padding([5,10]).style(menu_tab_style(self.menu_open.as_deref()==Some(name))).into()
+            button(text(name).size(9).color(if self.menu_open.as_deref()==Some(name){TEXT}else{rgb(0xb2b8c7)}))
+                .on_press(Message::MenuOpen(name.into()))
+                .padding([5,9])
+                .style(menu_tab_style(self.menu_open.as_deref()==Some(name)))
+                .into()
         }).collect::<Vec<Element<'_,Message>>>();
-        let mut content: Element<'_,Message>=container(scrollable(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center)).horizontal().height(30).width(Length::Fill)).height(30).style(menu_bar_style()).into();
+        let mut content:Element<'_,Message>=container(
+            scrollable(iced::widget::Row::with_children(tabs).spacing(0).padding([0,10]).align_y(alignment::Vertical::Center))
+                .horizontal().height(31).width(Length::Fill)
+        ).height(31).style(menu_bar_style()).into();
         if let Some(name)=&self.menu_open {
             let entries:Vec<(&str,&str)>=match name.as_str() {
-                "File"=>vec![("New Project","file.new"),("Save Project","file.save"),("Export .syn","file.export")],
+                "File"=>vec![("New Project","file.new"),("Open Project","file.open"),("Save Project","file.save"),("Save As…","file.save_as"),("Export .syn","file.export")],
                 "Edit"=>vec![("Undo","edit.undo"),("Redo","edit.redo"),("Duplicate","edit.duplicate"),("Delete","edit.delete")],
                 "View"=>vec![("Fit Canvas","view.fit"),("Zoom In","view.zoom_in"),("Zoom Out","view.zoom_out"),("100%","view.zoom_reset"),("Inspector","view.inspector")],
                 "Insert"=>vec![("Text","insert.text"),("Card","insert.card"),("Button","insert.button"),("Circle","insert.circle"),("Divider","insert.line")],
                 "Format"=>vec![("Bold","format.bold"),("Italic","format.italic"),("Underline","format.underline"),("Align Left","format.left"),("Align Center","format.center"),("Align Right","format.right")],
-                "Scene"=>vec![("Command Center","scene.design"),("Motion Lab","scene.motion"),("Architecture","scene.architecture"),("Media Lab","scene.media"),("New Project Scene","scene.new")],
+                "Scene"=>vec![("Command Center","scene.design"),("Motion Lab","scene.motion"),("Architecture","scene.architecture"),("Media Lab","scene.media"),("New Scene","scene.new")],
                 "Media"=>vec![("Image Slot","media.image"),("Audio Track","media.audio"),("Video Track","media.video")],
                 "Interaction"=>vec![("Create Link","interaction.link"),("Create Trigger","interaction.trigger")],
                 "Code"=>vec![("SYN JSON","code.syn"),("Rust","code.rust"),("Format Source","code.format"),("Validate","code.validate"),("Apply to Design","code.apply"),("Document Symbols","code.symbols")],
-                "Window"=>vec![("Command Center","window.design"),("Motion Lab","window.motion"),("Architecture","window.architecture"),("Media Lab","window.media"),("Code","window.code"),("AI Workbench","window.ai"),("Publish","window.publish"),("Narrow Inspector","window.narrow"),("Widen Inspector","window.wide")],
+                "Window"=>vec![("Design","window.design"),("Motion","window.motion"),("Architecture","window.architecture"),("Media","window.media"),("Code","window.code"),("AI Workbench","window.ai"),("Publish","window.publish"),("Narrow Inspector","window.narrow"),("Widen Inspector","window.wide")],
                 "Help"=>vec![("Shortcuts","help.shortcuts"),("About SYN Studio","help.about"),("Run Validation","help.validate")], _=>vec![]
             };
             let buttons=entries.into_iter().map(|(label,action)|{
-                button(row![text(label).size(10).color(TEXT),space().width(Length::Fill),text("›").size(10).color(MUTED)])
-                    .on_press(Message::MenuAction(action.into())).width(236).height(32).padding([0,12]).style(menu_item_style()).into()
+                button(row![text(label).size(9).color(TEXT),space().width(Length::Fill),text("›").size(9).color(MUTED)])
+                    .on_press(Message::MenuAction(action.into())).width(250).height(29).padding([0,12]).style(menu_item_style()).into()
             }).collect::<Vec<Element<'_,Message>>>();
-            content=stack![content,container(column![text(name.to_uppercase()).size(7).color(ACCENT),iced::widget::Column::with_children(buttons).spacing(2).padding(7)].spacing(4).padding([8,0])).width(252).style(menu_panel_style())].height(Length::Shrink).into();
+            content=stack![
+                content,
+                container(column![
+                    text(name.to_uppercase()).size(6).color(ACCENT),
+                    iced::widget::Column::with_children(buttons).spacing(1)
+                ].spacing(5).padding(8)).width(270).style(menu_panel_style())
+            ].height(Length::Shrink).into();
         }
         content
     }
 
     fn rail(&self)->Element<'_,Message> {
-        let items=[(Tool::Select,"↖","Select"),(Tool::Draw,"✎","Draw"),(Tool::Text,"T","Text"),(Tool::Shape,"◇","Shape"),(Tool::Camera,"⌗","Camera"),(Tool::Bone,"⌁","Rig")];
+        let items=[
+            (Tool::Select,"↖","Select"),
+            (Tool::Draw,"✎","Draw"),
+            (Tool::Text,"T","Text"),
+            (Tool::Shape,"◇","Shape"),
+            (Tool::Camera,"⌗","Camera"),
+            (Tool::Bone,"⌁","Rig")
+        ];
         let controls=items.into_iter().map(|(t,i,l)|tool_button(t,i,l,self.tool)).collect::<Vec<_>>();
-        container(column![text("TOOLS").size(7).color(MUTED),iced::widget::Column::with_children(controls).spacing(4),space().height(Length::Fill),button(text("⌘").size(12)).on_press(Message::OpenWorkspace("Shortcuts".into())).style(ghost_btn_style()).width(42).height(36)].spacing(7).padding([10,7])).width(60).style(floating_glass_style()).into()
+        container(column![
+            container(text("TOOLS").size(6).font(Font::MONOSPACE).color(MUTED)).padding([0,3]),
+            iced::widget::Column::with_children(controls).spacing(3),
+            space().height(Length::Fill),
+            button(text("⌘").size(13)).on_press(Message::OpenWorkspace("Shortcuts".into())).style(ghost_btn_style()).width(44).height(34)
+        ].spacing(5).padding([9,5]))
+        .width(68).style(floating_glass_style()).into()
     }
 
     fn center(&self)->Element<'_,Message> {
         let header=container(row![
-            column![text(self.surface_name()).size(15).font(Font::MONOSPACE).color(TEXT),text(self.surface_subtitle()).size(7).color(MUTED)].spacing(2),
+            column![
+                row![text(self.surface_name()).size(14).font(Font::MONOSPACE).color(TEXT),text("  /  ").size(9).color(rgb(0x51586a)),text(self.surface_subtitle()).size(8).color(MUTED)].spacing(0),
+                text("Canvas workspace").size(7).color(rgb(0x596174))
+            ].spacing(2),
             space().width(Length::Fill),
             container(row![
-                button(text("−").size(13)).on_press(Message::ZoomOut).style(ghost_btn_style()).width(28).height(28),
-                text(format!("{:.0}%",self.zoom*100.)).size(9).color(TEXT),
-                button(text("+").size(13)).on_press(Message::ZoomIn).style(ghost_btn_style()).width(28).height(28),
-                button(text("FIT").size(8)).on_press(Message::ZoomFit).style(ghost_btn_style()).padding([6,9]),
-                button(text("INSPECT").size(8)).on_press(Message::ToggleInspector).style(menu_tab_style(self.inspector)).padding([6,10])
-            ].spacing(3).align_y(alignment::Vertical::Center))
-        ].spacing(12).padding([9,14]).align_y(alignment::Vertical::Center)).height(52).style(soft_chrome_style());
+                button(text("−").size(13)).on_press(Message::ZoomOut).style(ghost_btn_style()).width(27).height(27),
+                container(text(format!("{:.0}%",self.zoom*100.)).size(8).color(TEXT)).padding([0,6]),
+                button(text("+").size(13)).on_press(Message::ZoomIn).style(ghost_btn_style()).width(27).height(27),
+                button(text("FIT").size(7).font(Font::MONOSPACE)).on_press(Message::ZoomFit).style(ghost_btn_style()).padding([5,8]),
+                button(text(if self.inspector{"INSPECTOR"}else{"INSPECT"}).size(7).font(Font::MONOSPACE)).on_press(Message::ToggleInspector).style(menu_tab_style(self.inspector)).padding([5,9])
+            ].spacing(2).align_y(alignment::Vertical::Center)).style(floating_glass_style()).padding([2,3])
+        ].spacing(10).padding([7,10]).align_y(alignment::Vertical::Center)).height(48).style(soft_chrome_style());
         match self.surface {
             Surface::Design | Surface::Motion => {
-                let canvas_view=canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:self.selected.clone(),playhead:self.playhead,zoom:self.zoom}).width(Length::Fill).height(Length::Fill);
-                let stage=container(canvas_view).padding(18).width(Length::Fill).height(Length::Fill).style(stage_style());
-                let left_tools=container(self.rail()).padding([18,14]).width(76).height(Length::Fill);
+                let canvas_view=canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:self.selected.clone(),playhead:self.playhead,zoom:self.zoom})
+                    .width(Length::Fill).height(Length::Fill);
+                let stage=container(canvas_view).padding(12).width(Length::Fill).height(Length::Fill).style(stage_style());
+                let left_tools=container(self.rail()).padding([14,0,14,12]).width(80).height(Length::Fill);
                 let inspector=if self.inspector && !self.is_phone() {
-                    container(self.inspector_view()).width(Length::Fixed(if self.is_compact(){280.0}else{self.inspector_width as f32})).height(Length::Fill).padding([18,14])
+                    container(self.inspector_view())
+                        .width(Length::Fixed(if self.is_compact(){270.0}else{self.inspector_width as f32}))
+                        .height(Length::Fill).padding([14,12])
                 } else { container(space()).width(0).height(Length::Fill) };
                 let scene_or_motion:Element<'_,Message>=if self.surface==Surface::Motion{self.timeline()}else{self.scene_tabs()};
-                let bottom=container(scene_or_motion).padding([0,14]).width(Length::Fill);
+                let bottom=container(scene_or_motion).padding([0,12,10,12]).width(Length::Fill);
                 let overlays=stack![
                     stage,
                     container(row![left_tools,space().width(Length::Fill),inspector]).width(Length::Fill).height(Length::Fill),
@@ -854,51 +895,47 @@ impl App {
     }
 
     fn scene_tabs(&self)->Element<'_,Message> {
-        let scene_buttons=self.doc.scenes.iter().enumerate().map(|(i,s)|{
-            button(column![
-                text(format!("{:02}",i+1)).size(8).color(if i==self.doc.active_scene{ACCENT}else{MUTED}),
-                text(&s.name).size(9).color(TEXT)
-            ].spacing(1))
-            .on_press(Message::SelectScene(i))
-            .style(btn_style(i==self.doc.active_scene))
-            .padding([6,12])
-            .into()
-        }).collect::<Vec<Element<'_,Message>>>();
+    let scene_buttons=self.doc.scenes.iter().enumerate().map(|(i,s)|{
+        button(row![
+            container(text(format!("{:02}",i+1)).size(7).font(Font::MONOSPACE).color(if i==self.doc.active_scene{BG}else{ACCENT}))
+                .width(21).height(21).center(21).style(if i==self.doc.active_scene{accent_box()}else{ghost_box_style()}),
+            column![text(&s.name).size(8).color(TEXT),text("SCENE").size(5).color(MUTED)].spacing(0)
+        ].spacing(7).align_y(alignment::Vertical::Center))
+        .on_press(Message::SelectScene(i)).style(transparent_tab_style(i==self.doc.active_scene)).padding([4,8]).into()
+    }).collect::<Vec<Element<'_,Message>>>();
+    container(scrollable(row![
+        iced::widget::Row::with_children(scene_buttons).spacing(3),
+        button(text("+  NEW SCENE").size(7).font(Font::MONOSPACE)).on_press(Message::NewScene).style(ghost_btn_style()).padding([7,10]),
+        button(text("DUPLICATE").size(7).font(Font::MONOSPACE)).on_press(Message::DuplicateScene).style(ghost_btn_style()).padding([7,9]),
+        button(text("DELETE").size(7).font(Font::MONOSPACE)).on_press(Message::DeleteScene).style(ghost_btn_style()).padding([7,9])
+    ].spacing(3).padding([4,6]).align_y(alignment::Vertical::Center)).horizontal())
+    .height(50).width(Length::Fill).style(floating_glass_style()).into()
+}
 
-        container(
-            scrollable(row![
-                iced::widget::Row::with_children(scene_buttons),
-                button(text("+  Scene").size(9)).on_press(Message::NewScene).style(btn_style(false)).padding([7,12]),
-                button(text("Duplicate").size(8)).on_press(Message::DuplicateScene).style(btn_style(false)).padding([7,10]),
-                button(text("Delete").size(8)).on_press(Message::DeleteScene).style(btn_style(false)).padding([7,10]),
-            ].spacing(4).padding([5,7]).align_y(alignment::Vertical::Center)).horizontal()
-        )
-        .height(52).width(Length::Fill).style(panel_style(rgb(0x0b0f16))).into()
+fn timeline(&self)->Element<'_,Message> {
+    let duration=self.doc.scene().animation.duration;
+    let tracks=&self.doc.scene().animation.tracks;
+    let mut left=column![text("ANIMATION").size(7).font(Font::MONOSPACE).color(MUTED)].spacing(3).padding(7);
+    for t in tracks.iter().take(7) {
+        left=left.push(container(row![text(t.property.clone()).size(8).color(TEXT),space().width(Length::Fill),text(format!("{}",t.keyframes.len())).size(7).color(MUTED)].spacing(4)).height(25).style(panel_style(Color::from_rgba(0.05,0.06,0.09,0.52))));
     }
+    let slider=slider(0.0..=duration,self.playhead,Message::SetPlayhead).step(1.0/(self.doc.scene().animation.fps.max(1) as f32));
+    let right=column![
+        row![
+            button(text(if self.playing{"❚❚"}else{"▶"}).size(9)).on_press(Message::PlayPause).style(accent_btn_style()).width(28).height(26),
+            button(text("■").size(9)).on_press(Message::Stop).style(ghost_btn_style()).width(28).height(26),
+            text(format!("{:.2}s",self.playhead)).size(9).color(TEXT),
+            space().width(Length::Fill),
+            text("FPS").size(7).color(MUTED),
+            pick_list(vec![24u32,30,60,120],Some(self.doc.scene().animation.fps),Message::SetFps).text_size(8)
+        ].spacing(5).align_y(alignment::Vertical::Center),
+        slider,
+        timeline_canvas(tracks,self.playhead,duration,self.timeline_zoom)
+    ].spacing(5).padding(7);
+    container(row![left.width(165),right.width(Length::Fill)].height(185)).style(floating_glass_style()).into()
+}
 
-    fn timeline(&self)->Element<'_,Message> {
-        let duration=self.doc.scene().animation.duration;
-        let tracks=&self.doc.scene().animation.tracks;
-        let mut left=column![text("ANIMATION STACK").size(9).color(MUTED)].spacing(4).padding(8);
-        for t in tracks.iter().take(7) {
-            left=left.push(container(row![text(t.property.clone()).size(9).color(TEXT),space().width(Length::Fill),text(format!("{}",t.keyframes.len())).size(8).color(MUTED)].spacing(4)).height(28).style(panel_style(SURFACE)));
-        }
-        let slider=slider(0.0..=duration,self.playhead,Message::SetPlayhead).step(1.0/(self.doc.scene().animation.fps.max(1) as f32));
-        let right=column![
-            row![button(text(if self.playing{"❚❚"}else{"▶"}).size(10)).on_press(Message::PlayPause).style(btn_style(true)),
-                button(text("■").size(10)).on_press(Message::Stop).style(btn_style(false)),
-                text(format!("{:.2}s",self.playhead)).size(10).color(TEXT),
-                space().width(Length::Fill),
-                text("FPS").size(8).color(MUTED),
-                pick_list(vec![24u32,30,60,120],Some(self.doc.scene().animation.fps),Message::SetFps).text_size(9),
-            ].spacing(6).align_y(alignment::Vertical::Center),
-            slider,
-            timeline_canvas(tracks,self.playhead,duration,self.timeline_zoom),
-        ].spacing(5).padding(8);
-        container(row![left.width(170),right.width(Length::Fill)].height(190)).style(panel_style(SURFACE_2)).into()
-    }
-
-    fn inspector_view(&self)->Element<'_,Message> {
+fn inspector_view(&self)->Element<'_,Message> {
         let selected=self.selected.as_ref().and_then(|id|self.doc.scene().objects.iter().find(|o|&o.id==id));
         let mut body=column![
             row![
