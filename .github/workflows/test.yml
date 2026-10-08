@@ -9,15 +9,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-      - name: Native Rust check
-        run: cargo check
+      - uses: Swatinem/rust-cache@v2
       - name: Native tests
         run: cargo test
       - name: WASM check
         run: cargo check --target wasm32-unknown-unknown
+      - name: Verify framework removal
+        run: |
+          ! grep -R -E 'iced|dioxus' Cargo.toml src studio --include='*.rs' --include='*.js' --include='*.html' --include='*.css'
