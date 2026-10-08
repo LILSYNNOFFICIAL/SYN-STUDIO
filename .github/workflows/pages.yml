@@ -36,8 +36,8 @@ jobs:
           test -s studio/index.html
           test -s studio/app.js
           test -s studio/styles.css
-          test -s studio/pkg/syn-studio.js
-          test -s studio/pkg/syn-studio_bg.wasm
+          test -s studio/pkg/syn_studio.js
+          test -s studio/pkg/syn_studio_bg.wasm
       - name: Create Pages entrypoint
         run: |
           cat > index.html <<'EOF'
@@ -60,8 +60,8 @@ jobs:
           test -s _site/studio/index.html
           test -s _site/studio/app.js
           test -s _site/studio/styles.css
-          test -s _site/studio/pkg/syn-studio.js
-          test -s _site/studio/pkg/syn-studio_bg.wasm
+          test -s _site/studio/pkg/syn_studio.js
+          test -s _site/studio/pkg/syn_studio_bg.wasm
           test -s _site/studio/404.html
           test ! -e _site/src
           test ! -e _site/target
