@@ -107,9 +107,13 @@ fn id(prefix: &str) -> String {
     format!("{}-{}", prefix, &Uuid::new_v4().simple().to_string()[..8])
 }
 
-fn object(kind: &str, label: &str, x: f32, y: f32, w: f32, h: f32, styles: Value) -> Object {
+trait ToF32 { fn to_f32(self) -> f32; }
+impl ToF32 for f32 { fn to_f32(self) -> f32 { self } }
+impl ToF32 for i32 { fn to_f32(self) -> f32 { self as f32 } }
+
+fn object<X: ToF32, Y: ToF32, W: ToF32, H: ToF32>(kind: &str, label: &str, x: X, y: Y, w: W, h: H, styles: Value) -> Object {
     Object {
-        id: id("obj"), kind: kind.into(), label: label.into(), x, y, width: w, height: h,
+        id: id("obj"), kind: kind.into(), label: label.into(), x: x.to_f32(), y: y.to_f32(), width: w.to_f32(), height: h.to_f32(),
         rotation: 0., locked: false, hidden: false, props: json!({"text": label}), styles
     }
 }
@@ -592,8 +596,8 @@ fn TextToolbar(doc:Signal<Document>,scene:usize,id:String,history:Signal<History
                     m.insert("fontWeight".into(),json!(weight.read().parse::<u32>().unwrap_or(650)));
                     m.insert("color".into(),Value::String(color.read().clone()));
                     m.insert("textAlign".into(),Value::String(align.read().clone()));
-                    m.insert("fontStyle".into(),Value::String(if *italic.read(){"italic"}else{"normal"}));
-                    m.insert("textDecoration".into(),Value::String(if *underline.read(){"underline"}else{"none"}));
+                    m.insert("fontStyle".into(),json!(if *italic.read(){"italic"}else{"normal"}));
+                    m.insert("textDecoration".into(),json!(if *underline.read(){"underline"}else{"none"}));
                 }
             }
             doc.set(n);status.set("Text formatting applied".into());
