@@ -369,7 +369,7 @@ fn App()->Element {
                     button { class:"app-menu",onclick:{let mut menu=menu.clone();move |_|menu.set("File".into())},"S" }
                     for (name,_) in menus() {
                         button {
-                            class:if menu.read().as_ref()==Some(name){"ribbon-tab active"}else{"ribbon-tab"},
+                            class:if menu.read().as_str()==name{"ribbon-tab active"}else{"ribbon-tab"},
                             onclick:{let n=name.to_string();let mut menu=menu.clone();move |_|menu.set(n.clone())},
                             "{name}"
                         }
