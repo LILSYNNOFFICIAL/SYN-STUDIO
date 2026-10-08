@@ -896,12 +896,20 @@ impl App {
 
     fn scene_tabs(&self)->Element<'_,Message> {
     let scene_buttons=self.doc.scenes.iter().enumerate().map(|(i,s)|{
-        button(row![
-            container(text(format!("{:02}",i+1)).size(7).font(Font::MONOSPACE).color(if i==self.doc.active_scene{BG}else{ACCENT}))
-                .width(21).height(21).center(21).style(if i==self.doc.active_scene{accent_box()}else{ghost_box_style()}),
-            column![text(&s.name).size(8).color(TEXT),text("SCENE").size(5).color(MUTED)].spacing(0)
-        ].spacing(7).align_y(alignment::Vertical::Center))
-        .on_press(Message::SelectScene(i)).style(transparent_tab_style(i==self.doc.active_scene)).padding([4,8]).into()
+        {
+            let number:Element<'_,Message>=if i==self.doc.active_scene {
+                container(text(format!("{:02}",i+1)).size(7).font(Font::MONOSPACE).color(BG))
+                    .width(21).height(21).center(21).style(accent_box()).into()
+            } else {
+                container(text(format!("{:02}",i+1)).size(7).font(Font::MONOSPACE).color(ACCENT))
+                    .width(21).height(21).center(21).style(ghost_box_style()).into()
+            };
+            button(row![
+                number,
+                column![text(&s.name).size(8).color(TEXT),text("SCENE").size(5).color(MUTED)].spacing(0)
+            ].spacing(7).align_y(alignment::Vertical::Center))
+            .on_press(Message::SelectScene(i)).style(transparent_tab_style(i==self.doc.active_scene)).padding([4,8]).into()
+        }
     }).collect::<Vec<Element<'_,Message>>>();
     container(scrollable(row![
         iced::widget::Row::with_children(scene_buttons).spacing(3),
