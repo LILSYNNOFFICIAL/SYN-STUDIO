@@ -2,7 +2,7 @@ use iced::{
     alignment, border, keyboard, mouse, time,
     widget::{
         button, canvas, column, container, horizontal_space, pick_list, progress_bar,
-        row, scrollable, slider, space, stack, text, text_editor, toggler, vertical_space,
+        row, scrollable, slider, space, text, text_editor,
     },
     Color, Element, Font, Length, Point, Rectangle, Renderer, Size, Subscription, Theme,
     Vector,
@@ -10,7 +10,7 @@ use iced::{
 use iced::widget::canvas::{Frame, Geometry, Path, Program, Stroke, Text as CanvasText};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::{collections::BTreeMap, f32::consts::PI, time::Duration};
+use std::{f32::consts::PI, time::Duration};
 use uuid::Uuid;
 
 #[cfg(target_arch = "wasm32")]
