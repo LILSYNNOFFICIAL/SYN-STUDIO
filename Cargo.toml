@@ -1,10 +1,10 @@
 [package]
 name = "syn-studio"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 
 [dependencies]
-iced = { version = "0.14", features = ["canvas", "highlighter", "image", "svg", "webgl", "tokio"] }
+iced = { version = "0.14", features = ["canvas", "highlighter", "image", "svg", "webgl", "tokio", "fira-sans"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4", "js"] }
