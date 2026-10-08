@@ -120,124 +120,123 @@ fn text(o: &Object) -> String {
 
 fn demo() -> Document {
     let mut d = Document {
-        syn: "0.1".into(), r#type: "document".into(),
+        syn: "0.2".into(), r#type: "document".into(),
         meta: Meta { id: id("doc"), title: "SYN Studio / Creative Systems".into() },
         viewport: Viewport { width: 1120, height: 640 }, assets: vec![], scenes: vec![]
     };
 
     let mut home = Scene {
-        id: "HOME".into(), name: "Command Center".into(), background: "#080d14".into(),
+        id: "HOME".into(), name: "Command Center".into(), background: "#0b0d12".into(),
         objects: vec![], interactions: vec![]
     };
-    home.objects.push(object("text", "SYN / RUST CREATIVE IDE", 54., 36., 500., 20.,
-        json!({"fontSize":10,"fontWeight":900,"color":"#91b0ff","letterSpacing":3})));
-    home.objects.push(object("text", "Build the whole system.", 54., 72., 610., 62.,
-        json!({"fontSize":48,"fontWeight":900,"color":"#f5f8ff","letterSpacing":-2})));
-    home.objects.push(object("text", "A visual development environment for scenes, media, motion, behavior, data and portable SYN source.", 58., 142., 570., 54.,
-        json!({"fontSize":15,"color":"#9aabc0","lineHeight":1.45})));
 
-    let hero = object("shape", "SYSTEM PREVIEW", 666., 38., 390., 260.,
-        json!({"background":"linear-gradient(145deg,#172a46,#0c141f)","borderColor":"#385575","borderWidth":1,"borderRadius":22,"boxShadow":"0 30px 80px #0009"}));
-    home.objects.push(hero);
-    home.objects.push(object("text", "LIVE DOCUMENT", 694., 67., 220., 18.,
-        json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":2})));
-    home.objects.push(object("text", "04", 694., 99., 120., 62.,
-        json!({"fontSize":58,"fontWeight":950,"color":"#ffffff"})));
-    home.objects.push(object("text", "SCENES", 694., 161., 100., 18.,
-        json!({"fontSize":9,"fontWeight":800,"color":"#6e829c","letterSpacing":2})));
-    home.objects.push(object("text", "18", 830., 99., 120., 62.,
-        json!({"fontSize":58,"fontWeight":950,"color":"#ffffff"})));
-    home.objects.push(object("text", "OBJECTS", 830., 161., 100., 18.,
-        json!({"fontSize":9,"fontWeight":800,"color":"#6e829c","letterSpacing":2})));
-    home.objects.push(object("text", "SOURCE  •  MEDIA  •  MOTION  •  EVENTS", 694., 204., 300., 20.,
-        json!({"fontSize":10,"fontWeight":750,"color":"#c4d0df","letterSpacing":1})));
+    home.objects.push(object("shape", "HERO", 36., 30., 1048., 580.,
+        json!({"background":"linear-gradient(145deg,#171b2a,#0d111b 58%,#141021)","borderColor":"#32384d","borderWidth":1,"borderRadius":28,"boxShadow":"0 28px 90px #000b"})));
+    home.objects.push(object("text", "SYN STUDIO", 76., 68., 260., 22.,
+        json!({"fontSize":10,"fontWeight":900,"color":"#b7a7ff","letterSpacing":3})));
+    home.objects.push(object("text", "Create without\nfighting the interface.", 76., 112., 560., 112.,
+        json!({"fontSize":48,"fontWeight":850,"color":"#f8f7ff","letterSpacing":-1.8,"lineHeight":1.02})));
+    home.objects.push(object("text", "A visual creative IDE for design, code, motion, media and interactive systems. Every surface shares one portable SYN document.", 80., 244., 520., 54.,
+        json!({"fontSize":15,"fontWeight":500,"color":"#aeb6c8","lineHeight":1.5})));
 
-    let btn = object("button", "Explore architecture", 58., 228., 190., 48.,
-        json!({"background":"linear-gradient(180deg,#eef3ff,#aebfff)","color":"#07101c","fontSize":12,"fontWeight":900,"borderRadius":11,"boxShadow":"0 12px 30px #0006"}));
-    let bid = btn.id.clone();
-    home.objects.push(btn);
-    home.interactions.push(Interaction {
-        id: id("evt"), event: Event { r#type:"click".into(), target:bid },
-        actions: vec![Action::Goto { target:"ARCH".into() }]
-    });
+    let primary = object("button", "Explore the workspace", 80., 326., 210., 50.,
+        json!({"background":"linear-gradient(135deg,#d8d0ff,#8f7cff)","color":"#10101a","fontSize":12,"fontWeight":900,"borderRadius":13,"boxShadow":"0 14px 34px #8f7cff33"}));
+    let pid=primary.id.clone();
+    home.objects.push(primary);
+    home.interactions.push(Interaction{id:id("evt"),event:Event{r#type:"click".into(),target:pid},actions:vec![Action::Goto{target:"ARCH".into()}]});
 
-    for (i, (k, v)) in [
-        ("VISUAL", "Canvas + responsive composition"),
-        ("BEHAVIOR", "Events + navigation graph"),
-        ("MEDIA", "Embedded image / audio / video"),
-        ("SOURCE", "Structured SYN + validation"),
+    for (i,(k,v,c)) in [
+        ("DESIGN","Responsive canvas","Layouts that feel intentional"),
+        ("CODE","Rust + SYN","Readable source, real validation"),
+        ("MOTION","Timeline","Keyframes without leaving the document"),
+        ("MEDIA","Assets","Images, video, audio and fonts"),
     ].iter().enumerate() {
-        let x = 54. + (i % 2) as f32 * 300.;
-        let y = 320. + (i / 2) as f32 * 112.;
-        home.objects.push(object("shape", k, x, y, 276., 86.,
-            json!({"background":"#0e1722","borderColor":"#263b55","borderWidth":1,"borderRadius":14})));
-        home.objects.push(object("text", k, x+18., y+15., 220., 18.,
-            json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":1.5})));
-        home.objects.push(object("text", v, x+18., y+40., 235., 30.,
-            json!({"fontSize":11,"fontWeight":650,"color":"#b8c6d7"})));
+        let x=80.+(i%2) as f32*278.;
+        let y=414.+(i/2) as f32*82.;
+        home.objects.push(object("shape",*k,x,y,258.,64.,
+            json!({"background":"#111624","borderColor":"#2d354b","borderWidth":1,"borderRadius":14})));
+        home.objects.push(object("text",*k,x+15.,y+11.,78.,15.,
+            json!({"fontSize":8,"fontWeight":900,"color":"#9d8dff","letterSpacing":1.6})));
+        home.objects.push(object("text",&format!("{}  ·  {}",v,c),x+15.,y+34.,225.,18.,
+            json!({"fontSize":10,"fontWeight":650,"color":"#d9dceb"})));
     }
 
-    let mut arch = Scene {
-        id:"ARCH".into(), name:"Architecture".into(), background:"#091019".into(),
-        objects:vec![], interactions:vec![]
-    };
-    arch.objects.push(object("text","01 / ARCHITECTURE",54.,36.,400.,20.,json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":2})));
-    arch.objects.push(object("text","One document. Many surfaces.",54.,68.,700.,56.,json!({"fontSize":42,"fontWeight":900,"color":"#f5f8ff"})));
-    arch.objects.push(object("text","Rust owns the state. The UI is a renderer over the same document model.",58.,132.,700.,28.,json!({"fontSize":13,"color":"#91a4bb"})));
-    let cards = [
-        ("DOCUMENT", "SYN JSON", "Portable source of truth."),
-        ("SCENES", "04 WORKSPACES", "Independent compositions."),
-        ("MEDIA", "EMBEDDED", "Assets travel with projects."),
-        ("EVENTS", "GRAPH", "Behavior remains inspectable."),
-        ("MOTION", "TIMELINE", "Tracks, keyframes, playback."),
-        ("DATA", "BINDINGS", "State stays structured."),
-    ];
-    for (i,(a,b,c)) in cards.iter().enumerate() {
-        let x=54.+(i%3) as f32*342.;
-        let y=192.+(i/3) as f32*136.;
-        arch.objects.push(object("shape",*a,x,y,318.,108.,json!({"background":"linear-gradient(145deg,#111d2b,#0b121b)","borderColor":"#29415d","borderWidth":1,"borderRadius":15,"boxShadow":"0 16px 40px #0006"})));
-        arch.objects.push(object("text",*a,x+18.,y+17.,150.,16.,json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":1.5})));
-        arch.objects.push(object("text",*b,x+18.,y+42.,230.,25.,json!({"fontSize":18,"fontWeight":850,"color":"#eef3fb"})));
-        arch.objects.push(object("text",*c,x+18.,y+76.,260.,20.,json!({"fontSize":10,"color":"#8295ad"})));
+    home.objects.push(object("shape","PREVIEW",700.,70.,328.,448.,
+        json!({"background":"linear-gradient(160deg,#171c2b,#0b1019)","borderColor":"#3b4560","borderWidth":1,"borderRadius":22,"boxShadow":"0 22px 70px #0008"})));
+    home.objects.push(object("text","LIVE CANVAS",726.,98.,150.,18,
+        json!({"fontSize":9,"fontWeight":900,"color":"#8f7cff","letterSpacing":1.8})));
+    home.objects.push(object("shape","MOCK",726.,138.,276.,194.,
+        json!({"background":"linear-gradient(145deg,#252b3e,#151a29)","borderColor":"#46506a","borderWidth":1,"borderRadius":17,"boxShadow":"0 16px 45px #0007"})));
+    home.objects.push(object("shape","ACCENT",748.,160.,92.,7.,
+        json!({"background":"linear-gradient(90deg,#ff5fcf,#8f7cff)","borderRadius":4})));
+    home.objects.push(object("text","Design. Code.\nShip something real.",748.,190.,220.,68,
+        json!({"fontSize":25,"fontWeight":850,"color":"#f8f7ff","lineHeight":1.05})));
+    home.objects.push(object("text","SYN / 0.2",748.,278.,130.,18,
+        json!({"fontSize":9,"fontWeight":800,"color":"#7f8aa2","letterSpacing":1.5})));
+    home.objects.push(object("shape","PILL",748.,354.,238.,42.,
+        json!({"background":"#20263a","borderColor":"#343e58","borderWidth":1,"borderRadius":12})));
+    home.objects.push(object("text","One document • many surfaces",766.,367.,200.,18,
+        json!({"fontSize":9,"fontWeight":750,"color":"#cbd2e0"})));
+    home.objects.push(object("text","Command Center  /  01",726.,474.,240.,18,
+        json!({"fontSize":9,"fontWeight":800,"color":"#6f7b92","letterSpacing":1.2})));
+
+    let mut arch=Scene{id:"ARCH".into(),name:"Architecture".into(),background:"#0a0d13".into(),objects:vec![],interactions:vec![]};
+    arch.objects.push(object("text","01  /  ARCHITECTURE",58.,48.,300.,18,json!({"fontSize":9,"fontWeight":900,"color":"#9d8dff","letterSpacing":2})));
+    arch.objects.push(object("text","One document. Every surface.",58.,82.,760.,54,json!({"fontSize":40,"fontWeight":850,"color":"#f7f6fc","letterSpacing":-1.2})));
+    arch.objects.push(object("text","The editor, runtime and source view all operate on the same structured document.",62.,145.,700.,24,json!({"fontSize":13,"color":"#98a2b6"})));
+    for (i,(a,b,c)) in [
+        ("DOCUMENT","SYN source","Portable, inspectable state"),
+        ("SCENES","Workspaces","Independent compositions"),
+        ("BEHAVIOR","Interactions","Events and actions"),
+        ("MOTION","Timeline","Tracks and keyframes"),
+        ("MEDIA","Embedded","Portable assets"),
+        ("DATA","Bindings","Structured values"),
+    ].iter().enumerate() {
+        let x=58.+(i%3) as f32*342.;
+        let y=202.+(i/3) as f32*142.;
+        arch.objects.push(object("shape",*a,x,y,316.,112,json!({"background":"linear-gradient(145deg,#151a27,#0f131d)","borderColor":"#30384c","borderWidth":1,"borderRadius":18,"boxShadow":"0 18px 45px #0007"})));
+        arch.objects.push(object("text",*a,x+18.,y+17.,140.,16,json!({"fontSize":8,"fontWeight":900,"color":"#8f7cff","letterSpacing":1.6})));
+        arch.objects.push(object("text",*b,x+18.,y+43.,250.,23,json!({"fontSize":17,"fontWeight":850,"color":"#eef0f7"})));
+        arch.objects.push(object("text",*c,x+18.,y+77.,260.,18,json!({"fontSize":10,"color":"#7f8aa0"})));
     }
 
-    let mut motion = Scene {
-        id:"MOTION".into(), name:"Motion Lab".into(), background:"#080d14".into(),
-        objects:vec![], interactions:vec![]
-    };
-    motion.objects.push(object("text","02 / MOTION LAB",54.,36.,400.,20.,json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":2})));
-    motion.objects.push(object("text","Animation is part of the document.",54.,68.,760.,56.,json!({"fontSize":40,"fontWeight":900,"color":"#f5f8ff"})));
-    motion.objects.push(object("shape","TIMELINE",54.,156.,1010.,214.,json!({"background":"#0b141f","borderColor":"#263c58","borderWidth":1,"borderRadius":17})));
-    for i in 0..8 {
-        let x=86.+i as f32*120.;
-        motion.objects.push(object("text",&format!("{:02}",i),x,177.,40.,18.,json!({"fontSize":9,"fontWeight":800,"color":"#657a95"})));
-        motion.objects.push(object("shape","",x,205.,1.,130.,json!({"background":"#24374e"})));
+    let mut motion=Scene{id:"MOTION".into(),name:"Motion Lab".into(),background:"#090c12".into(),objects:vec![],interactions:vec![]};
+    motion.objects.push(object("text","02  /  MOTION LAB",58.,48.,300.,18,json!({"fontSize":9,"fontWeight":900,"color":"#8f7cff","letterSpacing":2})));
+    motion.objects.push(object("text","Motion belongs in the design.",58.,82.,760.,54,json!({"fontSize":40,"fontWeight":850,"color":"#f7f6fc","letterSpacing":-1.2})));
+    motion.objects.push(object("text","Build rhythm, transitions and keyframes without exporting your idea to another tool.",62.,145.,760.,24,json!({"fontSize":13,"color":"#98a2b6"})));
+    motion.objects.push(object("shape","TIMELINE",58.,202.,1004.,286,json!({"background":"#101521","borderColor":"#30394d","borderWidth":1,"borderRadius":20,"boxShadow":"0 22px 60px #0008"})));
+    for i in 0..9 {
+        let x=96.+i as f32*106.;
+        motion.objects.push(object("text",&format!("{:02}",i),x,226.,35.,16,json!({"fontSize":8,"fontWeight":800,"color":"#66728a"})));
+        motion.objects.push(object("shape","",x,252.,1.,182,json!({"background":"#2a3347"})));
     }
-    motion.objects.push(object("shape","KEYFRAMES",86.,224.,770.,36.,json!({"background":"linear-gradient(90deg,#86a9ff,#7e8cff)","borderRadius":8,"boxShadow":"0 8px 25px #86a9ff44"})));
-    motion.objects.push(object("shape","SECONDARY",160.,282.,520.,28.,json!({"background":"#23344b","borderRadius":7})));
-    motion.objects.push(object("text","PLAYBACK   00:00.00     01:24.00",86.,338.,400.,18.,json!({"fontSize":9,"fontWeight":850,"color":"#8da2bb","letterSpacing":1})));
+    motion.objects.push(object("shape","PRIMARY TRACK",96.,282.,710.,42,json!({"background":"linear-gradient(90deg,#8f7cff,#d05cff)","borderRadius":10,"boxShadow":"0 8px 24px #8f7cff33"})));
+    motion.objects.push(object("shape","SECONDARY TRACK",176.,354.,510.,32,json!({"background":"#29354d","borderRadius":8})));
+    motion.objects.push(object("text","00:00.00",96.,442.,90.,18,json!({"fontSize":9,"fontWeight":850,"color":"#9aa5ba"})));
+    motion.objects.push(object("text","01:24.00",928.,442.,90.,18,json!({"fontSize":9,"fontWeight":850,"color":"#9aa5ba"})));
 
-    let mut media = Scene {
-        id:"MEDIA".into(), name:"Media Lab".into(), background:"#080d14".into(),
-        objects:vec![], interactions:vec![]
-    };
-    media.objects.push(object("text","03 / MEDIA LAB",54.,36.,400.,20.,json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":2})));
-    media.objects.push(object("text","Media is a first-class object.",54.,68.,720.,56.,json!({"fontSize":40,"fontWeight":900,"color":"#f5f8ff"})));
-    media.objects.push(object("shape","VIDEO",54.,156.,500.,300.,json!({"background":"linear-gradient(145deg,#172b45,#0a111a)","borderColor":"#385575","borderWidth":1,"borderRadius":18,"boxShadow":"0 25px 70px #0009"})));
-    media.objects.push(object("text","VIDEO / AUDIO / IMAGE",82.,184.,320.,18.,json!({"fontSize":9,"fontWeight":900,"color":"#91b0ff","letterSpacing":2})));
-    media.objects.push(object("text","DROP MEDIA HERE",82.,244.,350.,42.,json!({"fontSize":25,"fontWeight":900,"color":"#eef3fb"})));
-    media.objects.push(object("text","Embedded assets are serialized into the .syn document.",82.,300.,350.,42.,json!({"fontSize":11,"color":"#91a4bb","lineHeight":1.5})));
-    media.objects.push(object("shape","ASSET LIBRARY",590.,156.,474.,300.,json!({"background":"#0c151f","borderColor":"#263c58","borderWidth":1,"borderRadius":18})));
+    let mut media=Scene{id:"MEDIA".into(),name:"Media Lab".into(),background:"#090c12".into(),objects:vec![],interactions:vec![]};
+    media.objects.push(object("text","03  /  MEDIA LAB",58.,48.,300.,18,json!({"fontSize":9,"fontWeight":900,"color":"#8f7cff","letterSpacing":2})));
+    media.objects.push(object("text","Media without the mess.",58.,82.,760.,54,json!({"fontSize":40,"fontWeight":850,"color":"#f7f6fc","letterSpacing":-1.2})));
+    media.objects.push(object("text","Drop media into the document and keep the project portable.",62.,145.,700.,24,json!({"fontSize":13,"color":"#98a2b6"})));
+    media.objects.push(object("shape","DROP",58.,202.,520.,286,json!({"background":"linear-gradient(145deg,#171c2a,#0e131d)","borderColor":"#3a4358","borderWidth":1,"borderRadius":20,"boxShadow":"0 22px 60px #0008"})));
+    media.objects.push(object("text","DROP MEDIA",92.,246.,260.,32,json!({"fontSize":27,"fontWeight":850,"color":"#f7f6fc"})));
+    media.objects.push(object("text","Image  •  Video  •  Audio  •  Fonts",94.,294.,300.,20,json!({"fontSize":11,"color":"#8e99ad"})));
+    media.objects.push(object("shape","DROPZONE",94.,338.,446.,104,json!({"background":"#101724","borderColor":"#4b5873","borderWidth":1,"borderRadius":16})));
+    media.objects.push(object("text","Drag, browse, or import",218.,365.,230.,20,json!({"fontSize":13,"fontWeight":750,"color":"#dfe3ed"})));
+    media.objects.push(object("text","Embedded assets travel with .syn",198.,394.,260.,18,json!({"fontSize":9,"color":"#758198"})));
+    media.objects.push(object("shape","LIBRARY",606.,202.,456.,286,json!({"background":"#101520","borderColor":"#30394d","borderWidth":1,"borderRadius":20})));
+    media.objects.push(object("text","ASSET LIBRARY",634.,230.,220.,18,json!({"fontSize":9,"fontWeight":900,"color":"#8f7cff","letterSpacing":1.5})));
     for (i,(name,kind)) in [("hero-image.png","IMAGE"),("intro-video.mp4","VIDEO"),("voiceover.wav","AUDIO"),("Inter Variable","FONT")].iter().enumerate() {
-        let y=190.+i as f32*57.;
-        media.objects.push(object("text",kind,614.,y,80.,18.,json!({"fontSize":8,"fontWeight":900,"color":"#91b0ff","letterSpacing":1.2})));
-        media.objects.push(object("text",name,700.,y,270.,18.,json!({"fontSize":11,"fontWeight":700,"color":"#d5dfeb"})));
+        let y=270.+i as f32*48.;
+        media.objects.push(object("text",kind,634.,y,70.,16,json!({"fontSize":8,"fontWeight":900,"color":"#6f7b92","letterSpacing":1.2})));
+        media.objects.push(object("text",name,716.,y,260.,18,json!({"fontSize":11,"fontWeight":700,"color":"#d6dbe5"})));
+        media.objects.push(object("shape","",634.,y+26.,392.,1,json!({"background":"#242d3e"})));
     }
 
     d.scenes=vec![home,arch,motion,media];
     d
 }
-
 fn initial() -> Document {
     #[cfg(target_arch="wasm32")]
     if let Some(w)=web_sys::window() {
