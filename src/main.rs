@@ -645,10 +645,13 @@ impl App {
         } else { container(space()).width(Length::Fixed(0.0)).height(Length::Fill) };
         let desktop_body=row![self.rail(),container(self.center()).width(Length::Fill).height(Length::Fill),right].height(Length::Fill);
         let body:Element<'_,Message>=if self.is_phone() {
-            column![
-                container(self.center()).width(Length::Fill).height(Length::Fill),
-                if self.inspector { container(self.inspector_view()).width(Length::Fill).height(Length::Fixed(320.0)).into() } else { container(space()).height(0).into() }
-            ].height(Length::Fill).into()
+            let mobile_inspector:Element<'_,Message>=if self.inspector {
+                container(self.inspector_view()).width(Length::Fill).height(Length::Fixed(320.0)).into()
+            } else {
+                container(space()).height(0).into()
+            };
+            column![container(self.center()).width(Length::Fill).height(Length::Fill),mobile_inspector]
+                .height(Length::Fill).into()
         } else { desktop_body.into() };
         let workspace_bar=container(scrollable(
             row![
