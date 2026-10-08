@@ -57,7 +57,7 @@ enum Tool {
     Camera,
     Bone,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 enum Ease {
     Linear,
     EaseIn,
@@ -521,7 +521,7 @@ impl App {
                 ribbon_group("PROJECT",vec![rbtn("✓","Validate",Message::Validate),rbtn("⇩","Export",Message::Export),rbtn("▶","Preview",Message::Preview)]),
             ],
         };
-        container(scrollable(groups).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::new())).height(82))
+        container(scrollable(groups).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::default())).height(82))
             .style(panel_style(rgb(0x0b1017))).into()
     }
 
