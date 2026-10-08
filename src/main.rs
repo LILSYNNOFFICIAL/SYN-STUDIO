@@ -1,7 +1,7 @@
 use iced::{
-    alignment, border, keyboard, mouse, time,
+    alignment, border, mouse, time, touch,
     widget::{
-        button, canvas, column, container, horizontal_space, pick_list, progress_bar,
+        button, canvas, column, container, pick_list, progress_bar,
         row, scrollable, slider, space, text, text_editor,
     },
     Color, Element, Font, Length, Point, Rectangle, Renderer, Size, Subscription, Theme,
@@ -363,15 +363,15 @@ impl App {
                 if let Some(id)=self.selected.clone() {
                     self.snapshot();
                     let t=self.playhead;
-                    let current=self.doc.scene().objects.iter().find(|o|o.id==id).cloned();
+                    let current=self.doc.scene().objects.iter().find(|o|o.id==selected_id).cloned();
                     if let Some(o)=current {
                         let mut props=vec![("x",o.x),("y",o.y),("rotation",o.rotation),("opacity",o.opacity)];
                         if o.kind=="model3d" {props.extend([("z",o.transform3d.z),("rx",o.transform3d.rx),("ry",o.transform3d.ry),("rz",o.transform3d.rz),("sx",o.transform3d.sx),("sy",o.transform3d.sy),("sz",o.transform3d.sz)]);}
                         for (name,value) in props {
-                            if let Some(track)=self.scene_mut().animation.tracks.iter_mut().find(|tr|tr.target==id && tr.property==name) {
+                            if let Some(track)=self.scene_mut().animation.tracks.iter_mut().find(|tr|tr.target==selected_id && tr.property==name) {
                                 track.keyframes.push(Keyframe::new(t,value));
                             } else {
-                                self.scene_mut().animation.tracks.push(Track{id:id("trk"),target:id.clone(),property:name.into(),keyframes:vec![Keyframe::new(t,value)],muted:false,locked:false});
+                                self.scene_mut().animation.tracks.push(Track{id:id("trk"),target:selected_id.clone(),property:name.into(),keyframes:vec![Keyframe::new(t,value)],muted:false,locked:false});
                             }
                         }
                     }
@@ -381,8 +381,8 @@ impl App {
             Message::AddTrack(property)=>{
                 if let Some(id)=self.selected.clone() {
                     self.snapshot();
-                    let value=self.doc.scene().objects.iter().find(|o|o.id==id).map(|o|match property.as_str(){"x"=>o.x,"y"=>o.y,"rotation"=>o.rotation,"opacity"=>o.opacity,"z"=>o.transform3d.z,"rx"=>o.transform3d.rx,"ry"=>o.transform3d.ry,"rz"=>o.transform3d.rz,_=>0.}).unwrap_or(0.);
-                    self.scene_mut().animation.tracks.push(Track{id:id("trk"),target:id,property:property.clone(),keyframes:vec![Keyframe::new(self.playhead,value)],muted:false,locked:false});
+                    let value=self.doc.scene().objects.iter().find(|o|o.id==selected_id).map(|o|match property.as_str(){"x"=>o.x,"y"=>o.y,"rotation"=>o.rotation,"opacity"=>o.opacity,"z"=>o.transform3d.z,"rx"=>o.transform3d.rx,"ry"=>o.transform3d.ry,"rz"=>o.transform3d.rz,_=>0.}).unwrap_or(0.);
+                    self.scene_mut().animation.tracks.push(Track{id:id("trk"),target:selected_id,property:property.clone(),keyframes:vec![Keyframe::new(self.playhead,value)],muted:false,locked:false});
                     self.status=format!("Track {} created",property);
                 }
             },
@@ -488,19 +488,19 @@ impl App {
             container(space().width(Length::Fixed(0.0))).width(Length::Fixed(0.0))
         };
         let body=row![rail,center,right].height(Length::Fill);
-        let status=row![
+        let status=container(row![
             text("SYN 0.3").size(11).color(MUTED),
             text("•").size(11).color(GOOD),
             text(&self.status).size(11).color(MUTED),
-            horizontal_space(),
+            space().width(Length::Fill),
             text(format!("{:.2}s / {:.2}s",self.playhead,self.doc.scene().animation.duration)).size(11).color(MUTED),
-        ].spacing(8).padding([5,12]);
+        ].spacing(8).padding([5,12])).height(30).style(panel_style(rgb(0x090d13)));
         column![
             self.titlebar(),
             container(tabs).height(34).style(panel_style(SURFACE)),
             ribbon,
             body,
-            status.height(30).style(panel_style(rgb(0x090d13))),
+            status,
         ].into()
     }
 
@@ -508,7 +508,7 @@ impl App {
         row![
             container(text("S").size(15).font(Font::MONOSPACE).color(BG)).width(30).height(30).center(30).style(accent_box()),
             column![text("SYN Studio").size(15).color(TEXT),text("RUST CREATIVE SYSTEMS IDE").size(8).color(MUTED)].spacing(0),
-            horizontal_space(),
+            space().width(Length::Fill),
             button(text("New").size(11)).on_press(Message::New).style(btn_style(false)),
             button(text("Undo").size(11)).on_press(Message::Undo).style(btn_style(false)),
             button(text("Redo").size(11)).on_press(Message::Redo).style(btn_style(false)),
@@ -557,12 +557,12 @@ impl App {
     }
 
     fn center(&self)->Element<'_,Message> {
-        let header=row![
+        let header=container(row![
             column![text(self.surface_name()).size(14).color(TEXT),text(self.surface_subtitle()).size(8).color(MUTED)].spacing(0),
-            horizontal_space(),
+            space().width(Length::Fill),
             text(format!("{:.0}%",self.zoom*100.)).size(10).color(MUTED),
             button(text(if self.inspector{"Hide Inspector"}else{"Inspector"}).size(10)).on_press(Message::ToggleInspector).style(btn_style(false)),
-        ].spacing(8).padding([8,12]).align_y(alignment::Vertical::Center).height(46).style(panel_style(SURFACE));
+        ].spacing(8).padding([8,12]).align_y(alignment::Vertical::Center).height(46)).style(panel_style(SURFACE));
 
         match self.surface {
             Surface::Code => column![header,self.code_surface()].height(Length::Fill).into(),
@@ -615,7 +615,7 @@ impl App {
             row![
                 text("SYN SOURCE").size(9).color(ACCENT),
                 text(format!("{} lines",self.code.line_count())).size(8).color(MUTED),
-                horizontal_space(),
+                space().width(Length::Fill),
                 button(text("Format").size(9)).on_press(Message::FormatCode).style(btn_style(false)),
                 button(text("Validate").size(9)).on_press(Message::Validate).style(btn_style(false)),
                 button(text("Apply to Design").size(9)).on_press(Message::ApplyCode).style(btn_style(true)),
@@ -693,14 +693,14 @@ impl App {
         let tracks=&self.doc.scene().animation.tracks;
         let mut left=column![text("ANIMATION STACK").size(9).color(MUTED)].spacing(4).padding(8);
         for t in tracks.iter().take(7) {
-            left=left.push(container(row![text(t.property.clone()).size(9).color(TEXT),horizontal_space(),text(format!("{}",t.keyframes.len())).size(8).color(MUTED)].spacing(4)).height(28).style(panel_style(SURFACE)));
+            left=left.push(container(row![text(t.property.clone()).size(9).color(TEXT),space().width(Length::Fill),text(format!("{}",t.keyframes.len())).size(8).color(MUTED)].spacing(4)).height(28).style(panel_style(SURFACE)));
         }
         let slider=slider(0.0..=duration,self.playhead,Message::SetPlayhead).step(1.0/(self.doc.scene().animation.fps.max(1) as f32));
         let right=column![
             row![button(text(if self.playing{"❚❚"}else{"▶"}).size(10)).on_press(Message::PlayPause).style(btn_style(true)),
                 button(text("■").size(10)).on_press(Message::Stop).style(btn_style(false)),
                 text(format!("{:.2}s",self.playhead)).size(10).color(TEXT),
-                horizontal_space(),
+                space().width(Length::Fill),
                 text("FPS").size(8).color(MUTED),
                 pick_list(vec![24u32,30,60,120],Some(self.doc.scene().animation.fps),Message::SetFps).text_size(9),
             ].spacing(6).align_y(alignment::Vertical::Center),
@@ -713,7 +713,7 @@ impl App {
     fn inspector_view(&self)->Element<'_,Message> {
         let selected=self.selected.as_ref().and_then(|id|self.doc.scene().objects.iter().find(|o|&o.id==id));
         let mut body=column![
-            row![text("INSPECTOR").size(10).color(TEXT),horizontal_space(),button(text("×").size(14)).on_press(Message::ToggleInspector).style(btn_style(false))].spacing(6),
+            row![text("INSPECTOR").size(10).color(TEXT),space().width(Length::Fill),button(text("×").size(14)).on_press(Message::ToggleInspector).style(btn_style(false))].spacing(6),
             text("RIGHT DOCK · CLOSED BY DEFAULT").size(7).color(ACCENT),
         ].spacing(8).padding(12);
         if let Some(o)=selected {
@@ -785,7 +785,7 @@ impl App {
             other=>column![text("WORKSPACE").size(9).color(ACCENT),text(other).size(24).color(TEXT),text("This surface is wired to the same Rust state machine. It is an executable workspace, not a decorative dead button.").size(11).color(MUTED)],
         };
         container(column![
-            row![text("SYN Studio").size(12).color(TEXT),horizontal_space(),button(text("Close").size(10)).on_press(Message::CloseOverlay).style(btn_style(false))].padding(12),
+            row![text("SYN Studio").size(12).color(TEXT),space().width(Length::Fill),button(text("Close").size(10)).on_press(Message::CloseOverlay).style(btn_style(false))].padding(12),
             container(content).padding(22).width(Length::Fill).height(Length::Fill),
         ]).width(Length::Fill).height(Length::Fill).style(panel_style(BG)).into()
     }
@@ -794,10 +794,10 @@ impl App {
 fn tab(label:&str, surface:Surface, active:Surface)->Element<'_,Message> {
     button(text(label).size(8)).on_press(Message::Surface(surface)).style(btn_style(surface==active)).into()
 }
-fn ribbon_group<'a>(name:&str, items:Vec<Element<'a,Message>>)->Element<'a,Message> {
+fn ribbon_group<'a>(name:&'a str, items:Vec<Element<'a,Message>>)->Element<'a,Message> {
     container(column![text(name).size(7).color(MUTED),row(items).spacing(4)].spacing(4).padding([5,8])).style(panel_style(SURFACE_2)).into()
 }
-fn rbtn<'a>(icon:&str,label:&str,msg:Message)->Element<'a,Message> {
+fn rbtn<'a>(icon:&'a str,label:&'a str,msg:Message)->Element<'a,Message> {
     button(column![text(icon).size(15).color(ACCENT),text(label).size(7).color(TEXT)].align_x(alignment::Horizontal::Center).spacing(2))
         .on_press(msg).style(btn_style(false)).width(58).height(56).into()
 }
@@ -969,10 +969,10 @@ fn distance(a:Point,b:Point)->f32 { ((a.x-b.x).powi(2)+(a.y-b.y).powi(2)).sqrt()
 
 fn timeline_canvas<'a>(tracks:&[Track],playhead:f32,duration:f32,zoom:f32)->Element<'a,Message> {
     let width=(720.*zoom).max(420.);
-    let mut items=column![row![text("TIME").size(7).color(MUTED),horizontal_space(),text(format!("{:.1}s",duration)).size(7).color(MUTED)].width(width)];
+    let mut items=column![row![text("TIME").size(7).color(MUTED),space().width(Length::Fill),text(format!("{:.1}s",duration)).size(7).color(MUTED)].width(width)];
     for track in tracks.iter().take(5) {
         let mut r=row![text(format!("{:<10}",track.property)).size(8).color(MUTED).width(70)];
-        let mut line=column![progress_bar(0.0..=duration,playhead).height(4).width(width-80.)];
+        let mut line=column![progress_bar(0.0..=duration,playhead).width(width-80.)];
         for k in &track.keyframes {
             line=line.push(text(format!("◆ {:.1}",k.time)).size(7).color(if (k.time-playhead).abs()<0.05{PINK}else{ACCENT}));
         }
@@ -1021,7 +1021,7 @@ fn download(name:&str,raw:&str) {
     { let _=std::fs::write(name,raw); }
 }
 
-fn main() {
+fn main() -> iced::Result {
     #[cfg(target_arch="wasm32")]
     console_error_panic_hook::set_once();
     #[cfg(target_arch="wasm32")]
