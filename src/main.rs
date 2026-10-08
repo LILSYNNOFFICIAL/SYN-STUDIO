@@ -1029,9 +1029,9 @@ fn main() -> iced::Result {
     #[cfg(target_arch="wasm32")]
     console_log::init_with_level(log::Level::Info).ok();
     iced::application(App::default, App::update, App::view)
-        .subscription(|app:&App| app.subscription())
-        .theme(|_|Theme::Dark)
-        .title(|_|"SYN Studio".into())
+        .subscription(App::subscription)
+        .theme(Theme::Dark)
+        .title("SYN Studio")
         .run()
 }
 
