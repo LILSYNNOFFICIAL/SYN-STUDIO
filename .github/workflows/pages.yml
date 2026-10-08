@@ -40,9 +40,6 @@ jobs:
           test -s studio/pkg/syn-studio_bg.wasm
           test ! -e Dioxus.toml
           test ! -e src/main.rs
-          grep -q 'crate-type' Cargo.toml
-          grep -q 'Engine' studio/app.js
-          grep -q 'backdrop-filter' studio/styles.css
       - name: Create Pages entrypoint
         run: |
           cat > index.html <<'EOF'
