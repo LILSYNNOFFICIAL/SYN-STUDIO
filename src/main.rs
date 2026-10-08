@@ -754,14 +754,14 @@ impl App {
                 let canvas_view=canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:self.selected.clone(),playhead:self.playhead,zoom:self.zoom})
                     .width(Length::Fill).height(Length::Fill);
                 let stage=container(canvas_view).padding(12).width(Length::Fill).height(Length::Fill).style(stage_style());
-                let left_tools=container(self.rail()).padding([14,0,14,12]).width(80).height(Length::Fill);
+                let left_tools=container(self.rail()).padding([14,12]).width(80).height(Length::Fill);
                 let inspector=if self.inspector && !self.is_phone() {
                     container(self.inspector_view())
                         .width(Length::Fixed(if self.is_compact(){270.0}else{self.inspector_width as f32}))
                         .height(Length::Fill).padding([14,12])
                 } else { container(space()).width(0).height(Length::Fill) };
                 let scene_or_motion:Element<'_,Message>=if self.surface==Surface::Motion{self.timeline()}else{self.scene_tabs()};
-                let bottom=container(scene_or_motion).padding([0,12,10,12]).width(Length::Fill);
+                let bottom=container(scene_or_motion).padding([0,12]).width(Length::Fill);
                 let overlays=stack![
                     stage,
                     container(row![left_tools,space().width(Length::Fill),inspector]).width(Length::Fill).height(Length::Fill),
@@ -1044,6 +1044,8 @@ fn value_box(label:&str,value:f32)->Element<'_,Message> {
     container(column![text(label).size(7).color(MUTED),text(format!("{:.1}",value)).size(10).color(TEXT)].spacing(2))
         .padding(7).width(Length::Fill).style(panel_style(SURFACE_2)).into()
 }
+fn ghost_box_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.12,0.13,0.18,0.42).into()),border:border::rounded(7).color(Color::from_rgba(0.60,0.64,0.78,0.18)).width(1.0),shadow:Default::default(),snap:true} }
+fn transparent_tab_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style { move |_theme,status| { let hover=matches!(status,button::Status::Hovered); button::Style{background:Some(if active{Color::from_rgba(0.42,0.35,0.78,0.22).into()}else if hover{Color::from_rgba(0.30,0.33,0.45,0.20).into()}else{Color::TRANSPARENT.into()}),text_color:TEXT,border:border::rounded(8).color(if active{Color::from_rgba(0.64,0.58,1.,0.28)}else{Color::TRANSPARENT}).width(if active{1.0}else{0.0}),shadow:Default::default(),snap:true} } }
 fn rail_logo_style()->impl Fn(&Theme)->iced::widget::container::Style { floating_glass_style() }
 fn stage_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.018,0.024,0.038,0.72).into()),border:border::rounded(18).color(Color::from_rgba(0.40,0.46,0.60,0.22)).width(1.0),shadow:iced::Shadow{color:Color::from_rgba(0.,0.,0.,0.38),offset:iced::Vector::new(0.,8.),blur_radius:28.},snap:true} }
 fn chrome_style()->impl Fn(&Theme)->iced::widget::container::Style { move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(Color::from_rgba(0.025,0.032,0.050,0.88).into()),border:border::rounded(0).color(Color::from_rgba(0.35,0.40,0.55,0.18)).width(1.0),shadow:Default::default(),snap:true} }
