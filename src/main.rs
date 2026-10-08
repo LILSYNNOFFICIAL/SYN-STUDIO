@@ -2,7 +2,7 @@ use iced::{
     alignment, border, mouse, time, touch,
     widget::{
         button, canvas, column, container, pick_list, progress_bar,
-        row, scrollable, slider, space, text, text_editor,
+        row, scrollable, slider, space, text, text_editor, text_input,
     },
     Color, Element, Font, Length, Point, Rectangle, Renderer, Size, Subscription, Theme,
 };
@@ -199,31 +199,23 @@ struct Document {
 }
 impl Document {
     fn sample() -> Self {
-        let mut scene=Scene {
-            id:"SCENE-01".into(), name:"Command Center".into(), width:1200.0,height:700.0,
-            objects:vec![], animation:AnimationState::default()
-        };
-        scene.objects.push(Object::rect("hero","Hero",60.,60.,1080.,580.,"shape"));
-        scene.objects.push(Object::rect("headline","SYN STUDIO",110.,120.,440.,90.,"text"));
-        scene.objects.push(Object::rect("orb","Motion Orb",720.,170.,170.,170.,"shape"));
-        let mut cube=Object::rect("cube","3D Hero Model",0.,0.,0.,0.,"model3d");
-        cube.transform3d.x=820.; cube.transform3d.y=420.; cube.transform3d.z=80.;
-        cube.transform3d.sx=1.35; cube.transform3d.sy=1.35; cube.transform3d.sz=1.35;
-        scene.objects.push(cube);
-        let mut drawing=Object::rect("stroke","Bezier Drawing",300.,420.,0.,0.,"drawing");
-        drawing.points=vec![[0.,0.],[80.,-70.],[170.,70.],[260.,0.],[350.,-50.]];
-        scene.objects.push(drawing);
-
-        let mut orb_track=Track{id:id("trk"),target:"orb".into(),property:"x".into(),keyframes:vec![],muted:false,locked:false};
-        orb_track.keyframes=vec![Keyframe::new(0.,720.),Keyframe::new(2.,890.),Keyframe::new(4.,720.),Keyframe::new(6.,560.),Keyframe::new(8.,720.)];
-        let mut rot=Track{id:id("trk"),target:"cube".into(),property:"rz".into(),keyframes:vec![],muted:false,locked:false};
-        rot.keyframes=vec![Keyframe::new(0.,0.),Keyframe::new(8.,360.)];
-        let mut y=Track{id:id("trk"),target:"cube".into(),property:"y".into(),keyframes:vec![],muted:false,locked:false};
-        y.keyframes=vec![Keyframe::new(0.,390.),Keyframe::new(4.,310.),Keyframe::new(8.,390.)];
-        scene.animation.tracks=vec![orb_track,rot,y];
-
-        Self{syn:"0.3".into(),title:"SYN Studio / Creative Systems".into(),scenes:vec![scene],active_scene:0}
+        let mut scene=Scene{id:"SCENE-01".into(),name:"Command Center".into(),width:1200.0,height:700.0,objects:vec![],animation:AnimationState::default()};
+        let mut hero=Object::rect("hero","SYN Studio",40.,36.,1120.,628.,"panel");hero.props=json!({"color":"#111827","stroke":"#2b3850"});scene.objects.push(hero);
+        let mut glow=Object::rect("glow","",720.,120.,240.,240.,"circle");glow.props=json!({"color":"#6c63ff"});scene.objects.push(glow);
+        let mut eyebrow=Object::rect("eyebrow","SYN / CREATIVE SYSTEMS",82.,78.,430.,30.,"text");eyebrow.props=json!({"fontSize":13.0,"color":"#8fa2c9","fontFamily":"Fira Sans","bold":true,"textAlign":"left"});scene.objects.push(eyebrow);
+        let mut headline=Object::rect("headline","Design systems that move.",82.,120.,600.,110.,"text");headline.props=json!({"fontSize":46.0,"color":"#f4f6fb","fontFamily":"Fira Sans","bold":true,"textAlign":"left"});scene.objects.push(headline);
+        let mut copy=Object::rect("copy","Build polished scenes, motion, media and code from one visual workspace.",82.,242.,520.,72.,"text");copy.props=json!({"fontSize":18.0,"color":"#a8b3c7","fontFamily":"Fira Sans","textAlign":"left"});scene.objects.push(copy);
+        let mut cta=Object::rect("cta","OPEN COMMAND CENTER",82.,342.,210.,54.,"button");cta.props=json!({"color":"#8d7dff","textColor":"#090c12"});scene.objects.push(cta);
+        let mut secondary=Object::rect("secondary","VIEW MOTION",306.,342.,170.,54.,"button");secondary.props=json!({"color":"#202a3c","textColor":"#f4f6fb"});scene.objects.push(secondary);
+        for (idn,label,x,accent) in [("card1","DESIGN",82.,"#8d7dff"),("card2","MOTION",350.,"#66d9ef"),("card3","CODE",618.,"#7ff0b2")] {
+            let mut card=Object::rect(idn,label,x,456.,250.,112.,"card");card.props=json!({"color":"#151e2e","accent":accent});scene.objects.push(card);
+        }
+        let mut stat=Object::rect("stat","60 FPS",910.,414.,170.,150.,"card");stat.props=json!({"color":"#121b2a","accent":"#df68f3","fontSize":22.0});scene.objects.push(stat);
+        let mut orb=Object::rect("orb","",836.,184.,110.,110.,"circle");orb.props=json!({"color":"#66d9ef"});scene.objects.push(orb);
+        let mut orb_track=Track{id:id("trk"),target:"orb".into(),property:"x".into(),keyframes:vec![],muted:false,locked:false};orb_track.keyframes=vec![Keyframe::new(0.,836.),Keyframe::new(2.,920.),Keyframe::new(4.,836.),Keyframe::new(6.,760.),Keyframe::new(8.,836.)];scene.animation.tracks=vec![orb_track];
+        Self{syn:"0.4".into(),title:"SYN Studio / Creative Systems".into(),scenes:vec![scene],active_scene:0}
     }
+
     fn scene(&self)->&Scene { &self.scenes[self.active_scene] }
 }
 
@@ -264,6 +256,18 @@ enum Message {
     Zoom(f32),
     TimelineZoom(f32),
     ToggleMenu,
+    MenuOpen(String),
+    MenuAction(String),
+    InsertObject(String),
+    TextContent(String),
+    FontFamily(String),
+    SetCodeLanguage(String),
+    ZoomFit,
+    ZoomReset,
+    ZoomIn,
+    ZoomOut,
+    InspectorNarrow,
+    InspectorWide,
     CloseOverlay,
     OpenWorkspace(String),
 }
@@ -282,7 +286,8 @@ struct App {
     status: String,
     code: text_editor::Content,
     overlay: Option<String>,
-    menu_open: bool,
+    menu_open: Option<String>,
+    code_language: String,
     last_tick: Option<iced::time::Instant>,
     history: Vec<Document>,
     future: Vec<Document>,
@@ -294,8 +299,8 @@ impl Default for App {
         Self {
             doc, surface:Surface::Design, tool:Tool::Select, selected:None,
             inspector:false, inspector_width:330, playhead:0., playing:false,
-            timeline_zoom:1.0, zoom:0.72, status:"Ready".into(), code,
-            overlay:None, menu_open:false, last_tick:None, history:vec![], future:vec![],
+            timeline_zoom:1.0, zoom:1.0, status:"Ready".into(), code,
+            overlay:None, menu_open:None, code_language:"SYN JSON".into(), last_tick:None, history:vec![], future:vec![],
         }
     }
 }
@@ -338,7 +343,7 @@ impl App {
     }
     fn update(&mut self, message:Message)->iced::Task<Message> {
         match message {
-            Message::Surface(s)=>{self.surface=s; self.menu_open=false; if s==Surface::Motion {self.status="Motion Lab / keyframe system".into();}},
+            Message::Surface(s)=>{self.surface=s; self.menu_open=None; if s==Surface::Motion {self.status="Motion Lab / keyframe system".into();}},
             Message::Tool(t)=>self.tool=t,
             Message::SelectObject(id)=>{self.selected=Some(id);self.inspector=true;},
             Message::ToggleInspector=>self.inspector=!self.inspector,
@@ -402,7 +407,100 @@ impl App {
                 if let Some(o)=self.selected_object_mut(){ if o.kind=="text" {o.props["textAlign"]=json!(a);} }
             },
             Message::TextFormat(f)=>{
-                if let Some(o)=self.selected_object_mut(){ if o.kind=="text" {o.props[&f]=json!(true);} }
+                if let Some(o)=self.selected_object_mut(){
+                    if o.kind=="text" {
+                        let current=o.props.get(&f).and_then(Value::as_bool).unwrap_or(false);
+                        o.props[&f]=json!(!current);
+                    }
+                }
+            },
+            Message::TextContent(value)=>{
+                if let Some(id)=self.selected.clone(){
+                    self.snapshot();
+                    if let Some(o)=self.scene_mut().objects.iter_mut().find(|o|o.id==id && o.kind=="text"){o.label=value;}
+                }
+            },
+            Message::FontFamily(name)=>{
+                if let Some(o)=self.selected_object_mut(){ if o.kind=="text" {o.props["fontFamily"]=json!(name);} }
+            },
+            Message::SetCodeLanguage(lang)=>{self.code_language=lang;self.status=format!("Code language: {}",self.code_language);},
+            Message::ZoomFit|Message::ZoomReset=>self.zoom=1.0,
+            Message::ZoomIn=>self.zoom=(self.zoom+0.1).min(2.5),
+            Message::ZoomOut=>self.zoom=(self.zoom-0.1).max(0.25),
+            Message::InspectorNarrow=>self.inspector_width=self.inspector_width.saturating_sub(20).max(240),
+            Message::InspectorWide=>self.inspector_width=(self.inspector_width+20).min(520),
+            Message::MenuOpen(name)=>{self.menu_open=if self.menu_open.as_deref()==Some(name.as_str()){None}else{Some(name)};},
+            Message::MenuAction(action)=>{
+                self.menu_open=None;
+                match action.as_str() {
+                    "file.new"=>self.update(Message::New),
+                    "file.save"=>self.update(Message::Save),
+                    "file.export"=>self.update(Message::Export),
+                    "edit.undo"=>self.update(Message::Undo),
+                    "edit.redo"=>self.update(Message::Redo),
+                    "edit.duplicate"=>self.update(Message::Duplicate),
+                    "edit.delete"=>self.update(Message::Delete),
+                    "view.inspector"=>self.update(Message::ToggleInspector),
+                    "view.fit"=>self.update(Message::ZoomFit),
+                    "view.zoom_in"=>self.update(Message::ZoomIn),
+                    "view.zoom_out"=>self.update(Message::ZoomOut),
+                    "view.zoom_reset"=>self.update(Message::ZoomReset),
+                    "insert.text"=>self.update(Message::InsertObject("text".into())),
+                    "insert.card"=>self.update(Message::InsertObject("card".into())),
+                    "insert.button"=>self.update(Message::InsertObject("button".into())),
+                    "insert.circle"=>self.update(Message::InsertObject("circle".into())),
+                    "insert.line"=>self.update(Message::InsertObject("line".into())),
+                    "format.bold"=>self.update(Message::TextFormat("bold".into())),
+                    "format.italic"=>self.update(Message::TextFormat("italic".into())),
+                    "format.underline"=>self.update(Message::TextFormat("underline".into())),
+                    "format.left"=>self.update(Message::TextAlign("left".into())),
+                    "format.center"=>self.update(Message::TextAlign("center".into())),
+                    "format.right"=>self.update(Message::TextAlign("right".into())),
+                    "scene.design"=>self.update(Message::Surface(Surface::Design)),
+                    "scene.motion"=>self.update(Message::Surface(Surface::Motion)),
+                    "scene.architecture"=>self.update(Message::Surface(Surface::Architecture)),
+                    "scene.media"=>self.update(Message::Surface(Surface::Media)),
+                    "scene.new"=>self.update(Message::New),
+                    "media.image"=>self.update(Message::InsertObject("card".into())),
+                    "media.audio"=>self.update(Message::Status("Audio asset slot ready".into())),
+                    "media.video"=>self.update(Message::Status("Video asset slot ready".into())),
+                    "interaction.link"=>self.update(Message::Status("Interaction link mode armed")),
+                    "interaction.trigger"=>self.update(Message::Status("Interaction trigger mode armed")),
+                    "code.rust"=>self.update(Message::SetCodeLanguage("Rust".into())),
+                    "code.syn"=>self.update(Message::SetCodeLanguage("SYN JSON".into())),
+                    "code.format"=>self.update(Message::FormatCode),
+                    "code.validate"=>self.update(Message::Validate),
+                    "code.apply"=>self.update(Message::ApplyCode),
+                    "code.symbols"=>self.update(Message::OpenWorkspace("Code Symbols".into())),
+                    "window.design"=>self.update(Message::Surface(Surface::Design)),
+                    "window.motion"=>self.update(Message::Surface(Surface::Motion)),
+                    "window.architecture"=>self.update(Message::Surface(Surface::Architecture)),
+                    "window.media"=>self.update(Message::Surface(Surface::Media)),
+                    "window.code"=>self.update(Message::Surface(Surface::Code)),
+                    "window.ai"=>self.update(Message::Surface(Surface::Ai)),
+                    "window.publish"=>self.update(Message::Surface(Surface::Publish)),
+                    "window.narrow"=>self.update(Message::InspectorNarrow),
+                    "window.wide"=>self.update(Message::InspectorWide),
+                    "help.shortcuts"=>self.update(Message::OpenWorkspace("Shortcuts".into())),
+                    "help.about"=>self.update(Message::OpenWorkspace("About SYN Studio".into())),
+                    "help.validate"=>self.update(Message::Validate),
+                    _=>self.status=format!("Command executed: {}",action),
+                };
+                iced::Task::none()
+            },
+            Message::InsertObject(kind)=>{
+                self.snapshot();
+                let n=self.doc.scene().objects.len();
+                let object=match kind.as_str() {
+                    "text"=>Object::rect(&id("text"),"New text",110.+(n as f32*12.0)%300.0,120.+(n as f32*18.0)%260.0,360.,70.,"text"),
+                    "circle"=>Object::rect(&id("circle"),"Orb",700.,170.+(n as f32*12.0)%220.0,150.,150.,"circle"),
+                    "button"=>Object::rect(&id("button"),"BUTTON",760.,500.,180.,56.,"button"),
+                    "line"=>Object::rect(&id("line"),"Divider",160.,540.,620.,4.,"line"),
+                    _=>Object::rect(&id("card"),"Card",140.,380.,280.,120.,"card"),
+                };
+                let oid=object.id.clone();
+                self.doc.scenes[self.doc.active_scene].objects.push(object);
+                self.selected=Some(oid);self.inspector=true;self.status=format!("Inserted {}",kind);
             },
             Message::ToggleLoop(v)=>self.scene_mut().animation.looped=v,
             Message::ToggleOnion(v)=>self.scene_mut().animation.onion_skin=v,
@@ -447,9 +545,9 @@ impl App {
             Message::Status(s)=>self.status=s,
             Message::Zoom(v)=>self.zoom=v,
             Message::TimelineZoom(v)=>self.timeline_zoom=v,
-            Message::ToggleMenu=>self.menu_open=!self.menu_open,
+            Message::ToggleMenu=>self.menu_open=if self.menu_open.is_some(){None}else{Some("File".into())},
             Message::CloseOverlay=>self.overlay=None,
-            Message::OpenWorkspace(s)=>{self.overlay=Some(s);self.menu_open=false;},
+            Message::OpenWorkspace(s)=>{self.overlay=Some(s);self.menu_open=None;},
         }
         iced::Task::none()
     }
@@ -472,31 +570,62 @@ impl App {
         let workspace_bar=container(row![
             iced::widget::Row::with_children(workspaces),space().width(Length::Fill),
             text(if self.inspector{"INSPECTOR OPEN"}else{"INSPECTOR CLOSED"}).size(7).color(MUTED)
-        ].spacing(3).align_y(alignment::Vertical::Center)).height(38).padding([0,12]).style(panel_style(rgb(0x080b10)));
+        ].spacing(3).align_y(alignment::Vertical::Center)).height(36).padding([0,12]).style(panel_style(rgb(0x080b10)));
         let status=container(row![
             row![text("●").size(7).color(GOOD),text("READY").size(8).color(TEXT)].spacing(5),
             text(&self.status).size(8).color(MUTED),space().width(Length::Fill),
+            text(format!("{:.0}%",self.zoom*100.)).size(8).color(MUTED),
             text(format!("{:.2}s",self.playhead)).size(8).color(MUTED),
             text(format!("{} FPS",self.doc.scene().animation.fps)).size(8).color(MUTED)
         ].spacing(14).padding([0,13]).align_y(alignment::Vertical::Center)).height(30).style(panel_style(rgb(0x06090d)));
-        column![self.titlebar(),workspace_bar,body,status].into()
+        column![self.titlebar(),self.menu_bar(),workspace_bar,body,status].into()
     }
 
     fn titlebar(&self)->Element<'_,Message> {
-        row![
+        container(row![
             container(text("S").size(15).font(Font::MONOSPACE).color(BG)).width(32).height(32).center(32).style(accent_box()),
             column![text("SYN").size(13).font(Font::MONOSPACE).color(TEXT),text("STUDIO").size(7).color(MUTED)].spacing(0),
             text("·").size(12).color(LINE),text(&self.doc.title).size(9).color(MUTED),space().width(Length::Fill),
             button(text("↶").size(13)).on_press(Message::Undo).style(btn_style(false)).width(30).height(30),
             button(text("↷").size(13)).on_press(Message::Redo).style(btn_style(false)).width(30).height(30),
-            button(text("Save").size(8)).on_press(Message::Save).style(btn_style(false)).padding([6,10]),
-            button(text("Preview").size(8)).on_press(Message::Preview).style(btn_style(true)).padding([7,12])
-        ].spacing(7).padding([8,12]).align_y(alignment::Vertical::Center).height(56).into()
+            button(text("Save").size(8)).on_press(Message::Save).style(btn_style(false)).padding([6,11]),
+            button(text("Preview").size(8)).on_press(Message::Preview).style(btn_style(true)).padding([7,13])
+        ].spacing(7).padding([8,12]).align_y(alignment::Vertical::Center)).height(52).style(panel_style(rgb(0x070a10))).into()
     }
 
-    fn ribbon(&self)->Element<'_,Message> {
-        // Kept as a compatibility shim for older call sites.
-        container(space()).height(0).into()
+    fn menu_bar(&self)->Element<'_,Message> {
+        let names=["File","Edit","View","Insert","Format","Scene","Media","Interaction","Code","Window","Help"];
+        let tabs=names.into_iter().map(|name|{
+            button(text(name).size(9).color(if self.menu_open.as_deref()==Some(name){TEXT}else{MUTED}))
+                .on_press(Message::MenuOpen(name.into())).padding([5,9])
+                .style(btn_style(self.menu_open.as_deref()==Some(name)))
+        }).collect::<Vec<_>>();
+        let mut content=column![
+            container(iced::widget::Row::with_children(tabs).spacing(1).padding([0,8]).align_y(alignment::Vertical::Center))
+                .height(30).style(panel_style(rgb(0x0b0f16)))
+        ];
+        if let Some(name)=&self.menu_open {
+            let entries:Vec<(&str,&str)>=match name.as_str() {
+                "File"=>vec![("New Project","file.new"),("Save Project","file.save"),("Export .syn","file.export")],
+                "Edit"=>vec![("Undo","edit.undo"),("Redo","edit.redo"),("Duplicate","edit.duplicate"),("Delete","edit.delete")],
+                "View"=>vec![("Fit Canvas","view.fit"),("Zoom In","view.zoom_in"),("Zoom Out","view.zoom_out"),("100%","view.zoom_reset"),("Inspector","view.inspector")],
+                "Insert"=>vec![("Text","insert.text"),("Card","insert.card"),("Button","insert.button"),("Circle","insert.circle"),("Divider","insert.line")],
+                "Format"=>vec![("Bold","format.bold"),("Italic","format.italic"),("Underline","format.underline"),("Align Left","format.left"),("Align Center","format.center"),("Align Right","format.right")],
+                "Scene"=>vec![("Command Center","scene.design"),("Motion Lab","scene.motion"),("Architecture","scene.architecture"),("Media Lab","scene.media"),("New Project Scene","scene.new")],
+                "Media"=>vec![("Image Slot","media.image"),("Audio Track","media.audio"),("Video Track","media.video")],
+                "Interaction"=>vec![("Create Link","interaction.link"),("Create Trigger","interaction.trigger")],
+                "Code"=>vec![("SYN JSON","code.syn"),("Rust","code.rust"),("Format Source","code.format"),("Validate","code.validate"),("Apply to Design","code.apply"),("Document Symbols","code.symbols")],
+                "Window"=>vec![("Command Center","window.design"),("Motion Lab","window.motion"),("Architecture","window.architecture"),("Media Lab","window.media"),("Code","window.code"),("AI Workbench","window.ai"),("Publish","window.publish"),("Narrow Inspector","window.narrow"),("Widen Inspector","window.wide")],
+                "Help"=>vec![("Shortcuts","help.shortcuts"),("About SYN Studio","help.about"),("Run Validation","help.validate")],
+                _=>vec![]
+            };
+            let buttons=entries.into_iter().map(|(label,action)|{
+                button(row![text(label).size(9).color(TEXT),space().width(Length::Fill),text("›").size(9).color(MUTED)])
+                    .on_press(Message::MenuAction(action.into())).width(210).height(28).padding([0,10]).style(menu_item_style())
+            }).collect::<Vec<_>>();
+            content=content.push(container(column![iced::widget::Column::with_children(buttons).spacing(1).padding(5)]).width(230).style(menu_panel_style()));
+        }
+        content.height(Length::Shrink).into()
     }
 
     fn rail(&self)->Element<'_,Message> {
@@ -514,8 +643,8 @@ impl App {
         let header=container(row![
             column![text(self.surface_name()).size(13).color(TEXT),text(self.surface_subtitle()).size(7).color(MUTED)].spacing(2),
             space().width(Length::Fill),
-            button(text(format!("{:.0}%",self.zoom*100.)).size(8)).on_press(Message::Zoom(self.zoom)).style(btn_style(false)),
-            button(text("Fit").size(8)).on_press(Message::Zoom(0.72)).style(btn_style(false)),
+            button(text(format!("{:.0}%",self.zoom*100.)).size(8)).on_press(Message::ZoomReset).style(btn_style(self.zoom==1.0)),
+            button(text("Fit").size(8)).on_press(Message::ZoomFit).style(btn_style(false)),
             button(text(if self.inspector{"Inspector"}else{"Inspect"}).size(8)).on_press(Message::ToggleInspector).style(btn_style(self.inspector))
         ].spacing(5).padding([8,14]).align_y(alignment::Vertical::Center)).height(50).style(panel_style(rgb(0x090d13)));
         match self.surface {
@@ -542,9 +671,10 @@ impl App {
                         button(text("DUPLICATE").size(8)).on_press(Message::Duplicate).style(btn_style(false)),
                         button(text("DELETE").size(8)).on_press(Message::Delete).style(btn_style(false)),
                         space().width(Length::Fill),
-                        button(text("−").size(10)).on_press(Message::Zoom((self.zoom-0.1).max(0.25))).style(btn_style(false)),
+                        button(text("−").size(10)).on_press(Message::ZoomOut).style(btn_style(false)),
                         text(format!("{:.0}%",self.zoom*100.)).size(8).color(MUTED),
-                        button(text("+").size(10)).on_press(Message::Zoom((self.zoom+0.1).min(2.0))).style(btn_style(false))
+                        button(text("+").size(10)).on_press(Message::ZoomIn).style(btn_style(false)),
+                        button(text("FIT").size(7)).on_press(Message::ZoomFit).style(btn_style(false))
                     ].spacing(4).padding([6,10])
                 };
                 let bottom=if self.surface==Surface::Motion {column![actions,self.timeline()]} else {column![actions,self.scene_tabs()]};
@@ -583,24 +713,43 @@ impl App {
     }
     fn code_surface(&self)->Element<'_,Message> {
         let editor=text_editor(&self.code)
-            .placeholder("Edit the SYN document...")
-            .highlight("json", iced::highlighter::Theme::Base16Mocha)
-            .on_action(Message::CodeEdit)
-            .padding(14)
-            .size(12)
-            .height(Length::Fill);
+            .placeholder("Edit the SYN document or code...")
+            .highlight(if self.code_language=="Rust"{"rust"}else{"json"}, iced::highlighter::Theme::Base16Mocha)
+            .on_action(Message::CodeEdit).padding(14).size(12).height(Length::Fill);
+        let symbols=self.code.text().lines().filter_map(|line|{
+            let t=line.trim();
+            if t.starts_with('"') && t.contains(':') {
+                let key=t.split(':').next()?.trim_matches('"').to_string();
+                if key.len()<32 {Some(key)} else {None}
+            } else {None}
+        }).take(12).collect::<Vec<_>>();
+        let symbol_widgets=symbols.into_iter().map(|x|{
+            button(text(format!("◇ {}",x)).size(8)).on_press(Message::Status(format!("Symbol: {}",x))).style(btn_style(false)).into()
+        }).collect::<Vec<Element<'_,Message>>>();
+        let symbols_panel=if symbol_widgets.is_empty(){column![text("No symbols detected").size(8).color(MUTED)]}else{iced::widget::Column::with_children(symbol_widgets).spacing(2)};
         container(column![
             row![
-                text("SYN SOURCE").size(9).color(ACCENT),
-                text(format!("{} lines",self.code.line_count())).size(8).color(MUTED),
+                column![text("CODE INTELLIGENCE").size(9).color(ACCENT),text("Formatting · syntax highlighting · validation · symbols").size(7).color(MUTED)].spacing(2),
                 space().width(Length::Fill),
+                pick_list(vec!["SYN JSON".to_string(),"Rust".to_string()],Some(self.code_language.clone()),Message::SetCodeLanguage).width(105).text_size(8),
                 button(text("Format").size(9)).on_press(Message::FormatCode).style(btn_style(false)),
                 button(text("Validate").size(9)).on_press(Message::Validate).style(btn_style(false)),
-                button(text("Apply to Design").size(9)).on_press(Message::ApplyCode).style(btn_style(true)),
-            ].spacing(7).padding(8),
-            container(editor).padding(8).height(Length::Fill).style(panel_style(BG)),
+                button(text("Apply").size(9)).on_press(Message::ApplyCode).style(btn_style(true)),
+            ].spacing(6).padding(9).align_y(alignment::Vertical::Center),
+            row![
+                container(editor).padding(8).width(Length::Fill).height(Length::Fill).style(panel_style(BG)),
+                container(column![
+                    text("SYMBOLS").size(8).color(MUTED),symbols_panel,
+                    text("ASSISTS").size(8).color(MUTED),
+                    button(text("Format source").size(8)).on_press(Message::FormatCode).style(btn_style(false)),
+                    button(text("Validate structure").size(8)).on_press(Message::Validate).style(btn_style(false)),
+                    button(text("Apply safely").size(8)).on_press(Message::ApplyCode).style(btn_style(false)),
+                    text("Structured keys, scenes, objects and tracks are exposed as navigable symbols.").size(7).color(MUTED),
+                ].spacing(6).padding(10)).width(190).height(Length::Fill).style(panel_style(SURFACE_2))
+            ].spacing(5).height(Length::Fill)
         ]).height(Length::Fill).style(panel_style(SURFACE_2)).into()
     }
+
     fn architecture_surface(&self)->Element<'_,Message> {
         let cards=[
             ("STATE","Document, scenes, objects and animation are typed Rust state."),
@@ -658,12 +807,14 @@ impl App {
     }
 
     fn scene_tabs(&self)->Element<'_,Message> {
-        row![
-            button(text("Command Center").size(10)).on_press(Message::Surface(Surface::Design)).style(btn_style(self.surface==Surface::Design)),
-            button(text("Motion Lab").size(10)).on_press(Message::Surface(Surface::Motion)).style(btn_style(self.surface==Surface::Motion)),
-            button(text("Architecture").size(10)).on_press(Message::Surface(Surface::Architecture)).style(btn_style(self.surface==Surface::Architecture)),
-            button(text("Media Lab").size(10)).on_press(Message::Surface(Surface::Media)).style(btn_style(self.surface==Surface::Media)),
-        ].spacing(3).padding(5).height(38).into()
+        container(row![
+            tab("Command Center",Surface::Design,self.surface),
+            tab("Motion Lab",Surface::Motion,self.surface),
+            tab("Architecture",Surface::Architecture,self.surface),
+            tab("Media Lab",Surface::Media,self.surface),
+            space().width(Length::Fill),
+            text("SCENES").size(7).color(MUTED),
+        ].spacing(2).padding([4,6]).align_y(alignment::Vertical::Center)).height(40).style(panel_style(rgb(0x0b0f16))).into()
     }
 
     fn timeline(&self)->Element<'_,Message> {
@@ -691,63 +842,52 @@ impl App {
     fn inspector_view(&self)->Element<'_,Message> {
         let selected=self.selected.as_ref().and_then(|id|self.doc.scene().objects.iter().find(|o|&o.id==id));
         let mut body=column![
-            row![text("INSPECTOR").size(10).color(TEXT),space().width(Length::Fill),button(text("×").size(14)).on_press(Message::ToggleInspector).style(btn_style(false))].spacing(6),
-            text("RIGHT DOCK · CLOSED BY DEFAULT").size(7).color(ACCENT),
+            row![
+                column![text("INSPECTOR").size(10).color(TEXT),text("RIGHT DOCK").size(7).color(MUTED)].spacing(2),
+                space().width(Length::Fill),
+                button(text("−").size(10)).on_press(Message::InspectorNarrow).style(btn_style(false)),
+                button(text("+").size(10)).on_press(Message::InspectorWide).style(btn_style(false)),
+                button(text("×").size(14)).on_press(Message::ToggleInspector).style(btn_style(false)),
+            ].spacing(5),
         ].spacing(8).padding(12);
         if let Some(o)=selected {
-            body=body.push(container(column![
-                text(o.label.clone()).size(14).color(TEXT),
-                text(format!("{} · {}",o.kind,o.id)).size(8).color(MUTED),
-            ].spacing(3)).padding(10).style(panel_style(SURFACE_2)));
+            body=body.push(container(column![text(o.label.clone()).size(14).color(TEXT),text(format!("{} · {}",o.kind,o.id)).size(8).color(MUTED)].spacing(3)).padding(10).style(panel_style(SURFACE_2)));
             body=body.push(text("TRANSFORM").size(8).color(MUTED));
-            body=body.push(row![
-                value_box("X",o.x),value_box("Y",o.y),value_box("W",o.width),value_box("H",o.height)
-            ].spacing(5));
-            body=body.push(row![
-                value_box("ROT",o.rotation),value_box("OPACITY",o.opacity),value_box("3D Z",o.transform3d.z)
-            ].spacing(5));
-            if o.kind=="model3d" {
-                body=body.push(text("3D TRANSFORM").size(8).color(MUTED));
-                body=body.push(row![value_box("RX",o.transform3d.rx),value_box("RY",o.transform3d.ry),value_box("RZ",o.transform3d.rz)].spacing(5));
-                body=body.push(row![value_box("SX",o.transform3d.sx),value_box("SY",o.transform3d.sy),value_box("SZ",o.transform3d.sz)].spacing(5));
-            }
+            body=body.push(row![value_box("X",o.x),value_box("Y",o.y),value_box("W",o.width),value_box("H",o.height)].spacing(5));
+            body=body.push(row![value_box("ROT",o.rotation),value_box("OPACITY",o.opacity),value_box("3D Z",o.transform3d.z)].spacing(5));
             if o.kind=="text" {
-                let fs=o.props.get("fontSize").and_then(Value::as_f64).unwrap_or(16.0) as f32;
-                let color=o.props.get("color").and_then(Value::as_str).unwrap_or("#ffffff").to_string();
-                body=body.push(text("TEXT FORMAT").size(8).color(MUTED));
+                let fs=o.props.get("fontSize").and_then(Value::as_f64).unwrap_or(24.0) as f32;
+                let color=o.props.get("color").and_then(Value::as_str).unwrap_or("#f4f6fb").to_string();
+                let family=o.props.get("fontFamily").and_then(Value::as_str).unwrap_or("Fira Sans").to_string();
+                let align=o.props.get("textAlign").and_then(Value::as_str).unwrap_or("left");
+                body=body.push(text("TEXT TOOLBAR").size(8).color(MUTED));
+                body=body.push(text_input("Text", &o.label).on_input(Message::TextContent).padding(8).size(11).width(Length::Fill).style(text_input_style()));
                 body=body.push(row![
+                    pick_list(vec!["Fira Sans".to_string(),"Fira Mono".to_string(),"Sans".to_string()],Some(family),Message::FontFamily).width(100).text_size(8),
                     button(text("B").size(10)).on_press(Message::TextFormat("bold".into())).style(btn_style(o.props.get("bold").and_then(Value::as_bool).unwrap_or(false))),
                     button(text("I").size(10)).on_press(Message::TextFormat("italic".into())).style(btn_style(o.props.get("italic").and_then(Value::as_bool).unwrap_or(false))),
                     button(text("U").size(10)).on_press(Message::TextFormat("underline".into())).style(btn_style(o.props.get("underline").and_then(Value::as_bool).unwrap_or(false))),
-                    button(text("L").size(9)).on_press(Message::TextAlign("left".into())).style(btn_style(o.props.get("textAlign").and_then(Value::as_str)==Some("left"))),
-                    button(text("C").size(9)).on_press(Message::TextAlign("center".into())).style(btn_style(o.props.get("textAlign").and_then(Value::as_str)==Some("center"))),
-                    button(text("R").size(9)).on_press(Message::TextAlign("right".into())).style(btn_style(o.props.get("textAlign").and_then(Value::as_str)==Some("right"))),
                 ].spacing(4));
                 body=body.push(row![
-                    text("Size").size(8).color(MUTED),
-                    slider(8.0..=96.0,fs,Message::TextSize).width(Length::Fill),
-                    text(format!("{:.0}px",fs)).size(8).color(TEXT),
-                ].spacing(6));
+                    button(text("L").size(9)).on_press(Message::TextAlign("left".into())).style(btn_style(align=="left")),
+                    button(text("C").size(9)).on_press(Message::TextAlign("center".into())).style(btn_style(align=="center")),
+                    button(text("R").size(9)).on_press(Message::TextAlign("right".into())).style(btn_style(align=="right")),
+                    text("Size").size(8).color(MUTED),slider(8.0..=96.0,fs,Message::TextSize).width(Length::Fill),text(format!("{:.0}px",fs)).size(8).color(TEXT),
+                ].spacing(5));
                 body=body.push(row![
                     button(text("White").size(8)).on_press(Message::TextColor("#f4f6fb".into())).style(btn_style(color=="#f4f6fb")),
                     button(text("Lavender").size(8)).on_press(Message::TextColor("#a897ff".into())).style(btn_style(color=="#a897ff")),
+                    button(text("Cyan").size(8)).on_press(Message::TextColor("#6fe7ff".into())).style(btn_style(color=="#6fe7ff")),
                     button(text("Pink").size(8)).on_press(Message::TextColor("#df68f3".into())).style(btn_style(color=="#df68f3")),
                 ].spacing(4));
             }
             body=body.push(text("ANIMATION").size(8).color(MUTED));
-            body=body.push(row![
-                button(text("Capture Keyframe").size(9)).on_press(Message::AddKeyframe).style(btn_style(true)),
-                button(text("+ Track").size(9)).on_press(Message::AddTrack("x".into())).style(btn_style(false)),
-            ].spacing(5));
+            body=body.push(row![button(text("Capture Keyframe").size(9)).on_press(Message::AddKeyframe).style(btn_style(true)),button(text("+ Track").size(9)).on_press(Message::AddTrack("x".into())).style(btn_style(false))].spacing(5));
         } else {
-            body=body.push(container(column![
-                text("Nothing selected").size(14).color(TEXT),
-                text("The Inspector stays closed until you explicitly open it or select an object. The canvas gets the full workspace by default.").size(9).color(MUTED),
-            ].spacing(8)).padding(12).style(panel_style(SURFACE_2)));
+            body=body.push(container(column![text("Select an object").size(14).color(TEXT),text("The inspector stays on the right and can be closed or resized without stealing the canvas.").size(9).color(MUTED)].spacing(8)).padding(12).style(panel_style(SURFACE_2)));
         }
-        body=body.push(text("DOCK SIZE").size(8).color(MUTED));
-        body=body.push(slider(260.0..=480.0,self.inspector_width as f32,|v|Message::InspectorSize(v as i32)));
-        body=body.push(text("260 px     330 px     480 px").size(7).color(MUTED));
+        body=body.push(text("DOCK WIDTH").size(8).color(MUTED));
+        body=body.push(row![button(text("Narrow").size(8)).on_press(Message::InspectorNarrow).style(btn_style(false)),slider(240.0..=520.0,self.inspector_width as f32,|v|Message::InspectorSize(v as i32)).width(Length::Fill),button(text("Wide").size(8)).on_press(Message::InspectorWide).style(btn_style(false))].spacing(5));
         container(scrollable(body)).width(Length::Fill).height(Length::Fill).style(panel_style(rgb(0x0b1119))).into()
     }
 
@@ -758,7 +898,7 @@ impl App {
                 text("LIVE PREVIEW").size(9).color(ACCENT),
                 text("SYN Runtime Preview").size(28).color(TEXT),
                 text(format!("Frame {:.2}s  ·  {} objects",self.playhead,self.doc.scene().objects.len())).size(11).color(MUTED),
-                container(canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:None,playhead:self.playhead,zoom:0.75}).width(Length::Fill).height(Length::Fill)).padding(10).style(panel_style(BG)),
+                container(canvas(SceneCanvas{scene:self.doc.scene().clone(),selected:None,playhead:self.playhead,zoom:1.0}).width(Length::Fill).height(Length::Fill)).padding(10).style(panel_style(BG)),
             ],
             "Document Model"=>column![text("DOCUMENT MODEL").size(9).color(ACCENT),text("Rust state → SYN serialization → canvas/runtime").size(18).color(TEXT),text(serde_json::to_string_pretty(&self.doc).unwrap_or_default()).size(9).color(MUTED)],
             other=>column![text("WORKSPACE").size(9).color(ACCENT),text(overlay_name).size(24).color(TEXT),text("This surface is wired to the same Rust state machine. It is an executable workspace, not a decorative dead button.").size(11).color(MUTED)],
@@ -811,6 +951,18 @@ fn rail_logo_style()->impl Fn(&Theme)->iced::widget::container::Style {
 fn stage_style()->impl Fn(&Theme)->iced::widget::container::Style {
     move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(rgb(0x06090e).into()),border:border::rounded(0).color(Color::TRANSPARENT).width(0.0),shadow:Default::default(),snap:true}
 }
+fn menu_panel_style()->impl Fn(&Theme)->iced::widget::container::Style {
+    move |_theme| iced::widget::container::Style{text_color:Some(TEXT),background:Some(rgb(0x111722).into()),border:border::rounded(6).color(rgb(0x303b50)).width(1.0),shadow:Default::default(),snap:true}
+}
+fn menu_item_style()->impl Fn(&Theme,button::Status)->button::Style {
+    move |_theme,status| {
+        let hover=matches!(status,button::Status::Hovered);
+        button::Style{background:Some(if hover{rgb(0x242f43).into()}else{Color::TRANSPARENT.into()}),text_color:TEXT,border:border::rounded(4).color(if hover{rgb(0x3d4c68)}else{Color::TRANSPARENT}).width(if hover{1.0}else{0.0}),shadow:Default::default(),snap:true}
+    }
+}
+fn text_input_style()->impl Fn(&Theme,text_input::Status)->text_input::Style {
+    move |_theme,_status| text_input::Style{background:rgb(0x101722).into(),border:border::rounded(6).color(rgb(0x2b3850)).width(1.0),icon:MUTED,placeholder:MUTED,value:TEXT,selection:ACCENT}
+}
 fn panel_style(bg:Color)->impl Fn(&Theme)->iced::widget::container::Style {
     move |_theme| iced::widget::container::Style {
         text_color:Some(TEXT),
@@ -832,9 +984,9 @@ fn btn_style(active:bool)->impl Fn(&Theme,button::Status)->button::Style {
         let hover=matches!(status,button::Status::Hovered);
         let pressed=matches!(status,button::Status::Pressed);
         button::Style {
-            background:Some(if active {rgb(0x9b8cff).into()} else if pressed {rgb(0x171c28).into()} else if hover {rgb(0x111722).into()} else {Color::TRANSPARENT.into()}),
+            background:Some(if active {rgb(0x8d7dff).into()} else if pressed {rgb(0x171c28).into()} else if hover {rgb(0x151d2b).into()} else {Color::TRANSPARENT.into()}),
             text_color:if active {BG}else if hover {TEXT}else{MUTED},
-            border:border::rounded(7).color(if active {rgb(0xb0a5ff)} else if hover {rgb(0x293348)} else {Color::TRANSPARENT}).width(if active || hover {1.0}else{0.0}),
+            border:border::rounded(6).color(if active {rgb(0xa99dff)} else if hover {rgb(0x34445f)} else {Color::TRANSPARENT}).width(if active || hover {1.0}else{0.0}),
             shadow:Default::default(),
             snap:true
         }
@@ -855,7 +1007,7 @@ impl SceneCanvas {
         let available_w=(bounds.width-40.0).max(80.0);
         let available_h=(bounds.height-52.0).max(80.0);
         let fit=(available_w/self.scene.width).min(available_h/self.scene.height);
-        (fit*(self.zoom/0.72)).clamp(0.08,2.5)
+        (fit*self.zoom).clamp(0.08,2.5)
     }
 
     fn project3d(p:[f32;3], transform:Transform3D, center:Point)->Point {
@@ -904,19 +1056,31 @@ impl Program<Message> for SceneCanvas {
                 }
                 continue;
             }
-            let rect=Path::rounded_rectangle(Point::new(x,y),Size::new(o.width*scale,o.height*scale),border::Radius::from(14.));
-            let color=if o.kind=="text"{rgb(0x151b2a)}else{rgb(0x1b2130)};
-            frame.fill(&rect,color);
-            frame.stroke(&rect,Stroke{style:canvas::Style::Solid(if self.selected.as_ref()==Some(&o.id){ACCENT}else{rgb(0x3a465f)}),width:if self.selected.as_ref()==Some(&o.id){2.}else{1.},..Default::default()});
-            let label=if o.kind=="text"{"SYN STUDIO".to_string()}else{o.label.clone()};
-            let text_size=o.props.get("fontSize").and_then(Value::as_f64).unwrap_or(14.0) as f32;
-            let text_color=o.props.get("color").and_then(Value::as_str).map(parse_hex).unwrap_or(TEXT);
+            let selected=self.selected.as_ref()==Some(&o.id);
+            let fill_color=o.props.get("color").and_then(Value::as_str).map(parse_hex).unwrap_or(if o.kind=="text"{rgb(0x151b2a)}else{rgb(0x1b2130)});
+            if o.kind=="circle" {
+                let circle=Path::circle(Point::new(x+o.width*scale/2.,y+o.height*scale/2.),(o.width.min(o.height)*scale/2.).max(2.));
+                frame.fill(&circle,fill_color);
+                frame.stroke(&circle,Stroke{style:canvas::Style::Solid(if selected{ACCENT}else{rgb(0x3a465f)}),width:if selected{2.}else{1.},..Default::default()});
+            } else {
+                let radius=if o.kind=="button"{12.}else{14.};
+                let rect=Path::rounded_rectangle(Point::new(x,y),Size::new(o.width*scale,o.height*scale),border::Radius::from(radius));
+                frame.fill(&rect,fill_color);
+                frame.stroke(&rect,Stroke{style:canvas::Style::Solid(if selected{ACCENT}else{rgb(0x3a465f)}),width:if selected{2.}else{1.},..Default::default()});
+            }
+            let label=o.label.clone();
+            let text_size=o.props.get("fontSize").and_then(Value::as_f64).unwrap_or(if o.kind=="button"{13.}else{14.}) as f32;
+            let text_color=o.props.get("textColor").and_then(Value::as_str).map(parse_hex).or_else(||o.props.get("color").and_then(Value::as_str).map(|c|if o.kind=="text"{parse_hex(c)}else{TEXT})).unwrap_or(TEXT);
             let align=match o.props.get("textAlign").and_then(Value::as_str) {
                 Some("center")=>alignment::Horizontal::Center,
                 Some("right")=>alignment::Horizontal::Right,
                 _=>alignment::Horizontal::Left,
             };
-            frame.fill_text(CanvasText{content:label,position:Point::new(x+16.*scale,y+22.*scale),max_width:(o.width*scale-28.).max(40.),color:text_color,size:(text_size*scale).into(),align_x:align.into(),..Default::default()});
+            let family=o.props.get("fontFamily").and_then(Value::as_str).unwrap_or("Fira Sans");
+            let mut font=if family=="Fira Mono"{Font::MONOSPACE}else{Font::DEFAULT};
+            if o.props.get("bold").and_then(Value::as_bool).unwrap_or(false) { font.weight=iced::font::Weight::Bold; }
+            if o.props.get("italic").and_then(Value::as_bool).unwrap_or(false) { font.style=iced::font::Style::Italic; }
+            frame.fill_text(CanvasText{content:label,position:Point::new(x+16.*scale,y+22.*scale),max_width:(o.width*scale-28.).max(40.),color:text_color,size:(text_size*scale).into(),font,align_x:align.into(),..Default::default()});
         }
         frame.fill_rectangle(Point::new(0.,bounds.height-28.),Size::new(bounds.width,28.),rgb(0x0c121b));
         frame.fill_text(CanvasText{content:format!("FRAME {:04}   /   {:.2}s", (self.playhead*60.) as u32,self.playhead),position:Point::new(12.,bounds.height-10.),color:MUTED,size:9.into(),..Default::default()});
