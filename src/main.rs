@@ -296,7 +296,15 @@ struct App {
 }
 impl Default for App {
     fn default() -> Self {
-        let doc=load_document().unwrap_or_else(Document::sample);
+        let mut doc=load_document().unwrap_or_else(Document::sample);
+
+        // Browser storage can outlive the current SYN Studio schema. Never let
+        // stale or partially-valid project state make the renderer panic.
+        if doc.scenes.is_empty() {
+            doc=Document::sample();
+        }
+        doc.active_scene=doc.active_scene.min(doc.scenes.len().saturating_sub(1));
+
         let code=text_editor::Content::with_text(&serde_json::to_string_pretty(&doc).unwrap_or_default());
         Self {
             doc, surface:Surface::Design, tool:Tool::Select, selected:None,
