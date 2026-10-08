@@ -540,19 +540,125 @@ impl App {
 
     fn center(&self)->Element<'_,Message> {
         let header=row![
-            column![text(self.doc.scene().name.clone()).size(14).color(TEXT),text("SCENE / LIVE RUNTIME").size(8).color(MUTED)].spacing(0),
+            column![text(self.surface_name()).size(14).color(TEXT),text(self.surface_subtitle()).size(8).color(MUTED)].spacing(0),
             horizontal_space(),
             text(format!("{:.0}%",self.zoom*100.)).size(10).color(MUTED),
-            button(text("Inspector").size(10)).on_press(Message::ToggleInspector).style(btn_style(false)),
+            button(text(if self.inspector{"Hide Inspector"}else{"Inspector"}).size(10)).on_press(Message::ToggleInspector).style(btn_style(false)),
         ].spacing(8).padding([8,12]).align_y(alignment::Vertical::Center).height(46).style(panel_style(SURFACE));
 
-        let canvas_view=canvas(SceneCanvas{
-            scene:self.doc.scene().clone(), selected:self.selected.clone(), playhead:self.playhead, zoom:self.zoom,
-        }).width(Length::Fill).height(Length::Fill);
+        match self.surface {
+            Surface::Code => column![header,self.code_surface()].height(Length::Fill).into(),
+            Surface::Architecture => column![header,self.architecture_surface()].height(Length::Fill).into(),
+            Surface::Media => column![header,self.media_surface()].height(Length::Fill).into(),
+            Surface::Ai => column![header,self.ai_surface()].height(Length::Fill).into(),
+            Surface::Publish => column![header,self.publish_surface()].height(Length::Fill).into(),
+            Surface::Design | Surface::Motion => {
+                let canvas_view=canvas(SceneCanvas{
+                    scene:self.doc.scene().clone(), selected:self.selected.clone(), playhead:self.playhead, zoom:self.zoom,
+                }).width(Length::Fill).height(Length::Fill);
+                let main=container(canvas_view).padding(16).style(panel_style(BG));
+                let bottom=if self.surface==Surface::Motion {self.timeline()} else {self.scene_tabs()};
+                column![header,main,bottom].height(Length::Fill).into()
+            }
+        }
+    }
 
-        let main=container(canvas_view).padding(16).style(panel_style(BG));
-        let bottom=if self.surface==Surface::Motion {self.timeline()} else {self.scene_tabs()};
-        column![header,main,bottom].height(Length::Fill).into()
+    fn surface_name(&self)->String {
+        match self.surface {
+            Surface::Design=>"Command Center".into(),
+            Surface::Motion=>"Motion Lab".into(),
+            Surface::Architecture=>"Architecture".into(),
+            Surface::Media=>"Media Lab".into(),
+            Surface::Code=>"Code Intelligence".into(),
+            Surface::Ai=>"AI Workbench".into(),
+            Surface::Publish=>"Publish & Validate".into(),
+        }
+    }
+    fn surface_subtitle(&self)->String {
+        match self.surface {
+            Surface::Design=>"SCENE / LIVE RUNTIME".into(),
+            Surface::Motion=>"NON-LINEAR KEYFRAME TIMELINE".into(),
+            Surface::Architecture=>"DOCUMENT / SYSTEM GRAPH".into(),
+            Surface::Media=>"ASSET PIPELINE / PORTABLE MEDIA".into(),
+            Surface::Code=>"RUST SOURCE / SYN DOCUMENT".into(),
+            Surface::Ai=>"ASSISTED WORKFLOWS / SAFE OPERATIONS".into(),
+            Surface::Publish=>"VALIDATION / PACKAGING / PREVIEW".into(),
+        }
+    }
+    fn code_surface(&self)->Element<'_,Message> {
+        let editor=text_editor(&self.code)
+            .placeholder("Edit the SYN document...")
+            .highlight("json", iced::highlighter::Theme::Base16Mocha)
+            .on_action(Message::CodeEdit)
+            .padding(14)
+            .size(12)
+            .height(Length::Fill);
+        container(column![
+            row![
+                text("SYN SOURCE").size(9).color(ACCENT),
+                text(format!("{} lines",self.code.line_count())).size(8).color(MUTED),
+                horizontal_space(),
+                button(text("Format").size(9)).on_press(Message::FormatCode).style(btn_style(false)),
+                button(text("Validate").size(9)).on_press(Message::Validate).style(btn_style(false)),
+                button(text("Apply to Design").size(9)).on_press(Message::ApplyCode).style(btn_style(true)),
+            ].spacing(7).padding(8),
+            container(editor).padding(8).height(Length::Fill).style(panel_style(BG)),
+        ]).height(Length::Fill).style(panel_style(SURFACE_2)).into()
+    }
+    fn architecture_surface(&self)->Element<'_,Message> {
+        let cards=[
+            ("STATE","Document, scenes, objects and animation are typed Rust state."),
+            ("RENDER","Iced Canvas + renderer geometry owns the visual surface."),
+            ("MOTION","Tracks, keyframes, easing and 60/120 FPS playback run in Rust."),
+            ("3D","Transform3D supports position, rotation, scale and perspective projection."),
+            ("INPUT","Canvas events map directly into typed Message values."),
+            ("ASYNC","Iced subscriptions drive playback without a JavaScript animation loop."),
+        ];
+        let content=cards.into_iter().map(|(a,b)|container(column![text(a).size(8).color(ACCENT),text(b).size(10).color(TEXT)].spacing(7)).padding(14).width(Length::Fill).style(panel_style(SURFACE_2))).collect::<Vec<_>>();
+        container(scrollable(iced::widget::Column::with_children(content).spacing(10).padding(16))).height(Length::Fill).style(panel_style(BG)).into()
+    }
+    fn media_surface(&self)->Element<'_,Message> {
+        container(column![
+            text("MEDIA LAB").size(10).color(ACCENT),
+            text("A typed asset pipeline belongs beside the scene, not outside it.").size(22).color(TEXT),
+            text("The document model is ready for embedded images, audio, video, fonts and model assets. The Iced renderer remains responsible for presentation.").size(10).color(MUTED),
+            row![
+                media_card("IMAGE","Raster / SVG"),
+                media_card("VIDEO","Playback surface"),
+                media_card("AUDIO","Timeline source"),
+                media_card("3D","Mesh / model"),
+            ].spacing(10),
+            container(column![
+                text("CURRENT PROJECT").size(8).color(MUTED),
+                text(format!("{} scenes · {} objects · {} animation tracks",self.doc.scenes.len(),self.doc.scene().objects.len(),self.doc.scene().animation.tracks.len())).size(13).color(TEXT),
+                text("Use Insert and Code to extend the document without breaking the runtime model.").size(9).color(MUTED),
+            ].spacing(6)).padding(16).style(panel_style(SURFACE_2)),
+        ].spacing(14).padding(18)).height(Length::Fill).style(panel_style(BG)).into()
+    }
+    fn ai_surface(&self)->Element<'_,Message> {
+        container(column![
+            text("AI WORKBENCH").size(9).color(ACCENT),
+            text("AI can operate on typed project state, not opaque UI guesses.").size(24).color(TEXT),
+            text("The workbench is intentionally separated from the renderer so generated changes can be validated before they touch the live document.").size(10).color(MUTED),
+            row![
+                workspace_button("Analyze document","Inspect scenes, tracks and structural issues",Message::Validate),
+                workspace_button("Generate layout","Prepare a structured scene operation",Message::OpenWorkspace("Layout Generator".into())),
+                workspace_button("Motion assist","Open the keyframe workflow",Message::Surface(Surface::Motion)),
+            ].spacing(10),
+        ].spacing(14).padding(18)).height(Length::Fill).style(panel_style(BG)).into()
+    }
+    fn publish_surface(&self)->Element<'_,Message> {
+        let valid=self.doc.scenes.iter().all(|s|s.width>0. && s.height>0.);
+        container(column![
+            text("PUBLISH").size(9).color(ACCENT),
+            text("Validate. Preview. Export.").size(24).color(TEXT),
+            container(row![text(if valid{"✓"}else{"!"}).size(18).color(if valid{GOOD}else{PINK}),text(if valid{"Document is structurally valid"}else{"Document needs attention"}).size(11).color(TEXT)]).padding(14).style(panel_style(SURFACE_2)),
+            row![
+                workspace_button("Validate","Run structural and animation checks",Message::Validate),
+                workspace_button("Preview","Run the current scene at the current playhead",Message::Preview),
+                workspace_button("Export .syn","Write the portable project document",Message::Export),
+            ].spacing(10),
+        ].spacing(14).padding(18)).height(Length::Fill).style(panel_style(BG)).into()
     }
 
     fn scene_tabs(&self)->Element<'_,Message> {
@@ -657,6 +763,13 @@ fn rbtn<'a>(icon:&str,label:&str,msg:Message)->Element<'a,Message> {
 fn tool_button(tool:Tool,icon:&str,label:&str,active:Tool)->Element<'_,Message> {
     button(column![text(icon).size(16).color(if tool==active{ACCENT}else{MUTED}),text(label).size(7).color(TEXT)].align_x(alignment::Horizontal::Center).spacing(2))
         .on_press(Message::Tool(tool)).style(btn_style(tool==active)).width(50).height(48).into()
+}
+fn media_card<'a>(kind:&'a str,desc:&'a str)->Element<'a,Message> {
+    container(column![text(kind).size(9).color(ACCENT),text(desc).size(10).color(TEXT)].spacing(5)).padding(14).width(Length::Fill).style(panel_style(SURFACE_2)).into()
+}
+fn workspace_button<'a>(title:&'a str,desc:&'a str,msg:Message)->Element<'a,Message> {
+    button(column![text(title).size(11).color(TEXT),text(desc).size(8).color(MUTED)].spacing(5).align_x(alignment::Horizontal::Left))
+        .on_press(msg).padding(12).width(Length::Fill).style(btn_style(false)).into()
 }
 fn value_box(label:&str,value:f32)->Element<'_,Message> {
     container(column![text(label).size(7).color(MUTED),text(format!("{:.1}",value)).size(10).color(TEXT)].spacing(2))
